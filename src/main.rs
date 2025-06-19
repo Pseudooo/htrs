@@ -1,35 +1,11 @@
-use crate::RootCommands::Service;
-use crate::ServiceCommands::Add;
-use clap::{Parser, Subcommand};
+mod commands;
+use clap::{Parser};
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::path::Path;
-
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-struct Cli {
-    #[command(subcommand)]
-    command: RootCommands
-}
-
-#[derive(Subcommand)]
-enum RootCommands {
-    #[command(subcommand)]
-    Service(ServiceCommands),
-    Call,
-}
-
-#[derive(Subcommand)]
-enum ServiceCommands {
-    Add {
-        #[arg(long, value_name = "name")]
-        name: String,
-
-        #[arg(long, value_name = "url")]
-        host: String,
-    },
-    List,
-}
+use crate::commands::{Cli, ServiceCommands};
+use crate::commands::RootCommands::Service;
+use crate::commands::ServiceCommands::Add;
 
 #[derive(Serialize, Deserialize)]
 struct HtrsConfig {
