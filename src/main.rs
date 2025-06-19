@@ -1,11 +1,11 @@
-mod commands;
+mod command_args;
 use clap::{Parser};
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::path::Path;
-use crate::commands::{Cli, ServiceCommands};
-use crate::commands::RootCommands::Service;
-use crate::commands::ServiceCommands::Add;
+use crate::command_args::{Cli, ServiceCommands};
+use crate::command_args::RootCommands::Service;
+use crate::command_args::ServiceCommands::Add;
 
 #[derive(Serialize, Deserialize)]
 struct HtrsConfig {
