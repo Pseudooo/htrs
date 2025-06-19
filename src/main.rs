@@ -1,39 +1,23 @@
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    #[command(subcommand)]
-    command: CliCommands
-}
-
-#[derive(Subcommand)]
-enum CliCommands {
-    #[command(alias = "c")]
-    Call,
-    #[command(alias = "cfg")]
-    Config,
+    #[arg(long, value_name = "URL")]
+    url: String
 }
 
 fn main() {
+    let parsed_args = Cli::parse();
 
-    match Cli::try_parse() {
-        Ok(x) => {
-            exec(x);
-        }
-        Err(e) => {
-            e.exit();
-        }
-    }
-}
-
-fn exec(arg: Cli) {
-    match arg.command {
-        CliCommands::Call => {
-            println!("Using Call")
+    let client = reqwest::blocking::Client::new();
+    let response_result = client.get(&parsed_args.url).send();
+    match response_result {
+        Ok(response) => {
+            println!("Response: {}", response.status());
         },
-        CliCommands::Config => {
-            println!("Using config");
+        Err(error) => {
+            panic!("{}", error);
         }
     }
 }
