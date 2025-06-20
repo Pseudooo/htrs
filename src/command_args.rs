@@ -23,5 +23,10 @@ pub enum ServiceCommands {
         #[arg(long, value_name = "url")]
         host: String,
     },
+    #[command(alias = "rm")]
+    Remove {
+        #[arg(long, value_name = "name")]
+        name: String
+    },
     List,
 }

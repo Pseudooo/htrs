@@ -5,7 +5,7 @@ use std::fs::{File, OpenOptions};
 use std::path::Path;
 use crate::command_args::{Cli, ServiceCommands};
 use crate::command_args::RootCommands::Service;
-use crate::command_args::ServiceCommands::Add;
+use crate::command_args::ServiceCommands::{Add, Remove};
 
 #[derive(Serialize, Deserialize)]
 struct HtrsConfig {
@@ -15,6 +15,15 @@ struct HtrsConfig {
 impl HtrsConfig {
     fn new() -> HtrsConfig {
         HtrsConfig { services: Vec::new() }
+    }
+
+    fn service_defined(&self, name: &str) -> bool {
+        for service in &self.services {
+            if service.name == name {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
@@ -66,6 +75,17 @@ fn execute_service_command(cmd: &ServiceCommands) {
 
             save_config(config);
         },
+
+        Remove { name } => {
+            if config.service_defined(name) {
+                config.services.retain(|x| !x.name.eq(name));
+                println!("Service {} removed", name);
+                save_config(config);
+            } else {
+                panic!("Service with name {} not found", name)
+            }
+        }
+
         ServiceCommands::List => {
             for service in config.services.iter() {
                 println!("{}: {}", service.name, service.host);
