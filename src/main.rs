@@ -87,8 +87,13 @@ fn execute_service_command(cmd: &ServiceCommands) {
         }
 
         ServiceCommands::List => {
-            for service in config.services.iter() {
-                println!("{}: {}", service.name, service.host);
+
+            if config.services.len() == 0 {
+                println!("There are no services defined!");
+            } else {
+                for service in config.services.iter() {
+                    println!("{}: {}", service.name, service.host);
+                }
             }
         }
     }
@@ -115,7 +120,10 @@ fn ensure_config() -> HtrsConfig {
 
 fn save_config(config: HtrsConfig) {
     let config_path = Path::new("./htrs_config.json");
-    let mut file = OpenOptions::new().write(true).open(config_path)
+    let mut file = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(config_path)
         .expect("Unable to write updated config to htrs_config.json");
     serde_json::to_writer_pretty(&mut file, &config)
         .expect("Unable to write updated config to htrs_config.json");
