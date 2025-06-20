@@ -73,22 +73,55 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
             } else {
                 panic!("Service {} not found", service_name)
             }
+        },
+        EnvironmentCommands::List { service_name } => {
+            if let Some(service) = config.find_service_config(&service_name) {
+                if service.environments.len() == 0 {
+                    println!("There are no environments defined!");
+                } else {
+                    for environment in &service.environments {
+                        if environment.default {
+                            println!("{}: {} (default)", environment.name, environment.host);
+                        } else {
+                            println!("{}: {}", environment.name, environment.host);
+                        }
+                    }
+                }
+            } else {
+                panic!("Service {} not found", service_name)
+            }
         }
     }
 }
 
 fn execute_call_command(config: &HtrsConfig, cmd: CallOpts) {
-    // if let Some(service) = config.find_service_config(&cmd.name) {
-    //     let client = reqwest::blocking::Client::new();
-    //     match client.get(&service.host).send() {
-    //         Ok(response) => {
-    //             println!("Receieved {} response", response.status());
-    //         },
-    //         Err(e) => {
-    //             panic!("{}", e);
-    //         }
-    //     }
-    // } else {
-    //     panic!("Service not found");
-    // }
+    if let Some(service) = config.find_service_config(&cmd.service_name) {
+        if let Some(environment_name) = cmd.environment {
+            if let Some(environment) = service.find_environment(&environment_name) {
+                let uri = format!("https://{}/", environment.host);
+                make_get_request(&uri);
+            } else {
+                panic!("Service {} has no environment {}", cmd.service_name, environment_name);
+            }
+        } else if let Some(default_environment) = service.find_default_environment() {
+            let uri = format!("https://{}/", default_environment.host);
+            make_get_request(&uri);
+        } else {
+            panic!("No default environment found for service {}", cmd.service_name)
+        }
+    } else {
+        panic!("Service not found");
+    }
+}
+
+fn make_get_request(url: &str) {
+    let client = reqwest::blocking::Client::new();
+    match client.get(url).send() {
+        Ok(response) => {
+            println!("Receieved {} response", response.status());
+        },
+        Err(e) => {
+            panic!("{}", e);
+        }
+    }
 }

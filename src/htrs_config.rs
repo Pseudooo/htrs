@@ -96,6 +96,24 @@ impl ServiceConfig {
         }
         return false;
     }
+
+    pub fn find_environment(&self, name: &str) -> Option<&ServiceEnvironmentConfig> {
+        for environment in &self.environments {
+            if environment.name == name {
+                return Some(environment);
+            }
+        }
+        None
+    }
+
+    pub fn find_default_environment(&self) -> Option<&ServiceEnvironmentConfig> {
+        for environment in &self.environments {
+            if environment.default {
+                return Some(environment);
+            }
+        }
+        None
+    }
 }
 
 impl ServiceEnvironmentConfig {

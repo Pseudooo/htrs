@@ -39,11 +39,18 @@ pub enum EnvironmentCommands {
         host: String,
         #[arg(long, default_value = "false")]
          default: bool,
-    }
+    },
+    #[clap(alias = "ls")]
+    List {
+        service_name: String
+    },
 }
 
 #[derive(Args)]
 pub struct CallOpts {
     #[arg(long, value_name = "name")]
-    pub name: String,
+    pub service_name: String,
+
+    #[arg(short, long, value_name = "environment")]
+    pub environment: Option<String>
 }
