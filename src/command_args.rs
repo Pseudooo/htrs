@@ -48,7 +48,6 @@ pub enum EnvironmentCommands {
 
 #[derive(Args)]
 pub struct CallOpts {
-    #[arg(long, value_name = "name")]
     pub service_name: String,
 
     #[arg(short, long, value_name = "environment")]
