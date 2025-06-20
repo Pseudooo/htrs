@@ -6,7 +6,6 @@ use crate::command_args::ServiceCommands::{Add, Remove};
 use crate::command_args::{CallOpts, Cli, ServiceCommands};
 use crate::htrs_config::{HtrsConfig, ServiceConfig};
 use clap::Parser;
-use serde::{Deserialize, Serialize};
 
 fn main() {
     let parsed_args = Cli::parse();
