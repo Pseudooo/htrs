@@ -67,6 +67,12 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
                 if service.environment_exists(&environment_name) {
                     panic!("Service {} already has an environment called {}", service_name, environment_name)
                 } else {
+                    if *default {
+                        if let Some(default_environment) = service.find_default_environment_mut() {
+                            default_environment.default = false;
+                        }
+                    }
+
                     service.environments.push(ServiceEnvironmentConfig::new(environment_name.clone(), host.clone(), default.clone()));
                     config.save("./htrs_config.json");
                 }

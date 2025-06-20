@@ -115,6 +115,15 @@ impl ServiceConfig {
         None
     }
     
+    pub fn find_default_environment_mut(&mut self) -> Option<&mut ServiceEnvironmentConfig> {
+        for environment in &mut self.environments {
+            if environment.default {
+                return Some(environment);
+            }
+        }
+        None
+    }
+    
     pub fn remove_environment(&mut self, name: &str) {
         self.environments.retain(|x| x.name != name);
     }
