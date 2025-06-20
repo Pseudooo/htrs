@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -11,7 +11,7 @@ pub struct Cli {
 pub enum RootCommands {
     #[command(subcommand)]
     Service(ServiceCommands),
-    Call,
+    Call(CallOpts),
 }
 
 #[derive(Subcommand)]
@@ -29,4 +29,10 @@ pub enum ServiceCommands {
         name: String
     },
     List,
+}
+
+#[derive(Args)]
+pub struct CallOpts {
+    #[arg(long, value_name = "name")]
+    pub name: String,
 }

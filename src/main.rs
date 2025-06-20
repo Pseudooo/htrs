@@ -1,11 +1,12 @@
 mod command_args;
-use clap::{Parser};
+
+use crate::command_args::RootCommands::{Call, Service};
+use crate::command_args::ServiceCommands::{Add, Remove};
+use crate::command_args::{CallOpts, Cli, ServiceCommands};
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::path::Path;
-use crate::command_args::{Cli, ServiceCommands};
-use crate::command_args::RootCommands::Service;
-use crate::command_args::ServiceCommands::{Add, Remove};
 
 #[derive(Serialize, Deserialize)]
 struct HtrsConfig {
@@ -25,6 +26,15 @@ impl HtrsConfig {
         }
         return false;
     }
+
+    fn find_service_config(&self, name: &str) -> Option<&ServiceConfig> {
+        for service in &self.services {
+            if service.name == name {
+                return Some(service);
+            }
+        }
+        None
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -41,11 +51,15 @@ impl ServiceConfig {
 
 fn main() {
     let parsed_args = Cli::parse();
+    let mut config = ensure_config();
+
     match parsed_args.command {
         Service(service_command) => {
-            execute_service_command(&service_command);
+            execute_service_command(&mut config, &service_command);
         },
-        _ => panic!("NO"),
+        Call(options) => {
+            execute_call_command(&config, options);
+        },
     }
 
     // let client = reqwest::blocking::Client::new();
@@ -60,9 +74,7 @@ fn main() {
     // }
 }
 
-fn execute_service_command(cmd: &ServiceCommands) {
-    let mut config = ensure_config();
-
+fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) {
     match cmd {
         Add { name, host } => {
             for service in config.services.iter() {
@@ -99,6 +111,22 @@ fn execute_service_command(cmd: &ServiceCommands) {
     }
 }
 
+fn execute_call_command(config: &HtrsConfig, cmd: CallOpts) {
+    if let Some(service) = config.find_service_config(&cmd.name) {
+        let client = reqwest::blocking::Client::new();
+        match client.get(&service.host).send() {
+            Ok(response) => {
+                println!("Receieved {} response", response.status());
+            },
+            Err(e) => {
+                panic!("{}", e);
+            }
+        }
+    } else {
+        panic!("Service not found");
+    }
+}
+
 fn ensure_config() -> HtrsConfig {
     let config_path = Path::new("./htrs_config.json");
     if config_path.exists() {
@@ -118,7 +146,7 @@ fn ensure_config() -> HtrsConfig {
     return blank_config;
 }
 
-fn save_config(config: HtrsConfig) {
+fn save_config(config: &mut HtrsConfig) {
     let config_path = Path::new("./htrs_config.json");
     let mut file = OpenOptions::new()
         .write(true)
