@@ -61,17 +61,6 @@ fn main() {
             execute_call_command(&config, options);
         },
     }
-
-    // let client = reqwest::blocking::Client::new();
-    // let response_result = client.get(&parsed_args.url).send();
-    // match response_result {
-    //     Ok(response) => {
-    //         println!("Response: {}", response.status());
-    //     },
-    //     Err(error) => {
-    //         panic!("{}", error);
-    //     }
-    // }
 }
 
 fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) {
