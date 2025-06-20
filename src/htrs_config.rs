@@ -10,7 +10,14 @@ pub struct HtrsConfig {
 #[derive(Serialize, Deserialize)]
 pub struct ServiceConfig {
     pub name: String,
+    pub environments: Vec<ServiceEnvironmentConfig>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ServiceEnvironmentConfig {
+    pub name: String,
     pub host: String,
+    pub default: bool,
 }
 
 impl HtrsConfig {
@@ -29,6 +36,15 @@ impl HtrsConfig {
 
     pub fn find_service_config(&self, name: &str) -> Option<&ServiceConfig> {
         for service in &self.services {
+            if service.name == name {
+                return Some(service);
+            }
+        }
+        None
+    }
+
+    pub fn find_service_config_mut(&mut self, name: &str) -> Option<&mut ServiceConfig> {
+        for service in &mut self.services {
             if service.name == name {
                 return Some(service);
             }
@@ -68,7 +84,22 @@ impl HtrsConfig {
 }
 
 impl ServiceConfig {
-    pub fn new(name: String, host: String) -> ServiceConfig {
-        ServiceConfig { name, host }
+    pub fn new(name: String) -> ServiceConfig {
+        ServiceConfig { name, environments: vec![] }
+    }
+
+    pub fn environment_exists(&self, name: &str) -> bool {
+        for environment in &self.environments {
+            if environment.name == name {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+impl ServiceEnvironmentConfig {
+    pub fn new(name: String, host: String, default: bool) -> ServiceEnvironmentConfig {
+        ServiceEnvironmentConfig { name, host, default }
     }
 }

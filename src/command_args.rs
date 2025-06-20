@@ -19,9 +19,6 @@ pub enum ServiceCommands {
     Add {
         #[arg(long, value_name = "name")]
         name: String,
-
-        #[arg(long, value_name = "url")]
-        host: String,
     },
     #[command(alias = "rm")]
     Remove {
@@ -29,6 +26,20 @@ pub enum ServiceCommands {
         name: String
     },
     List,
+
+    #[command(subcommand, alias = "env")]
+    Environment(EnvironmentCommands),
+}
+
+#[derive(Subcommand)]
+pub enum EnvironmentCommands {
+    Add {
+        service_name: String,
+        name: String,
+        host: String,
+        #[arg(long, default_value = "false")]
+         default: bool,
+    }
 }
 
 #[derive(Args)]
