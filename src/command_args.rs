@@ -44,6 +44,11 @@ pub enum EnvironmentCommands {
     List {
         service_name: String
     },
+    #[clap(alias = "rm")]
+    Remove {
+        service_name: String,
+        environment_name: String,
+    }
 }
 
 #[derive(Args)]

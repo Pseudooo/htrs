@@ -90,6 +90,13 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
             } else {
                 panic!("Service {} not found", service_name)
             }
+        },
+        EnvironmentCommands::Remove { service_name, environment_name } => {
+            if let Some(service) = config.find_service_config_mut(&service_name) {
+                service.remove_environment(environment_name)
+            } else {
+                panic!("Service {} not found", service_name);
+            }
         }
     }
 }

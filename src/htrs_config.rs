@@ -114,6 +114,10 @@ impl ServiceConfig {
         }
         None
     }
+    
+    pub fn remove_environment(&mut self, name: &str) {
+        self.environments.retain(|x| x.name != name);
+    }
 }
 
 impl ServiceEnvironmentConfig {
