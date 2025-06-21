@@ -118,12 +118,14 @@ fn execute_environment_command<'a>(config: &'a mut HtrsConfig, cmd: &Environment
 
         EnvironmentCommands::Remove { service_name, environment_name } => {
             if let Some(service) = config.find_service_config_mut(&service_name) {
-                service.remove_environment(environment_name);
-                Ok(HtrsOutcome::new(
-                    config,
-                    true,
-                    format!("Environment {environment_name} removed for {service_name}"),
-                ))
+                match service.remove_environment(environment_name) {
+                    true => Ok(HtrsOutcome::new(
+                        config,
+                        true,
+                        format!("Environment {environment_name} removed for {service_name}"),
+                    )),
+                    false => Err(HtrsError::new(&format!("Environment {environment_name} does not exist")))
+                }
             } else {
                 Err(HtrsError::new(&format!("Service {service_name} does not exist")))
             }
@@ -179,6 +181,7 @@ fn make_get_request(url: &str) -> Result<Response, HtrsError> {
 mod service_command_tests {
     use super::*;
     use crate::command_args::ServiceCommands::List;
+    use rstest::rstest;
 
     #[test]
     fn given_new_service_when_create_config_updated() {
@@ -314,5 +317,290 @@ mod service_command_tests {
         let outcome = result.unwrap();
         assert_eq!(outcome.config_updated, false);
         assert_ne!(outcome.outcome_dialogue.len(), 0);
+    }
+
+    #[test]
+    fn given_unknown_service_when_add_environment_no_update_with_error() {
+        // Arrange
+        let mut config = HtrsConfig::new();
+        config.services.push(ServiceConfig::new("foo".to_string()));
+        let command = Cli {
+            command: Service(
+                Environment(
+                    EnvironmentCommands::Add {
+                        service_name: "bar".to_string(),
+                        name: "kek".to_string(),
+                        host: "google.com".to_string(),
+                        default: false,
+                    },
+                ),
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert_ne!(error.details.len(), 0);
+    }
+
+    #[rstest]
+    #[case(true)]
+    #[case(false)]
+    fn given_known_service_when_add_environment_update_with_result(#[case] is_default: bool) {
+        // Arrange
+        let mut config = HtrsConfig::new();
+        config.services.push(ServiceConfig::new("foo".to_string()));
+        let command = Cli {
+            command: Service(
+                Environment(
+                    EnvironmentCommands::Add {
+                        service_name: "foo".to_string(),
+                        name: "bar".to_string(),
+                        host: "google.com".to_string(),
+                        default: is_default,
+                    },
+                ),
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_ok());
+        let outcome = result.unwrap();
+        assert!(outcome.config_updated);
+        let updated_service_option = config.services.iter().find(|s| s.name == "foo");
+        assert!(updated_service_option.is_some());
+        let updated_service = updated_service_option.unwrap();
+        assert_eq!(updated_service.environments.len(), 1);
+        assert!(updated_service.environments.iter().any(
+            |s| s.name == "bar" && s.host == "google.com" && s.default == is_default));
+    }
+
+    #[test]
+    fn given_known_service_with_default_environment_when_add_new_default_existing_replaced() {
+        // Arrange
+        let mut service = ServiceConfig::new("foo".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "bar".to_string(),
+            "google.com".to_string(),
+            true));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = Cli {
+            command: Service(
+                Environment(
+                    EnvironmentCommands::Add {
+                        service_name: "foo".to_string(),
+                        name: "kek".to_string(),
+                        host: "gmail.com".to_string(),
+                        default: true,
+                    },
+                ),
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_ok());
+        let outcome = result.unwrap();
+        assert!(outcome.config_updated);
+        let service = config.services.iter().find(|s| s.name == "foo");
+        assert!(service.is_some());
+        let service = service.unwrap();
+        assert!(service.environments.iter().any(|s| s.name == "bar" && !s.default));
+        assert!(service.environments.iter().any(|s| s.name == "kek" && s.default));
+    }
+
+    #[test]
+    fn given_known_service_with_existing_environment_when_create_no_update_with_error() {
+        // Arrange
+        let mut service = ServiceConfig::new("foo".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "bar".to_string(),
+            "google.com".to_string(),
+            true));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = Cli {
+            command: Service(
+                Environment(
+                    EnvironmentCommands::Add {
+                        service_name: "foo".to_string(),
+                        name: "bar".to_string(),
+                        host: "google.com".to_string(),
+                        default: false,
+                    },
+                ),
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert_ne!(error.details.len(), 0);
+    }
+
+    #[test]
+    fn given_unknown_service_when_list_environments_no_update_with_error() {
+        // Arrange
+        let mut service = ServiceConfig::new("foo".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "bar".to_string(),
+            "google".to_string(),
+            false));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = Cli {
+            command: Service(
+                Environment(
+                    EnvironmentCommands::List {
+                        service_name: "kek".to_string(),
+                    },
+                ),
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert_ne!(error.details.len(), 0);
+    }
+
+    #[test]
+    fn given_known_service_when_list_environments_no_update_with_result() {
+        // Arrange
+        let mut service = ServiceConfig::new("foo".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "bar".to_string(),
+            "google".to_string(),
+            false));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = Cli {
+            command: Service(
+                Environment(
+                    EnvironmentCommands::List {
+                        service_name: "foo".to_string(),
+                    },
+                ),
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_ok());
+        let outcome = result.unwrap();
+        assert_eq!(outcome.config_updated, false);
+        assert_ne!(outcome.outcome_dialogue.len(), 0);
+    }
+
+    #[test]
+    fn given_unknown_service_when_remove_environment_then_error() {
+        // Arrange
+        let mut service = ServiceConfig::new("foo".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "bar".to_string(),
+            "google".to_string(),
+            false));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = Cli {
+            command: Service(
+                Environment(
+                    EnvironmentCommands::Remove {
+                        service_name: "kek".to_string(),
+                        environment_name: "lmao".to_string(),
+                    },
+                ),
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert_ne!(error.details.len(), 0);
+    }
+
+    #[test]
+    fn given_known_service_when_remove_unknown_environment_then_error() {
+        // Arrange
+        let mut service = ServiceConfig::new("foo".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "bar".to_string(),
+            "google".to_string(),
+            false));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = Cli {
+            command: Service(
+                Environment(
+                    EnvironmentCommands::Remove {
+                        service_name: "foo".to_string(),
+                        environment_name: "lmao".to_string(),
+                    },
+                ),
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert_ne!(error.details.len(), 0);
+    }
+
+    #[test]
+    fn given_known_service_when_remove_known_environment_then_update_with_result() {
+        // Arrange
+        let mut service = ServiceConfig::new("foo".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "bar".to_string(),
+            "google".to_string(),
+            false));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = Cli {
+            command: Service(
+                Environment(
+                    EnvironmentCommands::Remove {
+                        service_name: "foo".to_string(),
+                        environment_name: "bar".to_string(),
+                    },
+                ),
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_ok());
+        let outcome = result.unwrap();
+        assert!(outcome.config_updated);
+        let updated_service = outcome.config.services.iter()
+            .find(|s| s.name == "foo");
+        assert!(updated_service.is_some());
+        let updated_service = updated_service.unwrap();
+        assert_eq!(updated_service.environments.len(), 0);
     }
 }

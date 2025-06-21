@@ -124,8 +124,10 @@ impl ServiceConfig {
         None
     }
     
-    pub fn remove_environment(&mut self, name: &str) {
+    pub fn remove_environment(&mut self, name: &str) -> bool {
+        let init_len = self.environments.len();
         self.environments.retain(|x| x.name != name);
+        return init_len != self.environments.len();
     }
 }
 
