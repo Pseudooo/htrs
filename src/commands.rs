@@ -134,7 +134,7 @@ fn execute_environment_command<'a>(config: &'a mut HtrsConfig, cmd: &Environment
 }
 
 fn execute_call_command(config: &HtrsConfig, cmd: CallOpts) -> Result<HtrsOutcome, HtrsError> {
-    if let Some(service) = config.find_service_config(&cmd.service_name) {
+    if let Some(service) = config.find_service_config(&cmd.service) {
         if let Some(environment_name) = cmd.environment {
             if let Some(environment) = service.find_environment(&environment_name) {
                 let uri = format!("https://{}/", environment.host);
@@ -160,10 +160,10 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallOpts) -> Result<HtrsOutcom
                 Err(e) => Err(e),
             }
         } else {
-            Err(HtrsError::new(&format!("No default environment defined for {}", cmd.service_name)))
+            Err(HtrsError::new(&format!("No default environment defined for {}", cmd.service)))
         }
     } else {
-        Err(HtrsError::new(&format!("Service {} does not exist", cmd.service_name)))
+        Err(HtrsError::new(&format!("Service {} does not exist", cmd.service)))
     }
 }
 
