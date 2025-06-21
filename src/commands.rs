@@ -36,8 +36,6 @@ fn execute_service_command<'a>(config: &'a mut HtrsConfig, cmd: &ServiceCommands
         Remove { name } => {
             if config.service_defined(name) {
                 config.services.retain(|x| !x.name.eq(name));
-                println!("Service {} removed", name);
-                config.save("./htrs_config.json");
                 Ok(HtrsOutcome::new(
                     config,
                     true,
@@ -180,17 +178,19 @@ fn make_get_request(url: &str) -> Result<Response, HtrsError> {
 #[cfg(test)]
 mod service_command_tests {
     use super::*;
+    use crate::command_args::ServiceCommands::List;
 
     #[test]
     fn given_new_service_when_create_config_updated() {
         // Arrange
         let mut config = HtrsConfig::new();
+        config.services.push(ServiceConfig::new("foo".to_string()));
         let command = Cli {
             command: Service(
                 Add {
-                    name: "foo".to_string(),
-                }
-            )
+                    name: "bar".to_string(),
+                },
+            ),
         };
 
         // Act
@@ -201,9 +201,9 @@ mod service_command_tests {
         let outcome = result.unwrap();
         assert_eq!(outcome.config_updated, true);
         let updated_config = outcome.config;
-        assert_eq!(updated_config.services.len(), 1);
-        assert_eq!(updated_config.services[0].name, "foo".to_string());
-        assert_eq!(updated_config.services[0].environments.len(), 0);
+        assert_eq!(updated_config.services.len(), 2);
+        assert!(updated_config.services.iter().any(|s| s.name == "foo" && s.environments.len() == 0));
+        assert!(updated_config.services.iter().any(|s| s.name == "bar" && s.environments.len() == 0));
     }
 
     #[test]
@@ -215,8 +215,8 @@ mod service_command_tests {
             command: Service(
                 Add {
                     name: "foo".to_string(),
-                }
-            )
+                },
+            ),
         };
 
         // Act
@@ -226,5 +226,93 @@ mod service_command_tests {
         assert!(result.is_err());
         let error = result.err().unwrap();
         assert_ne!(error.details.len(), 0);
+    }
+
+    #[test]
+    fn given_existing_service_when_remove_config_updated() {
+        // Arrange
+        let mut config = HtrsConfig::new();
+        config.services.push(ServiceConfig::new("foo".to_string()));
+        config.services.push(ServiceConfig::new("bar".to_string()));
+        let command = Cli {
+            command: Service(
+                Remove {
+                    name: "foo".to_string(),
+                },
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        assert!(result.is_ok());
+        let outcome = result.unwrap();
+        assert!(outcome.config_updated);
+        let updated_config = outcome.config;
+        assert!(!updated_config.services.iter().any(|s| s.name == "foo"));
+    }
+
+    #[test]
+    fn given_unknown_service_when_remove_no_action_with_error() {
+        // Arrange
+        let mut config = HtrsConfig::new();
+        config.services.push(ServiceConfig::new("foo".to_string()));
+        let command = Cli {
+            command: Service(
+                Remove {
+                    name: "bar".to_string(),
+                },
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_err());
+        let error = result.err().unwrap();
+        assert_ne!(error.details.len(), 0);
+    }
+
+    #[test]
+    fn given_no_services_when_list_no_update() {
+        // Arrange
+        let mut config = HtrsConfig::new();
+        let command = Cli {
+            command: Service(
+                List,
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_ok());
+        let outcome = result.unwrap();
+        assert_eq!(outcome.config_updated, false);
+        assert_ne!(outcome.outcome_dialogue.len(), 0);
+    }
+
+    #[test]
+    fn given_known_services_when_list_no_update() {
+        // Arrange
+        let mut config = HtrsConfig::new();
+        config.services.push(ServiceConfig::new("foo".to_string()));
+        config.services.push(ServiceConfig::new("bar".to_string()));
+        let command = Cli {
+            command: Service(
+                List,
+            ),
+        };
+
+        // Act
+        let result = execute_command(&mut config, command);
+
+        // Assert
+        assert!(result.is_ok());
+        let outcome = result.unwrap();
+        assert_eq!(outcome.config_updated, false);
+        assert_ne!(outcome.outcome_dialogue.len(), 0);
     }
 }
