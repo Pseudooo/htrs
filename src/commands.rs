@@ -184,7 +184,7 @@ mod service_command_tests {
     use rstest::rstest;
 
     #[test]
-    fn given_new_service_when_create_config_updated() {
+    fn given_new_service_when_create_then_config_updated_with_result() {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
@@ -210,7 +210,7 @@ mod service_command_tests {
     }
 
     #[test]
-    fn given_existing_service_when_create_no_action_with_error() {
+    fn given_existing_service_when_create_then_no_update_with_error() {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
@@ -232,7 +232,7 @@ mod service_command_tests {
     }
 
     #[test]
-    fn given_existing_service_when_remove_config_updated() {
+    fn given_existing_service_when_remove_then_config_updated_with_result() {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
@@ -256,7 +256,7 @@ mod service_command_tests {
     }
 
     #[test]
-    fn given_unknown_service_when_remove_no_action_with_error() {
+    fn given_unknown_service_when_remove_then_no_update_with_error() {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
@@ -278,7 +278,7 @@ mod service_command_tests {
     }
 
     #[test]
-    fn given_no_services_when_list_no_update() {
+    fn given_no_services_when_list_then_no_update_with_result() {
         // Arrange
         let mut config = HtrsConfig::new();
         let command = Cli {
@@ -298,7 +298,7 @@ mod service_command_tests {
     }
 
     #[test]
-    fn given_known_services_when_list_no_update() {
+    fn given_known_services_when_list_then_no_update_with_result() {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
@@ -320,7 +320,7 @@ mod service_command_tests {
     }
 
     #[test]
-    fn given_unknown_service_when_add_environment_no_update_with_error() {
+    fn given_unknown_service_when_add_environment_then_no_update_with_error() {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
@@ -349,7 +349,7 @@ mod service_command_tests {
     #[rstest]
     #[case(true)]
     #[case(false)]
-    fn given_known_service_when_add_environment_update_with_result(#[case] is_default: bool) {
+    fn given_known_service_when_add_environment_then_update_with_result(#[case] is_default: bool) {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
@@ -382,7 +382,7 @@ mod service_command_tests {
     }
 
     #[test]
-    fn given_known_service_with_default_environment_when_add_new_default_existing_replaced() {
+    fn given_known_service_with_default_environment_when_add_new_default_then_existing_replaced_with_result() {
         // Arrange
         let mut service = ServiceConfig::new("foo".to_string());
         service.environments.push(ServiceEnvironmentConfig::new(
@@ -419,7 +419,7 @@ mod service_command_tests {
     }
 
     #[test]
-    fn given_known_service_with_existing_environment_when_create_no_update_with_error() {
+    fn given_known_service_with_existing_environment_when_create_then_no_update_with_error() {
         // Arrange
         let mut service = ServiceConfig::new("foo".to_string());
         service.environments.push(ServiceEnvironmentConfig::new(
@@ -451,7 +451,7 @@ mod service_command_tests {
     }
 
     #[test]
-    fn given_unknown_service_when_list_environments_no_update_with_error() {
+    fn given_unknown_service_when_list_environments_then_no_update_with_error() {
         // Arrange
         let mut service = ServiceConfig::new("foo".to_string());
         service.environments.push(ServiceEnvironmentConfig::new(
@@ -480,7 +480,7 @@ mod service_command_tests {
     }
 
     #[test]
-    fn given_known_service_when_list_environments_no_update_with_result() {
+    fn given_known_service_when_list_environments_then_no_update_with_result() {
         // Arrange
         let mut service = ServiceConfig::new("foo".to_string());
         service.environments.push(ServiceEnvironmentConfig::new(
