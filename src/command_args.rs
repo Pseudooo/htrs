@@ -13,7 +13,7 @@ pub enum RootCommands {
     Service(ServiceCommands),
 
     #[clap(about = "Call a service")]
-    Call(CallOpts),
+    Call(CallServiceOptions),
 
     #[command(hide = true)]
     GenerateMarkdown,
@@ -68,10 +68,13 @@ pub enum EnvironmentCommands {
 }
 
 #[derive(Args)]
-pub struct CallOpts {
-    #[arg(long, value_name = "service name", help = "Service to call")]
+pub struct CallServiceOptions {
     pub service: String,
 
-    #[arg(short, long, value_name = "environment name", help = "Environment to call")]
-    pub environment: Option<String>
+    #[arg(short, long, value_name = "environment", help = "Environment to call")]
+    pub environment: Option<String>,
+
+    #[arg(long, value_name = "path", help = "Path to call for host")]
+    pub path: Option<String>,
 }
+
