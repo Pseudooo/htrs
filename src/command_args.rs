@@ -15,7 +15,7 @@ pub enum RootCommands {
     #[clap(about = "Call a service")]
     Call(CallOpts),
 
-    #[command(visible_alias = "gen")]
+    #[command(visible_alias = "gen", hide = true)]
     GenerateMarkdown,
 }
 
