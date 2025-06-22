@@ -2,6 +2,7 @@ mod command_args;
 mod htrs_config;
 mod commands;
 
+use crate::command_args::RootCommands::GenerateMarkdown;
 use crate::command_args::Cli;
 use crate::commands::execute_command;
 use crate::htrs_config::HtrsConfig;
@@ -47,7 +48,7 @@ impl<'a> HtrsOutcome<'a> {
 
 fn main() {
     let parsed_args = Cli::parse();
-    if parsed_args.generate_markdown {
+    if let GenerateMarkdown = parsed_args.command {
         print_help_markdown::<Cli>();
         return;
     }

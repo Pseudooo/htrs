@@ -13,6 +13,7 @@ pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<Htr
         Call(options) => {
             execute_call_command(config, options)
         },
+        _ => panic!("BAD")
     }
 }
 

@@ -5,42 +5,42 @@ use clap::{Args, Parser, Subcommand};
 pub struct Cli {
     #[command(subcommand)]
     pub command: RootCommands,
-
-    #[arg(long, hide = true)]
-    pub generate_markdown: bool
 }
 
 #[derive(Subcommand)]
 pub enum RootCommands {
-    #[command(subcommand, long_about = "Service configuration commands")]
+    #[command(subcommand, about = "Service configuration commands")]
     Service(ServiceCommands),
 
-    #[clap(long_about = "Call a service")]
+    #[clap(about = "Call a service")]
     Call(CallOpts),
+
+    #[command(visible_alias = "gen")]
+    GenerateMarkdown,
 }
 
 #[derive(Subcommand)]
 pub enum ServiceCommands {
-    #[clap(long_about = "Create a new service")]
+    #[clap(about = "Create a new service")]
     Add {
         #[arg(long, value_name = "name", help = "Unique name of service to create")]
         name: String,
     },
-    #[command(visible_alias = "rm", long_about = "Remove a service")]
+    #[command(visible_alias = "rm", about = "Remove a service")]
     Remove {
         #[arg(long, value_name = "name", help = "Service name to remove")]
         name: String
     },
-    #[command(visible_alias = "ls", long_about = "List all services")]
+    #[command(visible_alias = "ls", about = "List all services")]
     List,
 
-    #[command(subcommand, visible_alias = "env", long_about = "Service environment configuration commands")]
+    #[command(subcommand, visible_alias = "env", about = "Service environment configuration commands")]
     Environment(EnvironmentCommands),
 }
 
 #[derive(Subcommand)]
 pub enum EnvironmentCommands {
-    #[command(long_about = "Add a new environment to a service")]
+    #[command(about = "Add a new environment to a service")]
     Add {
         #[arg(long, value_name = "service name", help = "Service name to configure")]
         service_name: String,
@@ -54,11 +54,11 @@ pub enum EnvironmentCommands {
         #[arg(long, default_value = "false", help = "Determine if the created environment should be set as the default")]
          default: bool,
     },
-    #[clap(visible_alias = "ls", long_about = "List all environments for service")]
+    #[clap(visible_alias = "ls", about = "List all environments for service")]
     List {
         service_name: String
     },
-    #[clap(visible_alias = "rm", long_about = "Remove a given environment from the service")]
+    #[clap(visible_alias = "rm", about = "Remove a given environment from the service")]
     Remove {
         #[clap(long, help = "Service name to remove environment from")]
         service_name: String,
