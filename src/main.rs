@@ -48,7 +48,7 @@ fn main() {
     let parsed_args = Cli::parse();
     let mut config = HtrsConfig::load("./htrs_config.json");
 
-    let result = execute_command(&mut config, parsed_args);
+    let result = execute_command(&mut config, parsed_args.command);
     match result {
         Err(e) => {
             println!("{}", e.details);

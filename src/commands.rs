@@ -1,12 +1,12 @@
 use crate::command_args::RootCommands::{Call, Service};
 use crate::command_args::ServiceCommands::{Add, Environment, Remove};
-use crate::command_args::{CallOpts, Cli, EnvironmentCommands, ServiceCommands};
+use crate::command_args::{CallOpts, EnvironmentCommands, RootCommands, ServiceCommands};
 use crate::htrs_config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
 use crate::{HtrsError, HtrsOutcome};
 use reqwest::blocking::Response;
 
-pub fn execute_command(config: &mut HtrsConfig, cmd: Cli) -> Result<HtrsOutcome, HtrsError> {
-    match cmd.command {
+pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<HtrsOutcome, HtrsError> {
+    match cmd {
         Service(service_command) => {
             execute_service_command(config, &service_command)
         },
@@ -188,13 +188,11 @@ mod service_command_tests {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
-        let command = Cli {
-            command: Service(
-                Add {
-                    name: "bar".to_string(),
-                },
-            ),
-        };
+        let command = Service(
+            Add {
+                name: "bar".to_string(),
+            }
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -214,13 +212,11 @@ mod service_command_tests {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
-        let command = Cli {
-            command: Service(
-                Add {
-                    name: "foo".to_string(),
-                },
-            ),
-        };
+        let command = Service(
+            Add {
+                name: "foo".to_string(),
+            }
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -237,13 +233,11 @@ mod service_command_tests {
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
         config.services.push(ServiceConfig::new("bar".to_string()));
-        let command = Cli {
-            command: Service(
-                Remove {
-                    name: "foo".to_string(),
-                },
-            ),
-        };
+        let command = Service(
+            Remove {
+                name: "foo".to_string(),
+            },
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -260,13 +254,11 @@ mod service_command_tests {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
-        let command = Cli {
-            command: Service(
-                Remove {
-                    name: "bar".to_string(),
-                },
-            ),
-        };
+        let command = Service(
+            Remove {
+                name: "bar".to_string(),
+            },
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -281,11 +273,7 @@ mod service_command_tests {
     fn given_no_services_when_list_then_no_update_with_result() {
         // Arrange
         let mut config = HtrsConfig::new();
-        let command = Cli {
-            command: Service(
-                List,
-            ),
-        };
+        let command = Service(List);
 
         // Act
         let result = execute_command(&mut config, command);
@@ -303,11 +291,7 @@ mod service_command_tests {
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
         config.services.push(ServiceConfig::new("bar".to_string()));
-        let command = Cli {
-            command: Service(
-                List,
-            ),
-        };
+        let command = Service(List);
 
         // Act
         let result = execute_command(&mut config, command);
@@ -324,18 +308,16 @@ mod service_command_tests {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
-        let command = Cli {
-            command: Service(
-                Environment(
-                    EnvironmentCommands::Add {
-                        service_name: "bar".to_string(),
-                        name: "kek".to_string(),
-                        host: "google.com".to_string(),
-                        default: false,
-                    },
-                ),
+        let command = Service(
+            Environment(
+                EnvironmentCommands::Add {
+                    service_name: "bar".to_string(),
+                    name: "kek".to_string(),
+                    host: "google.com".to_string(),
+                    default: false,
+                },
             ),
-        };
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -353,18 +335,16 @@ mod service_command_tests {
         // Arrange
         let mut config = HtrsConfig::new();
         config.services.push(ServiceConfig::new("foo".to_string()));
-        let command = Cli {
-            command: Service(
-                Environment(
-                    EnvironmentCommands::Add {
-                        service_name: "foo".to_string(),
-                        name: "bar".to_string(),
-                        host: "google.com".to_string(),
-                        default: is_default,
-                    },
-                ),
+        let command = Service(
+            Environment(
+                EnvironmentCommands::Add {
+                    service_name: "foo".to_string(),
+                    name: "bar".to_string(),
+                    host: "google.com".to_string(),
+                    default: is_default,
+                },
             ),
-        };
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -391,18 +371,16 @@ mod service_command_tests {
             true));
         let mut config = HtrsConfig::new();
         config.services.push(service);
-        let command = Cli {
-            command: Service(
-                Environment(
-                    EnvironmentCommands::Add {
-                        service_name: "foo".to_string(),
-                        name: "kek".to_string(),
-                        host: "gmail.com".to_string(),
-                        default: true,
-                    },
-                ),
+        let command = Service(
+            Environment(
+                EnvironmentCommands::Add {
+                    service_name: "foo".to_string(),
+                    name: "kek".to_string(),
+                    host: "gmail.com".to_string(),
+                    default: true,
+                },
             ),
-        };
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -428,18 +406,16 @@ mod service_command_tests {
             true));
         let mut config = HtrsConfig::new();
         config.services.push(service);
-        let command = Cli {
-            command: Service(
-                Environment(
-                    EnvironmentCommands::Add {
-                        service_name: "foo".to_string(),
-                        name: "bar".to_string(),
-                        host: "google.com".to_string(),
-                        default: false,
-                    },
-                ),
+        let command = Service(
+            Environment(
+                EnvironmentCommands::Add {
+                    service_name: "foo".to_string(),
+                    name: "bar".to_string(),
+                    host: "google.com".to_string(),
+                    default: false,
+                },
             ),
-        };
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -460,15 +436,13 @@ mod service_command_tests {
             false));
         let mut config = HtrsConfig::new();
         config.services.push(service);
-        let command = Cli {
-            command: Service(
-                Environment(
-                    EnvironmentCommands::List {
-                        service_name: "kek".to_string(),
-                    },
-                ),
+        let command = Service(
+            Environment(
+                EnvironmentCommands::List {
+                    service_name: "kek".to_string(),
+                },
             ),
-        };
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -489,15 +463,13 @@ mod service_command_tests {
             false));
         let mut config = HtrsConfig::new();
         config.services.push(service);
-        let command = Cli {
-            command: Service(
-                Environment(
-                    EnvironmentCommands::List {
-                        service_name: "foo".to_string(),
-                    },
-                ),
+        let command = Service(
+            Environment(
+                EnvironmentCommands::List {
+                    service_name: "foo".to_string(),
+                },
             ),
-        };
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -519,16 +491,14 @@ mod service_command_tests {
             false));
         let mut config = HtrsConfig::new();
         config.services.push(service);
-        let command = Cli {
-            command: Service(
-                Environment(
-                    EnvironmentCommands::Remove {
-                        service_name: "kek".to_string(),
-                        environment_name: "lmao".to_string(),
-                    },
-                ),
+        let command = Service(
+            Environment(
+                EnvironmentCommands::Remove {
+                    service_name: "kek".to_string(),
+                    environment_name: "lmao".to_string(),
+                },
             ),
-        };
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -549,16 +519,14 @@ mod service_command_tests {
             false));
         let mut config = HtrsConfig::new();
         config.services.push(service);
-        let command = Cli {
-            command: Service(
-                Environment(
-                    EnvironmentCommands::Remove {
-                        service_name: "foo".to_string(),
-                        environment_name: "lmao".to_string(),
-                    },
-                ),
+        let command = Service(
+            Environment(
+                EnvironmentCommands::Remove {
+                    service_name: "foo".to_string(),
+                    environment_name: "lmao".to_string(),
+                },
             ),
-        };
+        );
 
         // Act
         let result = execute_command(&mut config, command);
@@ -579,16 +547,14 @@ mod service_command_tests {
             false));
         let mut config = HtrsConfig::new();
         config.services.push(service);
-        let command = Cli {
-            command: Service(
-                Environment(
-                    EnvironmentCommands::Remove {
-                        service_name: "foo".to_string(),
-                        environment_name: "bar".to_string(),
-                    },
-                ),
+        let command = Service(
+            Environment(
+                EnvironmentCommands::Remove {
+                    service_name: "foo".to_string(),
+                    environment_name: "bar".to_string(),
+                },
             ),
-        };
+        );
 
         // Act
         let result = execute_command(&mut config, command);
