@@ -7,7 +7,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  generate-markdown:
     runs-on: ubuntu-latest
     steps:
       - name: 🛒 Checkout
@@ -17,4 +17,35 @@ jobs:
         run: cargo build --verbose
 
       - name: Generate Markdown
-        run: cargo run -- generate-markdown
+        run: cargo run -- generate-markdown > htrs-cli.md
+
+      - name: 📤 Upload Markdown
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-wiki-markdown
+          path: ./htrs-cli.md
+
+  update-wiki:
+    needs: generate-markdown
+    runs-on: ubuntu-latest
+    permissions: 
+      contents: write
+    steps:
+      - name: 🛒 Checkout Wiki
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}.wiki
+          
+      - name: Delete Existing Wiki File
+        run: test -e && rm htrs-cli.md
+          
+      - name: 📥 Download Markdown
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-wiki-markdown
+          path: ./
+          
+      - name: Push Updated Wiki
+        run: |
+          git commit -m "Updated Wiki" ./htrs-cli.md
+          git push
