@@ -139,7 +139,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
     if let Some(service) = config.find_service_config(&cmd.service) {
         if let Some(environment_name) = cmd.environment {
             if let Some(environment) = service.find_environment(&environment_name) {
-                let url = build_url(&environment.host, cmd.path)?;
+                let url = build_url(&environment.host, cmd.path, cmd.query)?;
                 match make_get_request(url) {
                     Ok(response) => Ok(HtrsOutcome::new(
                         config,
@@ -152,7 +152,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
                 Err(HtrsError::new(&format!("No environments defined for {}", service.name)))
             }
         } else if let Some(default_environment) = service.find_default_environment() {
-            let url = build_url(&default_environment.host, cmd.path)?;
+            let url = build_url(&default_environment.host, cmd.path, cmd.query)?;
             match make_get_request(url) {
                 Ok(response) => Ok(HtrsOutcome::new(
                     config,
@@ -169,20 +169,29 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
     }
 }
 
-fn build_url(host: &str, path: Option<String>) -> Result<Url, HtrsError> {
-    let uri = match Url::parse(&format!("https://{host}")) {
+fn build_url(host: &str, path: Option<String>, query: Option<Vec<String>>) -> Result<Url, HtrsError> {
+    let mut url = match Url::parse(&format!("https://{host}")) {
         Ok(uri) => uri,
         Err(e) => return Err(HtrsError::new(&e.to_string())),
     };
 
-    if let Some(path) = path {
-        return match uri.join(&path) {
-            Ok(uri) => Ok(uri),
-            Err(e) => Err(HtrsError::new(&e.to_string())),
-        }
+    url = match path {
+        Some(path) => match url.join(&path) {
+            Ok(uri) => uri,
+            Err(e) => return Err(HtrsError::new(&e.to_string())),
+        },
+        None => url,
     };
 
-    Ok(uri)
+    url = match query {
+        Some(query) => match url.join(&format!("?{}", query.join("&"))) {
+            Ok(uri) => uri,
+            Err(e) => return Err(HtrsError::new(&e.to_string())),
+        },
+        None => url,
+    };
+
+    Ok(url)
 }
 
 fn make_get_request(url: Url) -> Result<Response, HtrsError> {
