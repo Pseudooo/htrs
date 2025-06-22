@@ -1,0 +1,20 @@
+name: Add Clap Docs
+on:
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOUR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛒 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔨 Build
+        run: cargo build --verbose
+
+      - name: Generate Markdown
+        run: cargo run -- --generate-markdown
