@@ -7,7 +7,7 @@ pub struct Cli {
     pub command: RootCommands,
 
     #[arg(long, hide = true)]
-    pub markdown_help: bool
+    pub generate_markdown: bool
 }
 
 #[derive(Subcommand)]

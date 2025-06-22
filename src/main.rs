@@ -6,6 +6,7 @@ use crate::command_args::Cli;
 use crate::commands::execute_command;
 use crate::htrs_config::HtrsConfig;
 use clap::Parser;
+use clap_markdown::print_help_markdown;
 use std::error::Error;
 use std::fmt;
 
@@ -46,6 +47,11 @@ impl<'a> HtrsOutcome<'a> {
 
 fn main() {
     let parsed_args = Cli::parse();
+    if parsed_args.generate_markdown {
+        print_help_markdown::<Cli>();
+        return;
+    }
+
     let mut config = HtrsConfig::load("./htrs_config.json");
 
     let result = execute_command(&mut config, parsed_args.command);
