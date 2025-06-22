@@ -15,7 +15,7 @@ pub enum RootCommands {
     #[clap(about = "Call a service")]
     Call(CallOpts),
 
-    #[command(visible_alias = "gen", hide = true)]
+    #[command(hide = true)]
     GenerateMarkdown,
 }
 
@@ -42,27 +42,27 @@ pub enum ServiceCommands {
 pub enum EnvironmentCommands {
     #[command(about = "Add a new environment to a service")]
     Add {
-        #[arg(long, value_name = "service name", help = "Service name to configure")]
+        #[arg(long, value_name = "service name", help = "Service to configure")]
         service_name: String,
 
         #[arg(long, value_name = "environment name", help = "Unique environment name to create")]
         name: String,
 
-        #[arg(long, value_name = "host", help = "Hostname of the given service for the environment")]
+        #[arg(long, value_name = "host", help = "Hostname of the for service in new environment")]
         host: String,
 
-        #[arg(long, default_value = "false", help = "Determine if the created environment should be set as the default")]
+        #[arg(long, default_value = "false", help = "Is the default environment for service")]
          default: bool,
     },
     #[clap(visible_alias = "ls", about = "List all environments for service")]
     List {
         service_name: String
     },
-    #[clap(visible_alias = "rm", about = "Remove a given environment from the service")]
+    #[clap(visible_alias = "rm", about = "Remove an environment from the service")]
     Remove {
-        #[clap(long, help = "Service name to remove environment from")]
+        #[clap(long, help = "Service to remove environment from")]
         service_name: String,
-        #[clap(long, help = "Environment name to remove")]
+        #[clap(long, help = "Environment to remove")]
         environment_name: String,
     }
 }
