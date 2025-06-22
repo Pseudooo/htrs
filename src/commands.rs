@@ -1,9 +1,10 @@
 use crate::command_args::RootCommands::{Call, Service};
 use crate::command_args::ServiceCommands::{Add, Environment, Remove};
-use crate::command_args::{CallOpts, EnvironmentCommands, RootCommands, ServiceCommands};
+use crate::command_args::{CallServiceOptions, EnvironmentCommands, RootCommands, ServiceCommands};
 use crate::htrs_config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
 use crate::{HtrsError, HtrsOutcome};
 use reqwest::blocking::Response;
+use reqwest::Url;
 
 pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<HtrsOutcome, HtrsError> {
     match cmd {
@@ -134,12 +135,12 @@ fn execute_environment_command<'a>(config: &'a mut HtrsConfig, cmd: &Environment
     }
 }
 
-fn execute_call_command(config: &HtrsConfig, cmd: CallOpts) -> Result<HtrsOutcome, HtrsError> {
+fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<HtrsOutcome, HtrsError> {
     if let Some(service) = config.find_service_config(&cmd.service) {
         if let Some(environment_name) = cmd.environment {
             if let Some(environment) = service.find_environment(&environment_name) {
-                let uri = format!("https://{}/", environment.host);
-                match make_get_request(&uri) {
+                let url = build_url(&environment.host, cmd.path)?;
+                match make_get_request(url) {
                     Ok(response) => Ok(HtrsOutcome::new(
                         config,
                         false,
@@ -151,8 +152,8 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallOpts) -> Result<HtrsOutcom
                 Err(HtrsError::new(&format!("No environments defined for {}", service.name)))
             }
         } else if let Some(default_environment) = service.find_default_environment() {
-            let uri = format!("https://{}/", default_environment.host);
-            match make_get_request(&uri) {
+            let url = build_url(&default_environment.host, cmd.path)?;
+            match make_get_request(url) {
                 Ok(response) => Ok(HtrsOutcome::new(
                     config,
                     false,
@@ -168,12 +169,29 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallOpts) -> Result<HtrsOutcom
     }
 }
 
-fn make_get_request(url: &str) -> Result<Response, HtrsError> {
+fn build_url(host: &str, path: Option<String>) -> Result<Url, HtrsError> {
+    let uri = match Url::parse(&format!("https://{host}")) {
+        Ok(uri) => uri,
+        Err(e) => return Err(HtrsError::new(&e.to_string())),
+    };
+
+    if let Some(path) = path {
+        return match uri.join(&path) {
+            Ok(uri) => Ok(uri),
+            Err(e) => Err(HtrsError::new(&e.to_string())),
+        }
+    };
+
+    Ok(uri)
+}
+
+fn make_get_request(url: Url) -> Result<Response, HtrsError> {
+    let url_str = url.to_string();
     let client = reqwest::blocking::Client::new();
     match client.get(url).send() {
         Ok(response) => Ok(response),
         Err(e) => {
-            Err(HtrsError::new(&format!("Failed to call {} response: {}", url, e)))
+            Err(HtrsError::new(&format!("Failed to call {} response: {}", url_str, e)))
         }
     }
 }
