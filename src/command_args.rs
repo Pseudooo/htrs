@@ -74,7 +74,10 @@ pub struct CallServiceOptions {
     #[arg(short, long, value_name = "environment", help = "Environment to call")]
     pub environment: Option<String>,
 
-    #[arg(long, value_name = "path", help = "Path to call for host")]
+    #[arg(short, long, value_name = "path", help = "Path to call for host")]
     pub path: Option<String>,
+
+    #[arg(short, long, value_name = "query", help = "Query string key=value pair")]
+    pub query: Option<Vec<String>>,
 }
 
