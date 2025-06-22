@@ -4,7 +4,10 @@ use clap::{Args, Parser, Subcommand};
 #[command(version, about, long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
-    pub command: RootCommands
+    pub command: RootCommands,
+
+    #[arg(long, hide = true)]
+    pub markdown_help: bool
 }
 
 #[derive(Subcommand)]
