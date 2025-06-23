@@ -2,10 +2,10 @@ mod command_args;
 mod htrs_config;
 mod commands;
 
-use crate::command_args::RootCommands::GenerateMarkdown;
 use crate::command_args::Cli;
+use crate::command_args::RootCommands::GenerateMarkdown;
 use crate::commands::execute_command;
-use crate::htrs_config::HtrsConfig;
+use crate::htrs_config::VersionedHtrsConfig;
 use clap::Parser;
 use clap_markdown::print_help_markdown;
 use std::error::Error;
@@ -34,15 +34,14 @@ impl Error for HtrsError {
     }
 }
 
-struct HtrsOutcome<'a> {
-    config: &'a HtrsConfig,
+struct HtrsOutcome {
     config_updated: bool,
     outcome_dialogue: String,
 }
 
-impl<'a> HtrsOutcome<'a> {
-    fn new(config: &'a HtrsConfig, config_updated: bool, outcome_dialogue: String) -> HtrsOutcome<'a> {
-        HtrsOutcome { config, config_updated, outcome_dialogue}
+impl HtrsOutcome {
+    fn new(config_updated: bool, outcome_dialogue: String) -> HtrsOutcome {
+        HtrsOutcome { config_updated, outcome_dialogue}
     }
 }
 
@@ -53,7 +52,10 @@ fn main() {
         return;
     }
 
-    let mut config = HtrsConfig::load("./htrs_config.json");
+    let versioned_config = VersionedHtrsConfig::load("./htrs_config.json");
+    let mut config = match versioned_config {
+        VersionedHtrsConfig::V0_0_1(config) => config,
+    };
 
     let result = execute_command(&mut config, parsed_args.command);
     match result {
@@ -64,7 +66,7 @@ fn main() {
         Ok(outcome) => {
             let dialogue = outcome.outcome_dialogue;
             if outcome.config_updated {
-                outcome.config.save("htrs_config.json");
+                VersionedHtrsConfig::save(config, "./htrs_config.json")
             }
 
             println!("{}", dialogue);

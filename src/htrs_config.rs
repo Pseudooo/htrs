@@ -3,6 +3,45 @@ use std::fs::{File, OpenOptions};
 use std::path::Path;
 
 #[derive(Serialize, Deserialize)]
+#[serde(tag = "version")]
+pub enum VersionedHtrsConfig {
+    V0_0_1(HtrsConfig),
+}
+
+impl VersionedHtrsConfig {
+    pub fn load(path: &str) -> VersionedHtrsConfig {
+        let config_path = Path::new(path);
+        if config_path.exists() {
+            let file = File::open(config_path)
+                .expect("Unable to read htrs_config.json");
+            let config: VersionedHtrsConfig = serde_json::from_reader(file)
+                .expect("Unable to read htrs_config.json");
+            return config;
+        }
+
+        let mut file = File::create(config_path)
+            .expect("Unable to create htrs_config.json");
+
+        let blank_config = VersionedHtrsConfig::V0_0_1(HtrsConfig::new());
+        serde_json::to_writer_pretty(&mut file, &blank_config)
+            .expect("Unable to write config to htrs_config.json");
+        return blank_config;
+    }
+
+    pub fn save(config: HtrsConfig, path: &str) {
+        let config_path = Path::new(path);
+        let mut file = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(config_path)
+            .expect("Unable to write updated config to htrs_config.json");
+        let versioned_config = VersionedHtrsConfig::V0_0_1(config);
+        serde_json::to_writer_pretty(&mut file, &versioned_config)
+            .expect("Unable to write updated config to htrs_config.json");
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct HtrsConfig {
     pub services: Vec<ServiceConfig>,
 }
