@@ -3,8 +3,8 @@ use crate::command_args::ServiceCommands::{Add, Environment, Remove};
 use crate::command_args::{CallServiceOptions, EnvironmentCommands, RootCommands, ServiceCommands};
 use crate::htrs_config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
 use crate::{HtrsError, HtrsOutcome};
-use reqwest::blocking::Response;
-use reqwest::Url;
+use reqwest::blocking::{Client, Request, Response};
+use reqwest::{Method, Url};
 
 pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<HtrsOutcome, HtrsError> {
     match cmd {
@@ -137,39 +137,30 @@ fn execute_environment_command<'a>(config: &'a mut HtrsConfig, cmd: &Environment
 
 fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<HtrsOutcome, HtrsError> {
     if let Some(service) = config.find_service_config(&cmd.service) {
+        let environment: &ServiceEnvironmentConfig;
         if let Some(environment_name) = cmd.environment {
-            if let Some(environment) = service.find_environment(&environment_name) {
-                let url = build_url(&environment.host, cmd.path, cmd.query)?;
-                match make_get_request(url) {
-                    Ok(response) => Ok(HtrsOutcome::new(
-                        config,
-                        false,
-                        format!("Received {} response", response.status()),
-                    )),
-                    Err(e) => Err(e),
-                }
+            if let Some(named_environment) = service.find_environment(&environment_name) {
+                environment = named_environment;
             } else {
-                Err(HtrsError::new(&format!("No environments defined for {}", service.name)))
+                return Err(HtrsError::new(&format!("No environments defined for {}", service.name)));
             }
         } else if let Some(default_environment) = service.find_default_environment() {
-            let url = build_url(&default_environment.host, cmd.path, cmd.query)?;
-            match make_get_request(url) {
-                Ok(response) => Ok(HtrsOutcome::new(
-                    config,
-                    false,
-                    format!("Received {} response", response.status()),
-                )),
-                Err(e) => Err(e),
-            }
+            environment = default_environment;
         } else {
-            Err(HtrsError::new(&format!("No default environment defined for {}", cmd.service)))
+            return Err(HtrsError::new(&format!("No default environment defined for {}", cmd.service)));
         }
+        let request = match build_request(&environment.host, cmd.path, cmd.query) {
+            Ok(req) => req,
+            Err(e) => return Err(e),
+        };
+        let response = make_get_request(request)?;
+        Ok(HtrsOutcome::new(config, false, format!("Received {} response", response.status())))
     } else {
         Err(HtrsError::new(&format!("Service {} does not exist", cmd.service)))
     }
 }
 
-fn build_url(host: &str, path: Option<String>, query: Option<Vec<String>>) -> Result<Url, HtrsError> {
+fn build_request(host: &str, path: Option<String>, query: Option<Vec<String>>) -> Result<Request, HtrsError> {
     let mut url = match Url::parse(&format!("https://{host}")) {
         Ok(uri) => uri,
         Err(e) => return Err(HtrsError::new(&e.to_string())),
@@ -191,16 +182,22 @@ fn build_url(host: &str, path: Option<String>, query: Option<Vec<String>>) -> Re
         None => url,
     };
 
-    Ok(url)
+    let builder = Client::new().request(Method::GET, url);
+
+    let request = match builder.build() {
+        Ok(req) => req,
+        Err(e) => return Err(HtrsError::new(&e.to_string())),
+    };
+
+    Ok(request)
 }
 
-fn make_get_request(url: Url) -> Result<Response, HtrsError> {
-    let url_str = url.to_string();
-    let client = reqwest::blocking::Client::new();
-    match client.get(url).send() {
+fn make_get_request(request: Request) -> Result<Response, HtrsError> {
+    let result = Client::new().execute(request);
+    match result {
         Ok(response) => Ok(response),
         Err(e) => {
-            Err(HtrsError::new(&format!("Failed to call {} response: {}", url_str, e)))
+            Err(HtrsError::new(&format!("Failed to make request: {}", e)))
         }
     }
 }
