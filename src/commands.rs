@@ -2,7 +2,7 @@ use crate::command_args::RootCommands::{Call, Service};
 use crate::command_args::ServiceCommands::{Add, Environment, Remove};
 use crate::command_args::{CallServiceOptions, EnvironmentCommands, RootCommands, ServiceCommands};
 use crate::htrs_config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
-use crate::{HtrsError, HtrsOutcome};
+use crate::outcomes::{HtrsError, HtrsOutcome};
 use reqwest::blocking::{Client, Request, Response};
 use reqwest::{Method, Url};
 use std::collections::HashMap;
