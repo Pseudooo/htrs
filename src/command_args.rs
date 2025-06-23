@@ -78,9 +78,9 @@ pub struct CallServiceOptions {
     pub path: Option<String>,
 
     #[arg(short, long, value_name = "query", help = "Query string key=value pair")]
-    pub query: Option<Vec<String>>,
+    pub query: Vec<String>,
 
     #[arg(long, value_name = "header", help = "Header values as key=value pairs")]
-    pub headers: Vec<String>,
+    pub header: Vec<String>,
 }
 
