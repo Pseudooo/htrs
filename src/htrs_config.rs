@@ -90,36 +90,6 @@ impl HtrsConfig {
         }
         None
     }
-
-    pub fn load(path: &str) -> HtrsConfig {
-        let config_path = Path::new(path);
-        if config_path.exists() {
-            let file = File::open(config_path)
-                .expect("Unable to read htrs_config.json");
-            let config: HtrsConfig = serde_json::from_reader(file)
-                .expect("Unable to read htrs_config.json");
-            return config;
-        }
-
-        let mut file = File::create(config_path)
-            .expect("Unable to create htrs_config.json");
-
-        let blank_config = HtrsConfig::new();
-        serde_json::to_writer_pretty(&mut file, &blank_config)
-            .expect("Unable to write config to htrs_config.json");
-        return blank_config;
-    }
-
-    pub fn save(&self, path: &str) {
-        let config_path = Path::new(path);
-        let mut file = OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .open(config_path)
-            .expect("Unable to write updated config to htrs_config.json");
-        serde_json::to_writer_pretty(&mut file, self)
-            .expect("Unable to write updated config to htrs_config.json");
-    }
 }
 
 impl ServiceConfig {
