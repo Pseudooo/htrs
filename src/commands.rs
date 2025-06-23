@@ -5,6 +5,7 @@ use crate::htrs_config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
 use crate::{HtrsError, HtrsOutcome};
 use reqwest::blocking::{Client, Request, Response};
 use reqwest::{Method, Url};
+use std::collections::HashMap;
 
 pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<HtrsOutcome, HtrsError> {
     match cmd {
@@ -149,7 +150,18 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
         } else {
             return Err(HtrsError::new(&format!("No default environment defined for {}", cmd.service)));
         }
-        let request = match build_request(&environment.host, cmd.path, cmd.query) {
+
+        let mut headers: HashMap<String, String> = HashMap::new();
+        for header_kvp in cmd.headers {
+            let parts = header_kvp.splitn(2, '=').collect::<Vec<&str>>();
+            if let [key, value] = parts.as_slice() {
+                headers.insert(key.to_string(), value.to_string());
+            } else {
+                return Err(HtrsError::new(&format!("Header {} is invalid", header_kvp)))
+            }
+        }
+
+        let request = match build_request(&environment.host, cmd.path, cmd.query, headers) {
             Ok(req) => req,
             Err(e) => return Err(e),
         };
@@ -160,7 +172,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
     }
 }
 
-fn build_request(host: &str, path: Option<String>, query: Option<Vec<String>>) -> Result<Request, HtrsError> {
+fn build_request(host: &str, path: Option<String>, query: Option<Vec<String>>, headers: HashMap<String, String>) -> Result<Request, HtrsError> {
     let mut url = match Url::parse(&format!("https://{host}")) {
         Ok(uri) => uri,
         Err(e) => return Err(HtrsError::new(&e.to_string())),
@@ -182,7 +194,10 @@ fn build_request(host: &str, path: Option<String>, query: Option<Vec<String>>) -
         None => url,
     };
 
-    let builder = Client::new().request(Method::GET, url);
+    let mut builder = Client::new().request(Method::GET, url);
+    for (key, value) in headers {
+        builder = builder.header(key, value);
+    }
 
     let request = match builder.build() {
         Ok(req) => req,
