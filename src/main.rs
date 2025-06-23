@@ -63,11 +63,11 @@ fn main() {
         Err(e) => {
             println!("{}", e.details);
             return;
-        },
+        }
         Ok(outcome) => {
             let dialogue = outcome.outcome_dialogue;
             if outcome.config_updated {
-                VersionedHtrsConfig::save(config, "./htrs_config.json")
+                VersionedHtrsConfig::save(config, &config_path)
             }
 
             println!("{}", dialogue);

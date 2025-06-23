@@ -36,8 +36,7 @@ impl VersionedHtrsConfig {
         return blank_config;
     }
 
-    pub fn save(config: HtrsConfig, path: &str) {
-        let config_path = Path::new(path);
+    pub fn save(config: HtrsConfig, config_path: &Path) {
         let mut file = OpenOptions::new()
             .write(true)
             .truncate(true)
