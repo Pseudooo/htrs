@@ -52,7 +52,8 @@ fn main() {
         return;
     }
 
-    let versioned_config = VersionedHtrsConfig::load("./htrs_config.json");
+    let config_path = VersionedHtrsConfig::config_path();
+    let versioned_config = VersionedHtrsConfig::load(&config_path);
     let mut config = match versioned_config {
         VersionedHtrsConfig::V0_0_1(config) => config,
     };
@@ -62,11 +63,11 @@ fn main() {
         Err(e) => {
             println!("{}", e.details);
             return;
-        },
+        }
         Ok(outcome) => {
             let dialogue = outcome.outcome_dialogue;
             if outcome.config_updated {
-                VersionedHtrsConfig::save(config, "./htrs_config.json")
+                VersionedHtrsConfig::save(config, &config_path)
             }
 
             println!("{}", dialogue);
