@@ -1,3 +1,4 @@
+use reqwest::Url;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
@@ -38,8 +39,8 @@ impl HtrsOutcome {
 }
 
 pub enum HtrsAction {
-    CallUrl {
-        url: String,
+    MakeRequest {
+        url: Url,
         headers: HashMap<String, String>,
     }
 }

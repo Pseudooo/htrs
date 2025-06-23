@@ -2,9 +2,9 @@ use crate::command_args::RootCommands::{Call, Service};
 use crate::command_args::ServiceCommands::{Add, Environment, Remove};
 use crate::command_args::{CallServiceOptions, EnvironmentCommands, RootCommands, ServiceCommands};
 use crate::htrs_config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
+use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsError, HtrsOutcome};
-use reqwest::blocking::{Client, Request, Response};
-use reqwest::{Method, Url};
+use reqwest::Url;
 use std::collections::HashMap;
 
 pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<HtrsOutcome, HtrsError> {
@@ -135,45 +135,48 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
 }
 
 fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<HtrsOutcome, HtrsError> {
-    if let Some(service) = config.find_service_config(&cmd.service) {
-        let environment: &ServiceEnvironmentConfig;
-        if let Some(environment_name) = cmd.environment {
-            if let Some(named_environment) = service.find_environment(&environment_name) {
-                environment = named_environment;
-            } else {
-                return Err(HtrsError::new(&format!("No environments defined for {}", service.name)));
-            }
-        } else if let Some(default_environment) = service.find_default_environment() {
-            environment = default_environment;
-        } else {
-            return Err(HtrsError::new(&format!("No default environment defined for {}", cmd.service)));
-        }
+    let service = match config.find_service_config(&cmd.service) {
+        Some(service) => service,
+        None => return Err(HtrsError::new(&format!("Service {} does not exist", cmd.service))),
+    };
 
-        let mut headers: HashMap<String, String> = HashMap::new();
-        for header_kvp in cmd.header {
-            let parts = header_kvp.splitn(2, '=').collect::<Vec<&str>>();
-            if let [key, value] = parts.as_slice() {
-                headers.insert(key.to_string(), value.to_string());
-            } else {
-                return Err(HtrsError::new(&format!("Header {} is invalid", header_kvp)))
-            }
+    let environment: &ServiceEnvironmentConfig;
+    if let Some(environment_name) = cmd.environment {
+        environment = match service.find_environment(&environment_name) {
+            Some(environment) => environment,
+            None => return Err(HtrsError::new(&format!("Environment {} does not exist", environment_name))),
         }
-
-        let request = match build_request(&environment.host, cmd.path, cmd.query, headers) {
-            Ok(req) => req,
-            Err(e) => return Err(e),
-        };
-        let response = make_get_request(request)?;
-        Ok(HtrsOutcome::new(
-            false,
-            format!("Received {} response",response.status()),
-            None))
+    } else if let Some(default_environment) = service.find_default_environment() {
+        environment = default_environment;
     } else {
-        Err(HtrsError::new(&format!("Service {} does not exist", cmd.service)))
+        return Err(HtrsError::new(&format!("No default environment defined for {}", cmd.service)));
     }
+
+    let path = cmd.path;
+    let query = cmd.query;
+
+    let url = build_url(&environment.host, path, query)?;
+    let mut headers: HashMap<String, String> = HashMap::new();
+    for kvp in cmd.header {
+        match kvp.split("=").collect::<Vec<&str>>().as_slice() {
+            [key, value] => {
+                headers.insert(key.to_string(), value.to_string());
+            }
+            _ => return Err(HtrsError::new(&format!("Invalid header value {}", kvp))),
+        };
+    }
+    
+    Ok(HtrsOutcome::new(
+        false,
+        "".to_string(),
+        Some(MakeRequest {
+            url,
+            headers,
+        }),
+    ))
 }
 
-fn build_request(host: &str, path: Option<String>, query: Vec<String>, headers: HashMap<String, String>) -> Result<Request, HtrsError> {
+fn build_url(host: &str, path: Option<String>, query: Vec<String>) -> Result<Url, HtrsError> {
     let mut url = match Url::parse(&format!("https://{host}")) {
         Ok(uri) => uri,
         Err(e) => return Err(HtrsError::new(&e.to_string())),
@@ -192,27 +195,7 @@ fn build_request(host: &str, path: Option<String>, query: Vec<String>, headers: 
         Err(e) => return Err(HtrsError::new(&e.to_string())),
     };
 
-    let mut builder = Client::new().request(Method::GET, url);
-    for (key, value) in headers {
-        builder = builder.header(key, value);
-    }
-
-    let request = match builder.build() {
-        Ok(req) => req,
-        Err(e) => return Err(HtrsError::new(&e.to_string())),
-    };
-
-    Ok(request)
-}
-
-fn make_get_request(request: Request) -> Result<Response, HtrsError> {
-    let result = Client::new().execute(request);
-    match result {
-        Ok(response) => Ok(response),
-        Err(e) => {
-            Err(HtrsError::new(&format!("Failed to make request: {}", e)))
-        }
-    }
+    Ok(url)
 }
 
 #[cfg(test)]
