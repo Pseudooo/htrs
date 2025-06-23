@@ -19,7 +19,7 @@ pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<Htr
     }
 }
 
-fn execute_service_command<'a>(config: &'a mut HtrsConfig, cmd: &ServiceCommands) -> Result<HtrsOutcome<'a>, HtrsError> {
+fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Result<HtrsOutcome, HtrsError> {
     match cmd {
         Add { name } => {
             for service in config.services.iter() {
@@ -30,7 +30,6 @@ fn execute_service_command<'a>(config: &'a mut HtrsConfig, cmd: &ServiceCommands
 
             config.services.push(ServiceConfig::new(name.clone()));
             Ok(HtrsOutcome::new(
-                config,
                 true,
                 format!("Service \"{name}\" created")
             ))
@@ -40,7 +39,6 @@ fn execute_service_command<'a>(config: &'a mut HtrsConfig, cmd: &ServiceCommands
             if config.service_defined(name) {
                 config.services.retain(|x| !x.name.eq(name));
                 Ok(HtrsOutcome::new(
-                    config,
                     true,
                     format!("Service \"{name}\" removed"),
                 ))
@@ -51,12 +49,10 @@ fn execute_service_command<'a>(config: &'a mut HtrsConfig, cmd: &ServiceCommands
 
         ServiceCommands::List => match config.services.len() {
             0 => Ok(HtrsOutcome::new(
-                config,
                 false,
                 "No services found".to_string(),
             )),
             _ => Ok(HtrsOutcome::new(
-                config,
                 false,
                 format!(" - {}", config.services.iter().map(|service| service.name.clone())
                     .collect::<Vec<String>>()
@@ -70,7 +66,7 @@ fn execute_service_command<'a>(config: &'a mut HtrsConfig, cmd: &ServiceCommands
     }
 }
 
-fn execute_environment_command<'a>(config: &'a mut HtrsConfig, cmd: &EnvironmentCommands) -> Result<HtrsOutcome<'a>, HtrsError> {
+fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommands) -> Result<HtrsOutcome, HtrsError> {
     match cmd {
         EnvironmentCommands::Add { service_name, name: environment_name, host, default } => {
             if let Some(service) = config.find_service_config_mut(&service_name) {
@@ -85,7 +81,6 @@ fn execute_environment_command<'a>(config: &'a mut HtrsConfig, cmd: &Environment
 
                     service.environments.push(ServiceEnvironmentConfig::new(environment_name.clone(), host.clone(), default.clone()));
                     Ok(HtrsOutcome::new(
-                        config,
                         true,
                         format!("Environment \"{environment_name}\" created for {service_name}"),
                     ))
@@ -109,7 +104,6 @@ fn execute_environment_command<'a>(config: &'a mut HtrsConfig, cmd: &Environment
                         .join("\n");
 
                     Ok(HtrsOutcome::new(
-                        config,
                         false,
                         environment_list,
                     ))
@@ -123,7 +117,6 @@ fn execute_environment_command<'a>(config: &'a mut HtrsConfig, cmd: &Environment
             if let Some(service) = config.find_service_config_mut(&service_name) {
                 match service.remove_environment(environment_name) {
                     true => Ok(HtrsOutcome::new(
-                        config,
                         true,
                         format!("Environment {environment_name} removed for {service_name}"),
                     )),
@@ -166,7 +159,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
             Err(e) => return Err(e),
         };
         let response = make_get_request(request)?;
-        Ok(HtrsOutcome::new(config, false, format!("Received {} response", response.status())))
+        Ok(HtrsOutcome::new(false, format!("Received {} response", response.status())))
     } else {
         Err(HtrsError::new(&format!("Service {} does not exist", cmd.service)))
     }
@@ -241,10 +234,9 @@ mod service_command_tests {
         assert!(result.is_ok());
         let outcome = result.unwrap();
         assert_eq!(outcome.config_updated, true);
-        let updated_config = outcome.config;
-        assert_eq!(updated_config.services.len(), 2);
-        assert!(updated_config.services.iter().any(|s| s.name == "foo" && s.environments.len() == 0));
-        assert!(updated_config.services.iter().any(|s| s.name == "bar" && s.environments.len() == 0));
+        assert_eq!(config.services.len(), 2);
+        assert!(config.services.iter().any(|s| s.name == "foo" && s.environments.len() == 0));
+        assert!(config.services.iter().any(|s| s.name == "bar" && s.environments.len() == 0));
     }
 
     #[test]
@@ -285,8 +277,7 @@ mod service_command_tests {
         assert!(result.is_ok());
         let outcome = result.unwrap();
         assert!(outcome.config_updated);
-        let updated_config = outcome.config;
-        assert!(!updated_config.services.iter().any(|s| s.name == "foo"));
+        assert!(!config.services.iter().any(|s| s.name == "foo"));
     }
 
     #[test]
@@ -603,7 +594,7 @@ mod service_command_tests {
         assert!(result.is_ok());
         let outcome = result.unwrap();
         assert!(outcome.config_updated);
-        let updated_service = outcome.config.services.iter()
+        let updated_service = config.services.iter()
             .find(|s| s.name == "foo");
         assert!(updated_service.is_some());
         let updated_service = updated_service.unwrap();
