@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 
@@ -27,10 +28,18 @@ impl Error for HtrsError {
 pub struct HtrsOutcome {
     pub config_updated: bool,
     pub outcome_dialogue: String,
+    pub action: Option<HtrsAction>,
 }
 
 impl HtrsOutcome {
-    pub fn new(config_updated: bool, outcome_dialogue: String) -> HtrsOutcome {
-        HtrsOutcome { config_updated, outcome_dialogue}
+    pub fn new(config_updated: bool, outcome_dialogue: String, action: Option<HtrsAction>) -> HtrsOutcome {
+        HtrsOutcome { config_updated, outcome_dialogue, action }
+    }
+}
+
+pub enum HtrsAction {
+    CallUrl {
+        url: String,
+        headers: HashMap<String, String>,
     }
 }

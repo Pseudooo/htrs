@@ -31,7 +31,8 @@ fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Re
             config.services.push(ServiceConfig::new(name.clone()));
             Ok(HtrsOutcome::new(
                 true,
-                format!("Service \"{name}\" created")
+                format!("Service \"{name}\" created"),
+                None
             ))
         },
 
@@ -41,6 +42,7 @@ fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Re
                 Ok(HtrsOutcome::new(
                     true,
                     format!("Service \"{name}\" removed"),
+                    None
                 ))
             } else {
                 Err(HtrsError::new(&format!("Service \"{name}\" does not exist")))
@@ -51,13 +53,13 @@ fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Re
             0 => Ok(HtrsOutcome::new(
                 false,
                 "No services found".to_string(),
-            )),
+                None)),
             _ => Ok(HtrsOutcome::new(
                 false,
                 format!(" - {}", config.services.iter().map(|service| service.name.clone())
                     .collect::<Vec<String>>()
                     .join("\n - ")),
-            ))
+                None)),
         },
 
         Environment(env_command) => {
@@ -83,6 +85,7 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
                     Ok(HtrsOutcome::new(
                         true,
                         format!("Environment \"{environment_name}\" created for {service_name}"),
+                        None
                     ))
                 }
             } else {
@@ -106,6 +109,7 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
                     Ok(HtrsOutcome::new(
                         false,
                         environment_list,
+                        None
                     ))
                 }
             } else {
@@ -119,6 +123,7 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
                     true => Ok(HtrsOutcome::new(
                         true,
                         format!("Environment {environment_name} removed for {service_name}"),
+                        None
                     )),
                     false => Err(HtrsError::new(&format!("Environment {environment_name} does not exist")))
                 }
@@ -159,7 +164,10 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
             Err(e) => return Err(e),
         };
         let response = make_get_request(request)?;
-        Ok(HtrsOutcome::new(false, format!("Received {} response", response.status())))
+        Ok(HtrsOutcome::new(
+            false,
+            format!("Received {} response",response.status()),
+            None))
     } else {
         Err(HtrsError::new(&format!("Service {} does not exist", cmd.service)))
     }
