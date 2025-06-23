@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "version")]
@@ -9,13 +9,21 @@ pub enum VersionedHtrsConfig {
 }
 
 impl VersionedHtrsConfig {
-    pub fn load(path: &str) -> VersionedHtrsConfig {
-        let config_path = Path::new(path);
+    /// Generate the path to the configration file, using the directory
+    /// of the executable as the base path.
+    pub fn config_path() -> PathBuf {
+        std::env::current_exe()
+            .expect("Unable to get executable location")
+            .parent()
+            .expect("Unable to get parent directory")
+            .join("htrs_config.json")
+    }
+
+    pub fn load(config_path: &Path) -> VersionedHtrsConfig {
         if config_path.exists() {
-            let file = File::open(config_path)
-                .expect("Unable to read htrs_config.json");
-            let config: VersionedHtrsConfig = serde_json::from_reader(file)
-                .expect("Unable to read htrs_config.json");
+            let file = File::open(config_path).expect("Unable to read htrs_config.json");
+            let config: VersionedHtrsConfig =
+                serde_json::from_reader(file).expect("Unable to read htrs_config.json");
             return config;
         }
 
