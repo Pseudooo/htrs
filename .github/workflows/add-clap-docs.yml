@@ -39,7 +39,7 @@ jobs:
         with:
           repository: ${{ github.repository }}.wiki
 
-      - name: 📝 Delete Existing Wiki File
+      - name: 🗑️ Delete Existing Wiki File
         run: test -e && rm htrs-cli.md
 
       - name: 📥 Download Markdown
