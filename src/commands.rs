@@ -157,6 +157,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
 
     let path = cmd.path;
     let query = cmd.query;
+    let method = cmd.method;
 
     let url = build_url(&environment.host, path, query)?;
     let mut headers: HashMap<String, String> = HashMap::new();
@@ -175,6 +176,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
         Some(MakeRequest {
             url,
             headers,
+            method,
         }),
     ))
 }

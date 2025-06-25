@@ -1,4 +1,4 @@
-use reqwest::Url;
+use reqwest::{Method, Url};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
@@ -42,5 +42,6 @@ pub enum HtrsAction {
     MakeRequest {
         url: Url,
         headers: HashMap<String, String>,
+        method: Method,
     }
 }
