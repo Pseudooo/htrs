@@ -1,5 +1,4 @@
 use clap::{Args, Parser, Subcommand};
-use reqwest::Method;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -84,7 +83,8 @@ pub struct CallServiceOptions {
     #[arg(long, value_name = "header", help = "Header values as key=value pairs")]
     pub header: Vec<String>,
     
-    #[arg(long, value_name = "method", help = "The HTTP Method to use when making call, i.e. GET or POST", default_value = "GET")]
-    pub method: Method
+    #[arg(long, value_name = "method", help = "The HTTP Method to use when making call, i.e. GET or POST")]
+    pub method: Option<String>
 }
+
 
