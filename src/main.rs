@@ -56,7 +56,8 @@ fn main() {
 fn handle_outcome_action(action: HtrsAction) -> Result<Response, HtrsError> {
     let MakeRequest { url, headers } = action;
     let client = Client::new();
-    let mut request_builder = client.request(Method::GET, url);
+    let mut request_builder = client.request(Method::GET, url)
+        .header("User-Agent", format!("htrs/{}", env!("CARGO_PKG_VERSION")));
     for (key, value) in headers {
         request_builder = request_builder.header(key.as_str(), value.as_str());
     }
