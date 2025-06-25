@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - "master"
+    paths:
+      - "./src/command_args.rs"
 
 env:
   CARGO_TERM_COLOR: always
@@ -17,7 +19,7 @@ jobs:
       - name: 🔨 Build
         run: cargo build --verbose
 
-      - name: Generate Markdown
+      - name: 📝 Generate Markdown
         run: cargo run -- generate-markdown > htrs-cli.md
 
       - name: 📤 Upload Markdown
@@ -37,7 +39,7 @@ jobs:
         with:
           repository: ${{ github.repository }}.wiki
 
-      - name: Delete Existing Wiki File
+      - name: 📝 Delete Existing Wiki File
         run: test -e && rm htrs-cli.md
 
       - name: 📥 Download Markdown
@@ -46,7 +48,7 @@ jobs:
           name: cli-wiki-markdown
           path: ./
 
-      - name: Push Updated Wiki
+      - name: 📤 Push Updated Wiki
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
