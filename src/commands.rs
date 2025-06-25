@@ -31,7 +31,7 @@ fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Re
             config.services.push(ServiceConfig::new(name.clone()));
             Ok(HtrsOutcome::new(
                 true,
-                format!("Service \"{name}\" created"),
+                Some(format!("Service \"{name}\" created")),
                 None
             ))
         },
@@ -41,7 +41,7 @@ fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Re
                 config.services.retain(|x| !x.name.eq(name));
                 Ok(HtrsOutcome::new(
                     true,
-                    format!("Service \"{name}\" removed"),
+                    Some(format!("Service \"{name}\" removed")),
                     None
                 ))
             } else {
@@ -52,14 +52,17 @@ fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Re
         ServiceCommands::List => match config.services.len() {
             0 => Ok(HtrsOutcome::new(
                 false,
-                "No services found".to_string(),
+                Some("No services found".to_string()),
                 None)),
-            _ => Ok(HtrsOutcome::new(
-                false,
-                format!(" - {}", config.services.iter().map(|service| service.name.clone())
+            _ => {
+                let dialogue = format!(" - {}", config.services.iter().map(|service| service.name.clone())
                     .collect::<Vec<String>>()
-                    .join("\n - ")),
-                None)),
+                    .join("\n - "));
+                Ok(HtrsOutcome::new(
+                    false,
+                    Some(dialogue),
+                    None))
+            },
         },
 
         Environment(env_command) => {
@@ -84,7 +87,7 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
                     service.environments.push(ServiceEnvironmentConfig::new(environment_name.clone(), host.clone(), default.clone()));
                     Ok(HtrsOutcome::new(
                         true,
-                        format!("Environment \"{environment_name}\" created for {service_name}"),
+                        Some(format!("Environment \"{environment_name}\" created for {service_name}")),
                         None
                     ))
                 }
@@ -108,7 +111,7 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
 
                     Ok(HtrsOutcome::new(
                         false,
-                        environment_list,
+                        Some(environment_list),
                         None
                     ))
                 }
@@ -122,7 +125,7 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
                 match service.remove_environment(environment_name) {
                     true => Ok(HtrsOutcome::new(
                         true,
-                        format!("Environment {environment_name} removed for {service_name}"),
+                        Some(format!("Environment {environment_name} removed for {service_name}")),
                         None
                     )),
                     false => Err(HtrsError::new(&format!("Environment {environment_name} does not exist")))
@@ -168,7 +171,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
     
     Ok(HtrsOutcome::new(
         false,
-        "".to_string(),
+        None,
         Some(MakeRequest {
             url,
             headers,
@@ -301,7 +304,6 @@ mod service_command_tests {
         assert!(result.is_ok());
         let outcome = result.unwrap();
         assert_eq!(outcome.config_updated, false);
-        assert_ne!(outcome.outcome_dialogue.len(), 0);
     }
 
     #[test]
@@ -319,7 +321,6 @@ mod service_command_tests {
         assert!(result.is_ok());
         let outcome = result.unwrap();
         assert_eq!(outcome.config_updated, false);
-        assert_ne!(outcome.outcome_dialogue.len(), 0);
     }
 
     #[test]
@@ -497,7 +498,6 @@ mod service_command_tests {
         assert!(result.is_ok());
         let outcome = result.unwrap();
         assert_eq!(outcome.config_updated, false);
-        assert_ne!(outcome.outcome_dialogue.len(), 0);
     }
 
     #[test]

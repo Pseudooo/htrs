@@ -45,7 +45,9 @@ fn main() {
                 }
             }
 
-            println!("{}", dialogue);
+            if let Some(dialogue) = dialogue {
+                println!("{}", dialogue);
+            }
         }
     }
 }
