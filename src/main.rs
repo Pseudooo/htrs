@@ -1,49 +1,18 @@
 mod command_args;
 mod htrs_config;
 mod commands;
+mod outcomes;
 
 use crate::command_args::Cli;
 use crate::command_args::RootCommands::GenerateMarkdown;
 use crate::commands::execute_command;
 use crate::htrs_config::VersionedHtrsConfig;
+use crate::outcomes::{HtrsAction, HtrsError};
 use clap::Parser;
 use clap_markdown::print_help_markdown;
-use std::error::Error;
-use std::fmt;
-
-#[derive(Debug)]
-struct HtrsError {
-    details: String
-}
-
-impl HtrsError {
-    fn new(msg: &str) -> HtrsError {
-        HtrsError { details: msg.to_string() }
-    }
-}
-
-impl fmt::Display for HtrsError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.details)
-    }
-}
-
-impl Error for HtrsError {
-    fn description(&self) -> &str {
-        &self.details
-    }
-}
-
-struct HtrsOutcome {
-    config_updated: bool,
-    outcome_dialogue: String,
-}
-
-impl HtrsOutcome {
-    fn new(config_updated: bool, outcome_dialogue: String) -> HtrsOutcome {
-        HtrsOutcome { config_updated, outcome_dialogue}
-    }
-}
+use reqwest::blocking::{Client, Response};
+use reqwest::Method;
+use HtrsAction::MakeRequest;
 
 fn main() {
     let parsed_args = Cli::parse();
@@ -70,8 +39,35 @@ fn main() {
                 VersionedHtrsConfig::save(config, &config_path)
             }
 
-            println!("{}", dialogue);
+            if let Some(action) = outcome.action {
+                match handle_outcome_action(action) {
+                    Ok(response) => println!("Received {} response", response.status()),
+                    Err(e) => println!("Failed to call: {e}"),
+                }
+            }
+
+            if let Some(dialogue) = dialogue {
+                println!("{}", dialogue);
+            }
         }
+    }
+}
+
+fn handle_outcome_action(action: HtrsAction) -> Result<Response, HtrsError> {
+    let MakeRequest { url, headers } = action;
+    let client = Client::new();
+    let mut request_builder = client.request(Method::GET, url);
+    for (key, value) in headers {
+        request_builder = request_builder.header(key.as_str(), value.as_str());
+    }
+
+    let request = match request_builder.build() {
+        Ok(req) => req,
+        Err(e) => return Err(HtrsError::new(&e.to_string())),
+    };
+    match client.execute(request) {
+        Ok(res) => Ok(res),
+        Err(e) => Err(HtrsError::new(&e.to_string())),
     }
 }
 
