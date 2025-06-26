@@ -52,7 +52,7 @@ pub enum EnvironmentCommands {
         host: String,
 
         #[arg(long, default_value = "false", help = "Is the default environment for service")]
-         default: bool,
+        default: bool,
     },
     #[clap(visible_alias = "ls", about = "List all environments for service")]
     List {
