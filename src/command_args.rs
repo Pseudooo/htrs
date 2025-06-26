@@ -23,12 +23,12 @@ pub enum RootCommands {
 pub enum ServiceCommands {
     #[clap(about = "Create a new service")]
     Add {
-        #[arg(long, value_name = "name", help = "Unique name of service to create")]
+        #[clap(long, value_name = "name", help = "Unique name of service to create")]
         name: String,
     },
     #[command(visible_alias = "rm", about = "Remove a service")]
     Remove {
-        #[arg(long, value_name = "name", help = "Service name to remove")]
+        #[clap(long, value_name = "name", help = "Service name to remove")]
         name: String
     },
     #[command(visible_alias = "ls", about = "List all services")]
@@ -42,13 +42,13 @@ pub enum ServiceCommands {
 pub enum EnvironmentCommands {
     #[command(about = "Add a new environment to a service")]
     Add {
-        #[arg(long, value_name = "service name", help = "Service to configure")]
+        #[clap(long, value_name = "service name", help = "Service to configure")]
         service_name: String,
 
-        #[arg(long, value_name = "environment name", help = "Unique environment name to create")]
+        #[clap(long, value_name = "environment name", help = "Unique environment name to create")]
         name: String,
 
-        #[arg(long, value_name = "host", help = "Hostname of the for service in new environment")]
+        #[clap(long, value_name = "host", help = "Hostname of the for service in new environment")]
         host: String,
 
         #[arg(long, default_value = "false", help = "Is the default environment for service")]
