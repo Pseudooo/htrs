@@ -3,14 +3,13 @@ on:
   push:
     branches:
       - "master"
-    paths:
-      - "src/command_args.rs"
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   generate-markdown:
+    name: Generate Markdown
     runs-on: ubuntu-latest
     steps:
       - name: 🛒 Checkout
@@ -29,6 +28,7 @@ jobs:
           path: ./htrs-cli.md
 
   update-wiki:
+    name: Update Wiki
     needs: generate-markdown
     runs-on: ubuntu-latest
     permissions:
@@ -48,7 +48,17 @@ jobs:
           name: cli-wiki-markdown
           path: ./
 
+      - name: 🔍 Check for Changes
+        id: check_changes
+        run: |
+          if git diff --exit-code; then
+            echo "changes=true" >> "$GITHUB_OUTPUT";
+          else
+            echo "changes=false" >> "$GITHUB_OUTPUT";
+          fi
+
       - name: 📤 Push Updated Wiki
+        if: ${{ steps.check_changes.outputs.changes }}
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
