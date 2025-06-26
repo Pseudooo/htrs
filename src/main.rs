@@ -6,12 +6,11 @@ mod outcomes;
 use crate::command_args::Cli;
 use crate::command_args::RootCommands::GenerateMarkdown;
 use crate::commands::execute_command;
-use crate::htrs_config::VersionedHtrsConfig;
+use crate::htrs_config::{HtrsConfig, VersionedHtrsConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::Parser;
 use clap_markdown::print_help_markdown;
-use reqwest::blocking::{Client, Response};
-use HtrsAction::MakeRequest;
+use reqwest::blocking::Client;
 
 fn main() {
     let parsed_args = Cli::parse();
@@ -20,54 +19,57 @@ fn main() {
         return;
     }
 
-    let config_path = VersionedHtrsConfig::config_path();
-    let versioned_config = VersionedHtrsConfig::load(&config_path);
+    let versioned_config = VersionedHtrsConfig::load();
     let mut config = match versioned_config {
         VersionedHtrsConfig::V0_0_1(config) => config,
     };
 
-    let result = execute_command(&mut config, parsed_args.command);
-    match result {
+    let cmd_result = execute_command(&mut config, parsed_args.command);
+    let exec_result = match cmd_result {
         Err(e) => {
             println!("{}", e.details);
             return;
         }
-        Ok(outcome) => {
-            let dialogue = outcome.outcome_dialogue;
-            if outcome.config_updated {
-                VersionedHtrsConfig::save(config, &config_path)
-            }
+        Ok(action) => handle_action(action, config)
+    };
 
-            if let Some(action) = outcome.action {
-                match handle_outcome_action(action) {
-                    Ok(response) => println!("Received {} response", response.status()),
-                    Err(e) => println!("Failed to call: {e}"),
-                }
-            }
-
-            if let Some(dialogue) = dialogue {
-                println!("{}", dialogue);
-            }
-        }
+    if let Err(e) = exec_result {
+        println!("{}", e.details);
     }
 }
 
-fn handle_outcome_action(action: HtrsAction) -> Result<Response, HtrsError> {
-    let MakeRequest { url, headers, method } = action;
-    let client = Client::new();
-    let mut request_builder = client.request(method, url)
-        .header("User-Agent", format!("htrs/{}", env!("CARGO_PKG_VERSION")));
-    for (key, value) in headers {
-        request_builder = request_builder.header(key.as_str(), value.as_str());
-    }
+fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError>{
+    match action {
+        HtrsAction::PrintDialogue(dialogue) => {
+            println!("{}", dialogue);
+            Ok(())
+        },
+        HtrsAction::UpdateConfig => {
+            VersionedHtrsConfig::save(config);
+            Ok(())
+        },
+        HtrsAction::MakeRequest {
+            url, headers, method
+        } => {
+            let client = Client::new();
+            let mut request_builder = client.request(method, url)
+                .header("User-Agent", format!("htrs/{}", env!("CARGO_PKG_VERSION")));
+            for (key, value) in headers {
+                request_builder = request_builder.header(key.as_str(), value.as_str());
+            }
 
-    let request = match request_builder.build() {
-        Ok(req) => req,
-        Err(e) => return Err(HtrsError::new(&e.to_string())),
-    };
-    match client.execute(request) {
-        Ok(res) => Ok(res),
-        Err(e) => Err(HtrsError::new(&e.to_string())),
+            let request = match request_builder.build() {
+                Ok(req) => req,
+                Err(e) => return Err(HtrsError::new(&e.to_string())),
+            };
+            match client.execute(request) {
+                Ok(res) => {
+                    println!("Received {} response", res.status());
+                    Ok(())
+                },
+                Err(e) => Err(HtrsError::new(&e.to_string())),
+            }
+        },
     }
 }
 
