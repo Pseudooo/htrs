@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "version")]
@@ -11,7 +11,7 @@ pub enum VersionedHtrsConfig {
 impl VersionedHtrsConfig {
     /// Generate the path to the configration file, using the directory
     /// of the executable as the base path.
-    pub fn config_path() -> PathBuf {
+    fn config_path() -> PathBuf {
         std::env::current_exe()
             .expect("Unable to get executable location")
             .parent()
@@ -19,7 +19,8 @@ impl VersionedHtrsConfig {
             .join("htrs_config.json")
     }
 
-    pub fn load(config_path: &Path) -> VersionedHtrsConfig {
+    pub fn load() -> VersionedHtrsConfig {
+        let config_path = Self::config_path();
         if config_path.exists() {
             let file = File::open(config_path).expect("Unable to read htrs_config.json");
             let config: VersionedHtrsConfig =
@@ -36,11 +37,11 @@ impl VersionedHtrsConfig {
         return blank_config;
     }
 
-    pub fn save(config: HtrsConfig, config_path: &Path) {
+    pub fn save(config: HtrsConfig) {
         let mut file = OpenOptions::new()
             .write(true)
             .truncate(true)
-            .open(config_path)
+            .open(VersionedHtrsConfig::config_path())
             .expect("Unable to write updated config to htrs_config.json");
         let versioned_config = VersionedHtrsConfig::V0_0_1(config);
         serde_json::to_writer_pretty(&mut file, &versioned_config)

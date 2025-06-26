@@ -26,19 +26,9 @@ impl Error for HtrsError {
     }
 }
 
-pub struct HtrsOutcome {
-    pub config_updated: bool,
-    pub outcome_dialogue: Option<String>,
-    pub action: Option<HtrsAction>,
-}
-
-impl HtrsOutcome {
-    pub fn new(config_updated: bool, outcome_dialogue: Option<String>, action: Option<HtrsAction>) -> HtrsOutcome {
-        HtrsOutcome { config_updated, outcome_dialogue, action }
-    }
-}
-
 pub enum HtrsAction {
+    UpdateConfig,
+    PrintDialogue(String),
     MakeRequest {
         url: Url,
         headers: HashMap<String, String>,

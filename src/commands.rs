@@ -2,13 +2,13 @@ use crate::command_args::RootCommands::{Call, Service};
 use crate::command_args::ServiceCommands::{Add, Environment, Remove};
 use crate::command_args::{CallServiceOptions, EnvironmentCommands, RootCommands, ServiceCommands};
 use crate::htrs_config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
-use crate::outcomes::HtrsAction::MakeRequest;
-use crate::outcomes::{HtrsError, HtrsOutcome};
+use crate::outcomes::HtrsAction::{MakeRequest, PrintDialogue, UpdateConfig};
+use crate::outcomes::{HtrsAction, HtrsError};
 use reqwest::{Method, Url};
 use std::collections::HashMap;
 use std::str::FromStr;
 
-pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<HtrsOutcome, HtrsError> {
+pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<HtrsAction, HtrsError> {
     match cmd {
         Service(service_command) => {
             execute_service_command(config, &service_command)
@@ -20,7 +20,7 @@ pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<Htr
     }
 }
 
-fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Result<HtrsOutcome, HtrsError> {
+fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Result<HtrsAction, HtrsError> {
     match cmd {
         Add { name } => {
             for service in config.services.iter() {
@@ -30,40 +30,29 @@ fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Re
             }
 
             config.services.push(ServiceConfig::new(name.clone()));
-            Ok(HtrsOutcome::new(
-                true,
-                Some(format!("Service \"{name}\" created")),
-                None
-            ))
+            Ok(UpdateConfig)
         },
 
         Remove { name } => {
             if config.service_defined(name) {
                 config.services.retain(|x| !x.name.eq(name));
-                Ok(HtrsOutcome::new(
-                    true,
-                    Some(format!("Service \"{name}\" removed")),
-                    None
-                ))
+                Ok(UpdateConfig)
             } else {
                 Err(HtrsError::new(&format!("Service \"{name}\" does not exist")))
             }
         }
 
-        ServiceCommands::List => match config.services.len() {
-            0 => Ok(HtrsOutcome::new(
-                false,
-                Some("No services found".to_string()),
-                None)),
-            _ => {
-                let dialogue = format!(" - {}", config.services.iter().map(|service| service.name.clone())
-                    .collect::<Vec<String>>()
-                    .join("\n - "));
-                Ok(HtrsOutcome::new(
-                    false,
-                    Some(dialogue),
-                    None))
-            },
+        ServiceCommands::List => {
+            if config.services.len() == 0 {
+                return Ok(PrintDialogue("No services exist".to_string()));
+            }
+
+            let dialogue = config.services
+                .iter()
+                .map(|service| format!(" - {}", service.name))
+                .collect::<Vec<String>>()
+                .join("\n");
+            Ok(PrintDialogue(dialogue))
         },
 
         Environment(env_command) => {
@@ -72,73 +61,67 @@ fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Re
     }
 }
 
-fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommands) -> Result<HtrsOutcome, HtrsError> {
+fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommands) -> Result<HtrsAction, HtrsError> {
     match cmd {
         EnvironmentCommands::Add { service_name, name: environment_name, host, default } => {
-            if let Some(service) = config.find_service_config_mut(&service_name) {
-                if service.environment_exists(&environment_name) {
-                    Err(HtrsError::new(&format!("{environment_name} already defined under {service_name}")))
-                } else {
-                    if *default {
-                        if let Some(default_environment) = service.find_default_environment_mut() {
-                            default_environment.default = false;
-                        }
-                    }
+            let Some(service) = config.find_service_config_mut(&service_name) else {
+                return Err(HtrsError::new(&format!("Service `{}` not found", service_name)))
+            };
 
-                    service.environments.push(ServiceEnvironmentConfig::new(environment_name.clone(), host.clone(), default.clone()));
-                    Ok(HtrsOutcome::new(
-                        true,
-                        Some(format!("Environment \"{environment_name}\" created for {service_name}")),
-                        None
-                    ))
-                }
-            } else {
-                Err(HtrsError::new(&format!("Service {service_name} does not exist")))
+            if service.environment_exists(&environment_name) {
+                return Err(HtrsError::new(&format!("Service `{}` already has an environmnt called `{}`", service_name, environment_name)))
             }
+
+            if *default {
+                if let Some(curr_default_environment) = service.find_default_environment_mut() {
+                    curr_default_environment.default = false;
+                }
+            }
+
+            let new_env = ServiceEnvironmentConfig::new(
+                environment_name.clone(),
+                host.clone(),
+                *default,
+            );
+            service.environments.push(new_env);
+            Ok(UpdateConfig)
         },
 
         EnvironmentCommands::List { service_name } => {
-            if let Some(service) = config.find_service_config(&service_name) {
-                if service.environments.len() == 0 {
-                    Err(HtrsError::new(&format!("No environments defined for {service_name}")))
-                } else {
-                    let environment_list = service.environments.iter()
-                        .map(|env| match env.default {
-                            true => format!(" - {}: {} (default)", env.name, env.host),
-                            false => format!(" - {}: {}", env.name, env.host),
-                        })
-                        .collect::<Vec<String>>()
-                        .join("\n");
+            let Some(service) = config.find_service_config(&service_name) else {
+                return Err(HtrsError::new(&format!("Service `{}` not found", service_name)))
+            };
 
-                    Ok(HtrsOutcome::new(
-                        false,
-                        Some(environment_list),
-                        None
-                    ))
-                }
-            } else {
-                Err(HtrsError::new(&format!("Service {service_name} does not exist")))
+            if service.environments.len() == 0 {
+                return Ok(PrintDialogue(format!("No environments defined for `{}`", service_name)));
             }
+
+            let dialogue = service.environments.iter()
+                .map(|env| match env.default {
+                    true => format!(" - {} (default)", env.name),
+                    false => format!(" - {}", env.name),
+                })
+                .collect::<Vec<String>>()
+                .join("\n");
+            Ok(PrintDialogue(dialogue))
         },
 
         EnvironmentCommands::Remove { service_name, environment_name } => {
-            if let Some(service) = config.find_service_config_mut(&service_name) {
-                match service.remove_environment(environment_name) {
-                    true => Ok(HtrsOutcome::new(
-                        true,
-                        Some(format!("Environment {environment_name} removed for {service_name}")),
-                        None
-                    )),
-                    false => Err(HtrsError::new(&format!("Environment {environment_name} does not exist")))
-                }
-            } else {
-                Err(HtrsError::new(&format!("Service {service_name} does not exist")))
+            let Some(service) = config.find_service_config_mut(&service_name) else {
+                return Err(HtrsError::new(&format!("Service `{}` not found", service_name)));
+            };
+
+            if !service.environment_exists(&environment_name) {
+                return Err(HtrsError::new(&format!("Service `{}` has no environment `{}`", service_name, environment_name)));
             }
+
+            service.remove_environment(environment_name);
+            Ok(UpdateConfig)
         }
     }
 }
 
-fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<HtrsOutcome, HtrsError> {
+fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<HtrsAction, HtrsError> {
     let service = match config.find_service_config(&cmd.service) {
         Some(service) => service,
         None => return Err(HtrsError::new(&format!("Service {} does not exist", cmd.service))),
@@ -177,16 +160,11 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
             _ => return Err(HtrsError::new(&format!("Invalid header value {}", kvp))),
         };
     }
-    
-    Ok(HtrsOutcome::new(
-        false,
-        None,
-        Some(MakeRequest {
-            url,
-            headers,
-            method,
-        }),
-    ))
+
+    let action = MakeRequest {
+        url, headers, method
+    };
+    Ok(action)
 }
 
 fn build_url(host: &str, path: Option<String>, query: Vec<String>) -> Result<Url, HtrsError> {
@@ -232,9 +210,8 @@ mod service_command_tests {
         let result = execute_command(&mut config, command);
 
         // Assert
-        assert!(result.is_ok());
-        let outcome = result.unwrap();
-        assert_eq!(outcome.config_updated, true);
+        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result.unwrap(), UpdateConfig));
         assert_eq!(config.services.len(), 2);
         assert!(config.services.iter().any(|s| s.name == "foo" && s.environments.len() == 0));
         assert!(config.services.iter().any(|s| s.name == "bar" && s.environments.len() == 0));
@@ -275,9 +252,8 @@ mod service_command_tests {
         // Act
         let result = execute_command(&mut config, command);
 
-        assert!(result.is_ok());
-        let outcome = result.unwrap();
-        assert!(outcome.config_updated);
+        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result.unwrap(), UpdateConfig));
         assert!(!config.services.iter().any(|s| s.name == "foo"));
     }
 
@@ -311,9 +287,8 @@ mod service_command_tests {
         let result = execute_command(&mut config, command);
 
         // Assert
-        assert!(result.is_ok());
-        let outcome = result.unwrap();
-        assert_eq!(outcome.config_updated, false);
+        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result.unwrap(), PrintDialogue(_)));
     }
 
     #[test]
@@ -328,9 +303,8 @@ mod service_command_tests {
         let result = execute_command(&mut config, command);
 
         // Assert
-        assert!(result.is_ok());
-        let outcome = result.unwrap();
-        assert_eq!(outcome.config_updated, false);
+        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result.unwrap(), PrintDialogue(_)));
     }
 
     #[test]
@@ -380,9 +354,8 @@ mod service_command_tests {
         let result = execute_command(&mut config, command);
 
         // Assert
-        assert!(result.is_ok());
-        let outcome = result.unwrap();
-        assert!(outcome.config_updated);
+        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result.unwrap(), UpdateConfig));
         let updated_service_option = config.services.iter().find(|s| s.name == "foo");
         assert!(updated_service_option.is_some());
         let updated_service = updated_service_option.unwrap();
@@ -416,9 +389,8 @@ mod service_command_tests {
         let result = execute_command(&mut config, command);
 
         // Assert
-        assert!(result.is_ok());
-        let outcome = result.unwrap();
-        assert!(outcome.config_updated);
+        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result.unwrap(), UpdateConfig));
         let service = config.services.iter().find(|s| s.name == "foo");
         assert!(service.is_some());
         let service = service.unwrap();
@@ -505,9 +477,8 @@ mod service_command_tests {
         let result = execute_command(&mut config, command);
 
         // Assert
-        assert!(result.is_ok());
-        let outcome = result.unwrap();
-        assert_eq!(outcome.config_updated, false);
+        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result.unwrap(), PrintDialogue(_)));
     }
 
     #[test]
@@ -589,9 +560,8 @@ mod service_command_tests {
         let result = execute_command(&mut config, command);
 
         // Assert
-        assert!(result.is_ok());
-        let outcome = result.unwrap();
-        assert!(outcome.config_updated);
+        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result.unwrap(), UpdateConfig));
         let updated_service = config.services.iter()
             .find(|s| s.name == "foo");
         assert!(updated_service.is_some());
