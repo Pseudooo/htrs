@@ -52,7 +52,7 @@ pub enum EnvironmentCommands {
         host: String,
 
         #[arg(long, default_value = "false", help = "Is the default environment for service")]
-         default: bool,
+        default: bool,
     },
     #[clap(visible_alias = "ls", about = "List all environments for service")]
     List {
@@ -82,5 +82,9 @@ pub struct CallServiceOptions {
 
     #[arg(long, value_name = "header", help = "Header values as key=value pairs")]
     pub header: Vec<String>,
+    
+    #[arg(long, value_name = "method", help = "The HTTP Method to use when making call, i.e. GET or POST")]
+    pub method: Option<String>
 }
+
 

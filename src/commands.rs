@@ -4,8 +4,9 @@ use crate::command_args::{CallServiceOptions, EnvironmentCommands, RootCommands,
 use crate::htrs_config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
 use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsError, HtrsOutcome};
-use reqwest::Url;
+use reqwest::{Method, Url};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<HtrsOutcome, HtrsError> {
     match cmd {
@@ -158,6 +159,14 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
     let path = cmd.path;
     let query = cmd.query;
 
+    let mut method = Method::GET;
+    if let Some(method_str) = cmd.method {
+        method = match Method::from_str(&method_str.to_uppercase()) {
+            Ok(method) => method,
+            Err(_) => return Err(HtrsError::new(&format!("Invalid method: {}", method_str))),
+        }
+    }
+
     let url = build_url(&environment.host, path, query)?;
     let mut headers: HashMap<String, String> = HashMap::new();
     for kvp in cmd.header {
@@ -175,6 +184,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
         Some(MakeRequest {
             url,
             headers,
+            method,
         }),
     ))
 }
