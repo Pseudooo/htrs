@@ -1,6 +1,6 @@
 name: Add Clap Docs
 on:
-  pull_request:
+  push:
     branches:
       - "master"
 
@@ -9,6 +9,7 @@ env:
 
 jobs:
   generate-markdown:
+    name: Generate Markdown
     runs-on: ubuntu-latest
     steps:
       - name: 🛒 Checkout
@@ -27,6 +28,7 @@ jobs:
           path: ./htrs-cli.md
 
   update-wiki:
+    name: Update Wiki
     needs: generate-markdown
     runs-on: ubuntu-latest
     permissions:
