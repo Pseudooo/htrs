@@ -26,7 +26,7 @@ pub enum RootCommands {
 pub enum ServiceCommands {
     #[clap(about = "Create a new service")]
     Add {
-        #[clap(long, value_name = "name", help = "Unique name of service to create")]
+        #[clap(value_name = "name", help = "Unique name of service to create")]
         name: String,
     },
     #[command(visible_alias = "rm", about = "Remove a service")]
@@ -36,6 +36,14 @@ pub enum ServiceCommands {
     },
     #[command(visible_alias = "ls", about = "List all services")]
     List,
+
+    #[clap(about = "Service configuration")]
+    Config {
+        #[clap(value_name = "service name", help = "Service name to configure")]
+        service_name: String,
+        #[command(subcommand)]
+        config_command: ConfigurationCommands,
+    },
 
     #[command(subcommand, visible_alias = "env", about = "Service environment configuration commands")]
     Environment(EnvironmentCommands),

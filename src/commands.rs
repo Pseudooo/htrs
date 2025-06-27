@@ -73,6 +73,27 @@ fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Re
             Ok(PrintDialogue(dialogue))
         },
 
+        ServiceCommands::Config { service_name, config_command } => {
+            let Some(service) = config.find_service_config_mut(&service_name) else {
+                return Err(HtrsError::new(&format!("Service \"{}\" does not exist", service_name)))
+            };
+
+            let Header(header_cmd) = config_command;
+            match header_cmd {
+                Set { header, value } => {
+                    service.headers.insert(header.clone(), value.clone());
+                    Ok(UpdateConfig)
+                },
+                Clear { header } => {
+                    if config.headers.remove(header) == None {
+                        Err(HtrsError::new(&format!("No header `{}` defined", header)))
+                    } else {
+                        Ok(UpdateConfig)
+                    }
+                },
+            }
+        },
+
         Environment(env_command) => {
             execute_environment_command(config, env_command)
         }
