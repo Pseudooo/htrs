@@ -71,9 +71,9 @@ pub enum EnvironmentCommands {
     },
     #[clap(visible_alias = "rm", about = "Remove an environment from the service")]
     Remove {
-        #[clap(long, help = "Service to remove environment from")]
+        #[clap(help = "Service to remove environment from")]
         service_name: String,
-        #[clap(long, help = "Environment to remove")]
+        #[clap(help = "Environment to remove")]
         environment_name: String,
     }
 }
