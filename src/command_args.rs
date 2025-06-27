@@ -53,16 +53,16 @@ pub enum ServiceCommands {
 pub enum EnvironmentCommands {
     #[command(about = "Add a new environment to a service")]
     Add {
-        #[clap(long, value_name = "service name", help = "Service to configure")]
+        #[clap(value_name = "service name", help = "Service to configure")]
         service_name: String,
 
-        #[clap(long, value_name = "environment name", help = "Unique environment name to create")]
+        #[clap(value_name = "environment name", help = "Unique environment name to create")]
         name: String,
 
-        #[clap(long, value_name = "host", help = "Hostname of the for service in new environment")]
+        #[clap(value_name = "host", help = "Hostname of the for service in new environment")]
         host: String,
 
-        #[arg(long, default_value = "false", help = "Is the default environment for service")]
+        #[arg(short, long, default_value = "false", help = "Is the default environment for service")]
         default: bool,
     },
     #[clap(visible_alias = "ls", about = "List all environments for service")]
