@@ -191,6 +191,13 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
 
     let url = build_url(&environment.host, path, query)?;
     let mut headers: HashMap<String, String> = HashMap::new();
+    for (key, value) in &config.headers {
+        headers.insert(key.clone(), value.clone());
+    }
+    for (key, value) in &service.headers {
+        headers.insert(key.clone(), value.clone());
+    }
+
     for kvp in cmd.header {
         match kvp.split("=").collect::<Vec<&str>>().as_slice() {
             [key, value] => {
