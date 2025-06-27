@@ -50,8 +50,7 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
             url, headers, method, display_options
         } => {
             let client = Client::new();
-            let mut request_builder = client.request(method.clone(), url.clone())
-                .header("User-Agent", format!("htrs/{}", env!("CARGO_PKG_VERSION")));
+            let mut request_builder = client.request(method.clone(), url.clone());
             for (key, value) in headers.iter() {
                 request_builder = request_builder.header(key, value);
             }

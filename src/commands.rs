@@ -192,6 +192,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
 
     let url = build_url(&environment.host, path, query)?;
     let mut headers: HashMap<String, String> = HashMap::new();
+    headers.insert("User-Agent".to_string(), format!("htrs/{}", env!("CARGO_PKG_VERSION")));
     for (key, value) in &config.headers {
         headers.insert(key.clone(), value.clone());
     }

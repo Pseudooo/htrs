@@ -125,14 +125,14 @@ pub struct CallServiceOptions {
 
 #[derive(Args)]
 pub struct CallOutputOptions {
-    #[clap(help = "Hide the requested url")]
+    #[arg(long, help = "Hide the requested url")]
     pub hide_url: bool,
-    #[clap(help = "Hide the request headers")]
+    #[arg(long, help = "Hide the request headers")]
     pub hide_request_headers: bool,
-    #[clap(help = "Hide the response status code")]
+    #[arg(long, help = "Hide the response status code")]
     pub hide_response_status: bool,
-    #[clap(help = "Hide the response headers")]
+    #[arg(long, help = "Hide the response headers")]
     pub hide_response_headers: bool,
-    #[clap(help = "Hide the response body")]
+    #[arg(long, help = "Hide the response body")]
     pub hide_response_body: bool,
 }
