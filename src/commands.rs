@@ -1,3 +1,5 @@
+use crate::command_args::ConfigurationCommands::Header;
+use crate::command_args::HeaderCommands::{Clear, Set};
 use crate::command_args::RootCommands::{Call, Service};
 use crate::command_args::ServiceCommands::{Add, Environment, Remove};
 use crate::command_args::{CallServiceOptions, EnvironmentCommands, RootCommands, ServiceCommands};
@@ -15,6 +17,22 @@ pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<Htr
         },
         Call(options) => {
             execute_call_command(config, options)
+        },
+        RootCommands::Config(config_cmd) => {
+            let Header(header_cmd) = config_cmd;
+            match header_cmd {
+                Set { header, value } => {
+                    config.headers.insert(header, value);
+                    Ok(UpdateConfig)
+                },
+                Clear { header } => {
+                    if config.headers.remove(&header) == None {
+                        Err(HtrsError::new(&format!("No header `{}` defined", header)))
+                    } else {
+                        Ok(UpdateConfig)
+                    }
+                },
+            }
         },
         _ => panic!("BAD")
     }
