@@ -1,3 +1,4 @@
+use crate::command_args::CallOutputOptions;
 use reqwest::{Method, Url};
 use std::collections::HashMap;
 use std::error::Error;
@@ -33,5 +34,6 @@ pub enum HtrsAction {
         url: Url,
         headers: HashMap<String, String>,
         method: Method,
+        display_options: CallOutputOptions,
     }
 }

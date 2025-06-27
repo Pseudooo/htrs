@@ -180,6 +180,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
 
     let path = cmd.path;
     let query = cmd.query;
+    let display_options = cmd.display_options;
 
     let mut method = Method::GET;
     if let Some(method_str) = cmd.method {
@@ -208,7 +209,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
     }
 
     let action = MakeRequest {
-        url, headers, method
+        url, headers, method, display_options,
     };
     Ok(action)
 }

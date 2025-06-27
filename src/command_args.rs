@@ -117,7 +117,22 @@ pub struct CallServiceOptions {
     pub header: Vec<String>,
     
     #[arg(long, value_name = "method", help = "The HTTP Method to use when making call, i.e. GET or POST")]
-    pub method: Option<String>
+    pub method: Option<String>,
+
+    #[clap(flatten)]
+    pub display_options: CallOutputOptions,
 }
 
-
+#[derive(Args)]
+pub struct CallOutputOptions {
+    #[clap(help = "Hide the requested url")]
+    pub hide_url: bool,
+    #[clap(help = "Hide the request headers")]
+    pub hide_request_headers: bool,
+    #[clap(help = "Hide the response status code")]
+    pub hide_response_status: bool,
+    #[clap(help = "Hide the response headers")]
+    pub hide_response_headers: bool,
+    #[clap(help = "Hide the response body")]
+    pub hide_response_body: bool,
+}
