@@ -1,7 +1,9 @@
+use crate::command_args::ConfigurationCommands::Header;
+use crate::command_args::HeaderCommands::{Clear, Set};
 use crate::command_args::RootCommands::{Call, Service};
 use crate::command_args::ServiceCommands::{Add, Environment, Remove};
 use crate::command_args::{CallServiceOptions, EnvironmentCommands, RootCommands, ServiceCommands};
-use crate::htrs_config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
+use crate::config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
 use crate::outcomes::HtrsAction::{MakeRequest, PrintDialogue, UpdateConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 use reqwest::{Method, Url};
@@ -15,6 +17,22 @@ pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<Htr
         },
         Call(options) => {
             execute_call_command(config, options)
+        },
+        RootCommands::Config(config_cmd) => {
+            let Header(header_cmd) = config_cmd;
+            match header_cmd {
+                Set { header, value } => {
+                    config.headers.insert(header, value);
+                    Ok(UpdateConfig)
+                },
+                Clear { header } => {
+                    if config.headers.remove(&header) == None {
+                        Err(HtrsError::new(&format!("No header `{}` defined", header)))
+                    } else {
+                        Ok(UpdateConfig)
+                    }
+                },
+            }
         },
         _ => panic!("BAD")
     }
@@ -53,6 +71,27 @@ fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Re
                 .collect::<Vec<String>>()
                 .join("\n");
             Ok(PrintDialogue(dialogue))
+        },
+
+        ServiceCommands::Config { service_name, config_command } => {
+            let Some(service) = config.find_service_config_mut(&service_name) else {
+                return Err(HtrsError::new(&format!("Service \"{}\" does not exist", service_name)))
+            };
+
+            let Header(header_cmd) = config_command;
+            match header_cmd {
+                Set { header, value } => {
+                    service.headers.insert(header.clone(), value.clone());
+                    Ok(UpdateConfig)
+                },
+                Clear { header } => {
+                    if config.headers.remove(header) == None {
+                        Err(HtrsError::new(&format!("No header `{}` defined", header)))
+                    } else {
+                        Ok(UpdateConfig)
+                    }
+                },
+            }
         },
 
         Environment(env_command) => {
@@ -152,6 +191,13 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
 
     let url = build_url(&environment.host, path, query)?;
     let mut headers: HashMap<String, String> = HashMap::new();
+    for (key, value) in &config.headers {
+        headers.insert(key.clone(), value.clone());
+    }
+    for (key, value) in &service.headers {
+        headers.insert(key.clone(), value.clone());
+    }
+
     for kvp in cmd.header {
         match kvp.split("=").collect::<Vec<&str>>().as_slice() {
             [key, value] => {

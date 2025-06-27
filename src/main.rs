@@ -1,12 +1,12 @@
 mod command_args;
-mod htrs_config;
+mod config;
 mod commands;
 mod outcomes;
 
 use crate::command_args::Cli;
 use crate::command_args::RootCommands::GenerateMarkdown;
 use crate::commands::execute_command;
-use crate::htrs_config::{HtrsConfig, VersionedHtrsConfig};
+use crate::config::{HtrsConfig, VersionedHtrsConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::Parser;
 use clap_markdown::print_help_markdown;
@@ -19,11 +19,7 @@ fn main() {
         return;
     }
 
-    let versioned_config = VersionedHtrsConfig::load();
-    let mut config = match versioned_config {
-        VersionedHtrsConfig::V0_0_1(config) => config,
-    };
-
+    let mut config = VersionedHtrsConfig::load();
     let cmd_result = execute_command(&mut config, parsed_args.command);
     let exec_result = match cmd_result {
         Err(e) => {

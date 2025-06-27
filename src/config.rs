@@ -1,11 +1,16 @@
+mod config_v0_0_1;
+
+use crate::config::config_v0_0_1::HtrsConfigV0_0_1;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "version")]
 pub enum VersionedHtrsConfig {
-    V0_0_1(HtrsConfig),
+    V0_0_1(HtrsConfigV0_0_1),
+    V0_0_2(HtrsConfig),
 }
 
 impl VersionedHtrsConfig {
@@ -16,25 +21,26 @@ impl VersionedHtrsConfig {
             .expect("Unable to get executable location")
             .parent()
             .expect("Unable to get parent directory")
-            .join("htrs_config.json")
+            .join("config.json")
     }
 
-    pub fn load() -> VersionedHtrsConfig {
+    pub fn load() -> HtrsConfig {
         let config_path = Self::config_path();
         if config_path.exists() {
-            let file = File::open(config_path).expect("Unable to read htrs_config.json");
+            let file = File::open(config_path).expect("Unable to read config.json");
             let config: VersionedHtrsConfig =
-                serde_json::from_reader(file).expect("Unable to read htrs_config.json");
-            return config;
+                serde_json::from_reader(file).expect("Unable to read config.json");
+            return Self::migrate_to_latest(config);
         }
 
         let mut file = File::create(config_path)
-            .expect("Unable to create htrs_config.json");
+            .expect("Unable to create config.json");
 
-        let blank_config = VersionedHtrsConfig::V0_0_1(HtrsConfig::new());
-        serde_json::to_writer_pretty(&mut file, &blank_config)
-            .expect("Unable to write config to htrs_config.json");
-        return blank_config;
+        let blank_config = HtrsConfig::new();
+        let blank_versioned_config = VersionedHtrsConfig::V0_0_2(blank_config.clone());
+        serde_json::to_writer_pretty(&mut file, &blank_versioned_config)
+            .expect("Unable to write config to config.json");
+        blank_config
     }
 
     pub fn save(config: HtrsConfig) {
@@ -42,25 +48,56 @@ impl VersionedHtrsConfig {
             .write(true)
             .truncate(true)
             .open(VersionedHtrsConfig::config_path())
-            .expect("Unable to write updated config to htrs_config.json");
-        let versioned_config = VersionedHtrsConfig::V0_0_1(config);
+            .expect("Unable to write updated config to config.json");
+        let versioned_config = VersionedHtrsConfig::V0_0_2(config);
         serde_json::to_writer_pretty(&mut file, &versioned_config)
-            .expect("Unable to write updated config to htrs_config.json");
+            .expect("Unable to write updated config to config.json");
+    }
+
+    pub fn migrate_to_latest(config: VersionedHtrsConfig) -> HtrsConfig {
+        match config {
+            VersionedHtrsConfig::V0_0_1(config) => {
+                let mut mapped_services: Vec<ServiceConfig> = Vec::new();
+                for service in config.services {
+                    let mut mapped_environments: Vec<ServiceEnvironmentConfig> = Vec::new();
+                    for environment in service.environments {
+                        mapped_environments.push(ServiceEnvironmentConfig {
+                            name: environment.name,
+                            host: environment.host,
+                            default: environment.default,
+                        });
+                    }
+
+                    mapped_services.push(ServiceConfig {
+                        name: service.name,
+                        environments: mapped_environments,
+                        headers: HashMap::new(),
+                    });
+                }
+                HtrsConfig {
+                    services: mapped_services,
+                    headers: HashMap::new(),
+                }
+            },
+            VersionedHtrsConfig::V0_0_2(config) => config,
+        }
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct HtrsConfig {
     pub services: Vec<ServiceConfig>,
+    pub headers: HashMap<String, String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
     pub name: String,
     pub environments: Vec<ServiceEnvironmentConfig>,
+    pub headers: HashMap<String, String>
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ServiceEnvironmentConfig {
     pub name: String,
     pub host: String,
@@ -69,7 +106,7 @@ pub struct ServiceEnvironmentConfig {
 
 impl HtrsConfig {
     pub fn new() -> HtrsConfig {
-        HtrsConfig { services: Vec::new() }
+        HtrsConfig { services: Vec::new(), headers: HashMap::new() }
     }
 
     pub fn service_defined(&self, name: &str) -> bool {
@@ -102,7 +139,7 @@ impl HtrsConfig {
 
 impl ServiceConfig {
     pub fn new(name: String) -> ServiceConfig {
-        ServiceConfig { name, environments: vec![] }
+        ServiceConfig { name, environments: vec![], headers: HashMap::new() }
     }
 
     pub fn environment_exists(&self, name: &str) -> bool {

@@ -15,6 +15,9 @@ pub enum RootCommands {
     #[clap(about = "Call a service")]
     Call(CallServiceOptions),
 
+    #[command(subcommand, about = "Global configuration")]
+    Config(ConfigurationCommands),
+
     #[command(hide = true)]
     GenerateMarkdown,
 }
@@ -23,7 +26,7 @@ pub enum RootCommands {
 pub enum ServiceCommands {
     #[clap(about = "Create a new service")]
     Add {
-        #[clap(long, value_name = "name", help = "Unique name of service to create")]
+        #[clap(value_name = "name", help = "Unique name of service to create")]
         name: String,
     },
     #[command(visible_alias = "rm", about = "Remove a service")]
@@ -33,6 +36,14 @@ pub enum ServiceCommands {
     },
     #[command(visible_alias = "ls", about = "List all services")]
     List,
+
+    #[clap(about = "Service configuration")]
+    Config {
+        #[clap(value_name = "service name", help = "Service name to configure")]
+        service_name: String,
+        #[command(subcommand)]
+        config_command: ConfigurationCommands,
+    },
 
     #[command(subcommand, visible_alias = "env", about = "Service environment configuration commands")]
     Environment(EnvironmentCommands),
@@ -65,6 +76,28 @@ pub enum EnvironmentCommands {
         #[clap(long, help = "Environment to remove")]
         environment_name: String,
     }
+}
+
+#[derive(Subcommand)]
+pub enum ConfigurationCommands {
+    #[command(subcommand, about = "Configure headers")]
+    Header(HeaderCommands),
+}
+
+#[derive(Subcommand)]
+pub enum HeaderCommands {
+    #[command(about = "Set a header value")]
+    Set {
+        #[clap(value_name = "header", help = "Header name")]
+        header: String,
+        #[clap(value_name = "header_value", help = "Header value")]
+        value: String,
+    },
+    #[command(about = "Clear a header value")]
+    Clear {
+        #[clap(value_name = "header", help = "Header name to clear")]
+        header: String,
+    },
 }
 
 #[derive(Args)]
