@@ -180,6 +180,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
 
     let path = cmd.path;
     let query = cmd.query;
+    let display_options = cmd.display_options;
 
     let mut method = Method::GET;
     if let Some(method_str) = cmd.method {
@@ -191,6 +192,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
 
     let url = build_url(&environment.host, path, query)?;
     let mut headers: HashMap<String, String> = HashMap::new();
+    headers.insert("User-Agent".to_string(), format!("htrs/{}", env!("CARGO_PKG_VERSION")));
     for (key, value) in &config.headers {
         headers.insert(key.clone(), value.clone());
     }
@@ -208,7 +210,7 @@ fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<
     }
 
     let action = MakeRequest {
-        url, headers, method
+        url, headers, method, display_options,
     };
     Ok(action)
 }

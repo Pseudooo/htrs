@@ -53,16 +53,16 @@ pub enum ServiceCommands {
 pub enum EnvironmentCommands {
     #[command(about = "Add a new environment to a service")]
     Add {
-        #[clap(long, value_name = "service name", help = "Service to configure")]
+        #[clap(value_name = "service name", help = "Service to configure")]
         service_name: String,
 
-        #[clap(long, value_name = "environment name", help = "Unique environment name to create")]
+        #[clap(value_name = "environment name", help = "Unique environment name to create")]
         name: String,
 
-        #[clap(long, value_name = "host", help = "Hostname of the for service in new environment")]
+        #[clap(value_name = "host", help = "Hostname of the for service in new environment")]
         host: String,
 
-        #[arg(long, default_value = "false", help = "Is the default environment for service")]
+        #[arg(short, long, default_value = "false", help = "Is the default environment for service")]
         default: bool,
     },
     #[clap(visible_alias = "ls", about = "List all environments for service")]
@@ -117,7 +117,22 @@ pub struct CallServiceOptions {
     pub header: Vec<String>,
     
     #[arg(long, value_name = "method", help = "The HTTP Method to use when making call, i.e. GET or POST")]
-    pub method: Option<String>
+    pub method: Option<String>,
+
+    #[clap(flatten)]
+    pub display_options: CallOutputOptions,
 }
 
-
+#[derive(Args)]
+pub struct CallOutputOptions {
+    #[arg(long, help = "Hide the requested url")]
+    pub hide_url: bool,
+    #[arg(long, help = "Hide the request headers")]
+    pub hide_request_headers: bool,
+    #[arg(long, help = "Hide the response status code")]
+    pub hide_response_status: bool,
+    #[arg(long, help = "Hide the response headers")]
+    pub hide_response_headers: bool,
+    #[arg(long, help = "Hide the response body")]
+    pub hide_response_body: bool,
+}
