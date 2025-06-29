@@ -470,4 +470,74 @@ mod call_command_tests {
             assert_eq!(value, header_value.unwrap())
         }
     }
+
+    #[test]
+    fn given_known_header_configured_and_known_service_with_default_environment_when_call_then_result_returned_with_headers() {
+        // Arrange
+        let mut service = ServiceConfig::new("something".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "foo".to_string(),
+            "foo.com".to_string(),
+            true,
+        ));
+        let mut config = HtrsConfig::new();
+        config.headers.insert("foo".to_string(), "bar".to_string());
+        config.headers.insert("kek".to_string(), "lol".to_string());
+        config.services.push(service);
+        let command = CallServiceOptions::build()
+            .service("something")
+            .build();
+
+        // Act
+        let result = execute_call_command(&config, command);
+
+        // Assert
+        assert!(matches!(result, Ok(_)));
+        let MakeRequest { headers, .. } = result.unwrap() else {
+            panic!("Returned action was not MakeRequest");
+        };
+        let mut expected_headers = Vec::new();
+        expected_headers.push(("foo", "bar"));
+        expected_headers.push(("kek", "lol"));
+        for (key, value) in expected_headers {
+            let header_value = headers.get(key);
+            assert!(matches!(header_value, Some(_)));
+            assert_eq!(value, header_value.unwrap())
+        }
+    }
+
+    #[test]
+    fn given_known_service_with_default_environment_and_headers_configured_when_call_then_result_returned_with_headers() {
+        // Arrange
+        let mut service = ServiceConfig::new("something".to_string());
+        service.headers.insert("foo".to_string(), "bar".to_string());
+        service.headers.insert("kek".to_string(), "lol".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "foo".to_string(),
+            "foo.com".to_string(),
+            true,
+        ));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = CallServiceOptions::build()
+            .service("something")
+            .build();
+
+        // Act
+        let result = execute_call_command(&config, command);
+
+        // Assert
+        assert!(matches!(result, Ok(_)));
+        let MakeRequest { headers, .. } = result.unwrap() else {
+            panic!("Returned action was not MakeRequest");
+        };
+        let mut expected_headers = Vec::new();
+        expected_headers.push(("foo", "bar"));
+        expected_headers.push(("kek", "lol"));
+        for (key, value) in expected_headers {
+            let header_value = headers.get(key);
+            assert!(matches!(header_value, Some(_)));
+            assert_eq!(value, header_value.unwrap())
+        }
+    }
 }
