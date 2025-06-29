@@ -36,7 +36,15 @@ pub fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Res
         }
     }
 
-    let url = build_url(&environment.host, path, query)?;
+    let mut query_values = Vec::new();
+    for q in query {
+        match q.split("=").collect::<Vec<&str>>().as_slice() {
+            [key, value] if key.len() > 0 && value.len() > 0 => query_values.push((key.to_string(), value.to_string())),
+            _ => return Err(HtrsError::new(&format!("Invalid query: {}", q))),
+        }
+    }
+
+    let url = build_url(&environment.host, path, query_values)?;
     let mut headers: HashMap<String, String> = HashMap::new();
     headers.insert("User-Agent".to_string(), format!("htrs/{}", env!("CARGO_PKG_VERSION")));
     for (key, value) in &config.headers {
@@ -63,7 +71,7 @@ pub fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Res
     Ok(action)
 }
 
-fn build_url(host: &str, path: Option<String>, query: Vec<String>) -> Result<Url, HtrsError> {
+fn build_url(host: &str, path: Option<String>, query: Vec<(String, String)>) -> Result<Url, HtrsError> {
     let mut url = match Url::parse(&format!("https://{host}")) {
         Ok(uri) => uri,
         Err(e) => return Err(HtrsError::new(&e.to_string())),
@@ -77,10 +85,13 @@ fn build_url(host: &str, path: Option<String>, query: Vec<String>) -> Result<Url
         None => url,
     };
 
-    url = match url.join(&format!("?{}", query.join("&"))) {
-        Ok(uri) => uri,
-        Err(e) => return Err(HtrsError::new(&e.to_string())),
-    };
+    if query.len() > 0 {
+        let query_string = query.iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .collect::<Vec<String>>()
+            .join("&");
+        url.set_query(Some(&query_string));
+    }
 
     Ok(url)
 }
@@ -437,7 +448,7 @@ mod call_command_tests {
         let mut config = HtrsConfig::new();
         config.services.push(service);
         let command = CallServiceOptions::build()
-            .service("foo")
+            .service("something")
             .header("foo=bar")
             .header("kek=lol")
             .build();
@@ -451,8 +462,8 @@ mod call_command_tests {
             panic!("Returned action was not MakeRequest");
         };
         let mut expected_headers = Vec::new();
-        expected_headers.push(("kek", "foo"));
-        expected_headers.push(("lol", "kek"));
+        expected_headers.push(("foo", "bar"));
+        expected_headers.push(("kek", "lol"));
         for (key, value) in expected_headers {
             let header_value = headers.get(key);
             assert!(matches!(header_value, Some(_)));
