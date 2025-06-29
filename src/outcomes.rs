@@ -35,5 +35,6 @@ pub enum HtrsAction {
         headers: HashMap<String, String>,
         method: Method,
         display_options: CallOutputOptions,
-    }
+    },
+    GenerateMarkdown
 }

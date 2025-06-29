@@ -3,7 +3,6 @@ mod config;
 mod commands;
 mod outcomes;
 
-use crate::command_args::RootCommands::GenerateMarkdown;
 use crate::command_args::{CallOutputOptions, Cli};
 use crate::commands::execute_command;
 use crate::config::{HtrsConfig, VersionedHtrsConfig};
@@ -16,10 +15,6 @@ use std::collections::HashMap;
 
 fn main() {
     let parsed_args = Cli::parse();
-    if let GenerateMarkdown = parsed_args.command {
-        print_help_markdown::<Cli>();
-        return;
-    }
 
     let mut config = VersionedHtrsConfig::load();
     let cmd_result = execute_command(&mut config, parsed_args.command);
@@ -66,6 +61,10 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
                 },
                 Err(e) => Err(HtrsError::new(&e.to_string())),
             }
+        },
+        HtrsAction::GenerateMarkdown => {
+            print_help_markdown::<Cli>();
+            Ok(())
         },
     }
 }
