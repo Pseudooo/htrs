@@ -49,6 +49,8 @@ pub fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Res
     for kvp in cmd.header {
         match kvp.split("=").collect::<Vec<&str>>().as_slice() {
             [key, value] => {
+
+
                 headers.insert(key.to_string(), value.to_string());
             }
             _ => return Err(HtrsError::new(&format!("Invalid header value {}", kvp))),
@@ -88,6 +90,7 @@ mod call_command_tests {
     use super::*;
     use crate::command_args::CallOutputOptions;
     use crate::config::ServiceConfig;
+    use rstest::rstest;
 
     struct CallServiceOptionsBuilder {
         service: Option<String>,
@@ -127,8 +130,18 @@ mod call_command_tests {
             self
         }
 
-        fn query_value(&mut self, key: &str, value: &str) -> &mut CallServiceOptionsBuilder {
+        fn query_pair(&mut self, key: &str, value: &str) -> &mut CallServiceOptionsBuilder {
             self.query.push(format!("{}={}", key, value));
+            self
+        }
+
+        fn query(&mut self, query: &str) -> &mut CallServiceOptionsBuilder {
+            self.query.push(query.to_string());
+            self
+        }
+
+        fn header(&mut self, header: &str) -> &mut CallServiceOptionsBuilder {
+            self.header.push(header.to_string());
             self
         }
 
@@ -327,6 +340,34 @@ mod call_command_tests {
         assert_eq!(url.path(), "/my/path");
     }
 
+    #[rstest]
+    #[case("")]
+    #[case("foo")]
+    #[case("a=")]
+    #[case("=a")]
+    #[case("=")]
+    fn given_known_service_with_default_environment_when_call_with_invalid_query_values_then_error_returned(#[case] query: &str) {
+        // Arrange
+        let mut service = ServiceConfig::new("something".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "foo".to_string(),
+            "foo.com".to_string(),
+            true,
+        ));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = CallServiceOptions::build()
+            .service("something")
+            .query(query)
+            .build();
+
+        // Act
+        let result = execute_call_command(&config, command);
+
+        // Assert
+        assert!(matches!(result, Err(_)));
+    }
+
     #[test]
     fn given_known_service_with_default_environment_when_call_with_query_values_then_result_returned() {
         // Arrange
@@ -340,8 +381,8 @@ mod call_command_tests {
         config.services.push(service);
         let command = CallServiceOptions::build()
             .service("something")
-            .query_value("fieldA", "valueA")
-            .query_value("fieldB", "valueB")
+            .query_pair("fieldA", "valueA")
+            .query_pair("fieldB", "valueB")
             .build();
 
         // Act
@@ -354,5 +395,68 @@ mod call_command_tests {
         };
         assert_eq!(url.host().unwrap().to_string(), "foo.com");
         assert!(matches!(url.query(), Some("fieldA=valueA&fieldB=valueB")));
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("foo")]
+    #[case("a=")]
+    #[case("=a")]
+    #[case("=")]
+    fn given_known_service_with_default_environment_when_call_with_invalid_headers_then_error_returned(#[case] header: &str) {
+        // Arrange
+        let mut service = ServiceConfig::new("something".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "foo".to_string(),
+            "foo.com".to_string(),
+            true,
+        ));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = CallServiceOptions::build()
+            .service("foo")
+            .header(header)
+            .build();
+
+        // Act
+        let result = execute_call_command(&config, command);
+
+        // Assert
+        assert!(matches!(result, Err(_)));
+    }
+
+    #[test]
+    fn given_known_service_with_default_environment_when_call_with_headers_then_result_returned() {
+        // Arrange
+        let mut service = ServiceConfig::new("something".to_string());
+        service.environments.push(ServiceEnvironmentConfig::new(
+            "foo".to_string(),
+            "foo.com".to_string(),
+            true,
+        ));
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = CallServiceOptions::build()
+            .service("foo")
+            .header("foo=bar")
+            .header("kek=lol")
+            .build();
+
+        // Act
+        let result = execute_call_command(&config, command);
+
+        // Assert
+        assert!(matches!(result, Ok(_)));
+        let MakeRequest { headers, .. } = result.unwrap() else {
+            panic!("Returned action was not MakeRequest");
+        };
+        let mut expected_headers = Vec::new();
+        expected_headers.push(("kek", "foo"));
+        expected_headers.push(("lol", "kek"));
+        for (key, value) in expected_headers {
+            let header_value = headers.get(key);
+            assert!(matches!(header_value, Some(_)));
+            assert_eq!(value, header_value.unwrap())
+        }
     }
 }
