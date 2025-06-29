@@ -4,7 +4,7 @@ use crate::command_args::RootCommands::{Call, Service};
 use crate::command_args::ServiceCommands::{Add, Environment, Remove};
 use crate::command_args::{CallServiceOptions, EnvironmentCommands, RootCommands, ServiceCommands};
 use crate::config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
-use crate::outcomes::HtrsAction::{MakeRequest, PrintDialogue, UpdateConfig};
+use crate::outcomes::HtrsAction::{GenerateMarkdown, MakeRequest, PrintDialogue, UpdateConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 use reqwest::{Method, Url};
 use std::collections::HashMap;
@@ -34,7 +34,7 @@ pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<Htr
                 },
             }
         },
-        _ => panic!("BAD")
+        RootCommands::GenerateMarkdown => Ok(GenerateMarkdown)
     }
 }
 
