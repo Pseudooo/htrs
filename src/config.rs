@@ -1,6 +1,3 @@
-mod config_v0_0_1;
-
-use crate::config::config_v0_0_1::HtrsConfigV0_0_1;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
@@ -9,8 +6,7 @@ use std::path::PathBuf;
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "version")]
 pub enum VersionedHtrsConfig {
-    V0_0_1(HtrsConfigV0_0_1),
-    V0_0_2(HtrsConfig),
+    V0_0_1(HtrsConfig),
 }
 
 impl VersionedHtrsConfig {
@@ -28,16 +24,16 @@ impl VersionedHtrsConfig {
         let config_path = Self::config_path();
         if config_path.exists() {
             let file = File::open(config_path).expect("Unable to read config.json");
-            let config: VersionedHtrsConfig =
+            let VersionedHtrsConfig::V0_0_1(config): VersionedHtrsConfig =
                 serde_json::from_reader(file).expect("Unable to read config.json");
-            return Self::migrate_to_latest(config);
+            return config;
         }
 
         let mut file = File::create(config_path)
             .expect("Unable to create config.json");
 
         let blank_config = HtrsConfig::new();
-        let blank_versioned_config = VersionedHtrsConfig::V0_0_2(blank_config.clone());
+        let blank_versioned_config = VersionedHtrsConfig::V0_0_1(blank_config.clone());
         serde_json::to_writer_pretty(&mut file, &blank_versioned_config)
             .expect("Unable to write config to config.json");
         blank_config
@@ -49,38 +45,9 @@ impl VersionedHtrsConfig {
             .truncate(true)
             .open(VersionedHtrsConfig::config_path())
             .expect("Unable to write updated config to config.json");
-        let versioned_config = VersionedHtrsConfig::V0_0_2(config);
+        let versioned_config = VersionedHtrsConfig::V0_0_1(config);
         serde_json::to_writer_pretty(&mut file, &versioned_config)
             .expect("Unable to write updated config to config.json");
-    }
-
-    pub fn migrate_to_latest(config: VersionedHtrsConfig) -> HtrsConfig {
-        match config {
-            VersionedHtrsConfig::V0_0_1(config) => {
-                let mut mapped_services: Vec<ServiceConfig> = Vec::new();
-                for service in config.services {
-                    let mut mapped_environments: Vec<ServiceEnvironmentConfig> = Vec::new();
-                    for environment in service.environments {
-                        mapped_environments.push(ServiceEnvironmentConfig {
-                            name: environment.name,
-                            host: environment.host,
-                            default: environment.default,
-                        });
-                    }
-
-                    mapped_services.push(ServiceConfig {
-                        name: service.name,
-                        environments: mapped_environments,
-                        headers: HashMap::new(),
-                    });
-                }
-                HtrsConfig {
-                    services: mapped_services,
-                    headers: HashMap::new(),
-                }
-            },
-            VersionedHtrsConfig::V0_0_2(config) => config,
-        }
     }
 }
 
