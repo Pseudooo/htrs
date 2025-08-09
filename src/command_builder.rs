@@ -1,5 +1,6 @@
+use crate::command_args::HeaderCommands::{Clear, Set};
 use crate::command_args::ServiceCommands::Environment;
-use crate::command_args::{EnvironmentCommands, RootCommands, ServiceCommands};
+use crate::command_args::{ConfigurationCommands, EnvironmentCommands, RootCommands, ServiceCommands};
 use clap::{Arg, ArgMatches, Command};
 
 pub fn map_command(args: ArgMatches) -> RootCommands {
@@ -83,6 +84,53 @@ pub fn map_command(args: ArgMatches) -> RootCommands {
                         _ => panic!("Bad service environment command")
                     }
                 },
+                Some(("configuration" | "config", service_configuration_matches)) => {
+                    let Some(service_name) = service_configuration_matches.get_one::<String>("service_name") else {
+                        panic!("Service configuration command missing service name");
+                    };
+                    match service_configuration_matches.subcommand() {
+                        Some(("header", service_configure_header_matches)) => {
+                            match service_configure_header_matches.subcommand() {
+                                Some(("set", service_configuration_set_header_matches)) => {
+                                    let Some(header_name) = service_configuration_set_header_matches.get_one::<String>("header_name") else {
+                                        panic!("Service configuration set header missing header name");
+                                    };
+                                    let Some(header_value) = service_configuration_set_header_matches.get_one::<String>("header_value") else {
+                                        panic!("Service configuration set header missing header value");
+                                    };
+                                    RootCommands::Service(
+                                        ServiceCommands::Config {
+                                            service_name: service_name.to_string(),
+                                            config_command: ConfigurationCommands::Header(
+                                                Set {
+                                                    header: header_name.to_string(),
+                                                    value: header_value.to_string(),
+                                                }
+                                            )
+                                        }
+                                    )
+                                },
+                                Some(("clear", service_configuration_clear_header_matches)) => {
+                                    let Some(header_name) = service_configuration_clear_header_matches.get_one::<String>("header_name") else {
+                                        panic!("Service configuration clear header missing header name");
+                                    };
+                                    RootCommands::Service(
+                                        ServiceCommands::Config {
+                                            service_name: service_name.to_string(),
+                                            config_command: ConfigurationCommands::Header(
+                                                Clear {
+                                                    header: header_name.to_string(),
+                                                }
+                                            )
+                                        }
+                                    )
+                                }
+                                _ => panic!("Bad service configuration header command")
+                            }
+                        },
+                        _ => panic!("Bad service configuration command")
+                    }
+                }
                 _ => panic!("Bad service command")
             }
         },
@@ -128,7 +176,19 @@ fn get_service_command() -> Command {
                 .visible_alias("ls")
                 .about("List all services")
         )
-        .subcommand(get_service_environment_command());
+        .subcommand(get_service_environment_command())
+        .subcommand(
+            Command::new("configuration")
+                .visible_alias("config")
+                .about("Service configuration")
+                .arg(
+                    Arg::new("service_name")
+                        .value_name("Service name")
+                        .help("Service name to configure")
+                        .required(true)
+                )
+                .subcommand(get_header_configuration_command())
+        );
 
     command
 }
@@ -188,6 +248,37 @@ fn get_service_environment_command() -> Command {
                 .arg(
                     Arg::new("environment_name")
                         .help("Environment to remove")
+                        .required(true)
+                )
+        )
+}
+
+fn get_header_configuration_command() -> Command {
+    Command::new("header")
+        .about("Configure headers")
+        .subcommand(
+            Command::new("set")
+                .about("Set a header value")
+                .arg(
+                    Arg::new("header_name")
+                        .value_name("header")
+                        .help("Header name")
+                        .required(true)
+                )
+                .arg(
+                    Arg::new("header_value")
+                        .value_name("Header value")
+                        .help("Header value")
+                        .required(true)
+                )
+        )
+        .subcommand(
+            Command::new("clear")
+                .about("Clear a header value")
+                .arg(
+                    Arg::new("header_name")
+                        .value_name("header")
+                        .help("Header name to clear")
                         .required(true)
                 )
         )
@@ -362,6 +453,74 @@ mod command_builder_tests {
         };
         assert_eq!(service_name, "foo_service");
         assert_eq!(environment_name, "foo_environment");
+    }
+
+    #[rstest]
+    #[case("configuration")]
+    #[case("config")]
+    fn given_valid_service_configuration_set_header_command_then_should_parse_and_map(
+        #[case] config_alias: &str
+    ) {
+        let args = vec!["htrs", "service", config_alias, "foo_service", "header", "set", "foo_header_name", "foo_header_value"];
+
+        let result = get_root_command().try_get_matches_from(args);
+        let matches = match result {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to get matches - {e}"),
+        };
+        let mapped_command = map_command(matches);
+
+        let RootCommands::Service(service_command) = mapped_command else {
+            panic!("Command was not RootCommands::Service")
+        };
+        let ServiceCommands::Config {
+            service_name,
+            config_command,
+        } = service_command else {
+            panic!("Command was not ServiceCommands::Config");
+        };
+        let ConfigurationCommands::Header(header_command) = config_command;
+        let Set {
+            header,
+            value,
+        } = header_command else {
+            panic!("Command Configuration was not HeaderCommands::Set");
+        };
+        assert_eq!(service_name, "foo_service");
+        assert_eq!(header, "foo_header_name");
+        assert_eq!(value, "foo_header_value");
+    }
+
+    #[rstest]
+    #[case("configuration")]
+    #[case("config")]
+    fn given_valid_service_configuration_clear_header_command_then_should_parse_and_map(
+        #[case] config_alias: &str
+    ) {
+        let args = vec!["htrs", "service", config_alias, "foo_service", "header", "clear", "foo_header_name"];
+
+        let result = get_root_command().try_get_matches_from(args);
+        let matches = match result {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to get matches - {e}")
+        };
+        let mapped_command = map_command(matches);
+
+        let RootCommands::Service(service_command) = mapped_command else {
+            panic!("Command was not RootCommands::Service");
+        };
+        let ServiceCommands::Config {
+            service_name,
+            config_command,
+        } = service_command else {
+            panic!("Command was not ServiceCommands::Config");
+        };
+        let ConfigurationCommands::Header(header_command) = config_command;
+        let Clear { header } = header_command else {
+            panic!("Command configuration was not HeaderCommands::Clear");
+        };
+        assert_eq!(service_name, "foo_service");
+        assert_eq!(header, "foo_header_name");
     }
 }
 
