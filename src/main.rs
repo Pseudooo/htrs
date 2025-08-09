@@ -104,7 +104,3 @@ fn print_response(method: Method, url: Url, request_headers: HashMap<String, Str
 
     println!("{}", output);
 }
-
-
-
-
