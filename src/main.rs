@@ -2,6 +2,7 @@ mod command_args;
 mod config;
 mod commands;
 mod outcomes;
+mod command_builder;
 
 use crate::command_args::{CallOutputOptions, Cli};
 use crate::commands::execute_command;
@@ -103,5 +104,7 @@ fn print_response(method: Method, url: Url, request_headers: HashMap<String, Str
 
     println!("{}", output);
 }
+
+
 
 
