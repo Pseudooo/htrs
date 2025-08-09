@@ -1,7 +1,8 @@
 use crate::command_args::HeaderCommands::{Clear, Set};
 use crate::command_args::ServiceCommands::Environment;
-use crate::command_args::{ConfigurationCommands, EnvironmentCommands, RootCommands, ServiceCommands};
-use clap::{Arg, ArgMatches, Command};
+use crate::command_args::{CallOutputOptions, CallServiceOptions, ConfigurationCommands, EnvironmentCommands, RootCommands, ServiceCommands};
+use clap::parser::ValuesRef;
+use clap::{Arg, ArgAction, ArgMatches, Command};
 
 pub fn map_command(args: ArgMatches) -> RootCommands {
     match args.subcommand() {
@@ -134,8 +135,54 @@ pub fn map_command(args: ArgMatches) -> RootCommands {
                 _ => panic!("Bad service command")
             }
         },
+        Some(("call", call_matches)) => {
+            let Some(service_name) = call_matches.get_one::<String>("service_name") else {
+                panic!("Call command missing service name");
+            };
+            let environment_name = map_optional_string_reference(call_matches.get_one("environment_name"));
+            let path = map_optional_string_reference(call_matches.get_one::<String>("path"));
+            let query = map_collection(call_matches.get_many::<String>("query"));
+            let header = map_collection(call_matches.get_many::<String>("header"));
+            let method = map_optional_string_reference(call_matches.get_one::<String>("method"));
+            let hide_url = call_matches.get_flag("hide_url");
+            let hide_request_headers = call_matches.get_flag("hide_request_headers");
+            let hide_response_status = call_matches.get_flag("hide_response_status");
+            let hide_response_headers = call_matches.get_flag("hide_response_headers");
+            let hide_response_body = call_matches.get_flag("hide_response_body");
 
+            RootCommands::Call(
+                CallServiceOptions {
+                    service: service_name.to_string(),
+                    environment: environment_name,
+                    path,
+                    query,
+                    header,
+                    method,
+                    display_options: CallOutputOptions {
+                        hide_url,
+                        hide_request_headers,
+                        hide_response_status,
+                        hide_response_headers,
+                        hide_response_body,
+                    },
+                }
+            )
+        },
         _ => panic!("scrEEEEch")
+    }
+}
+
+fn map_optional_string_reference(option: Option<&String>) -> Option<String> {
+    match option {
+        Some(s) => Some(s.clone()),
+        _ => None,
+    }
+}
+
+fn map_collection(values: Option<ValuesRef<String>>) -> Vec<String> {
+    match values {
+        Some(values) => values.cloned().collect(),
+        _ => vec![],
     }
 }
 
@@ -143,7 +190,8 @@ pub fn get_root_command() -> Command {
     let command = Command::new("htrs")
         .version(env!("CARGO_PKG_VERSION"))
         .about("A flexible http cli client")
-        .subcommand(get_service_command());
+        .subcommand(get_service_command())
+        .subcommand(get_call_command());
 
     command
 }
@@ -281,6 +329,90 @@ fn get_header_configuration_command() -> Command {
                         .help("Header name to clear")
                         .required(true)
                 )
+        )
+}
+
+fn get_call_command() -> Command {
+    Command::new("call")
+        .about("Call a service")
+        .arg(
+            Arg::new("service_name")
+                .value_name("service name")
+                .required(true)
+        )
+        .arg(
+            Arg::new("environment_name")
+                .value_name("environment name")
+                .long("environment")
+                .short('e')
+                .required(false)
+        )
+        .arg(
+            Arg::new("path")
+                .value_name("path")
+                .long("path")
+                .short('p')
+                .help("Path to call on host")
+                .required(false)
+        )
+        .arg(
+            Arg::new("query")
+                .value_name("query")
+                .action(ArgAction::Append)
+                .long("query")
+                .short('q')
+                .help("Query string key=value pair")
+                .required(false)
+        )
+        .arg(
+            Arg::new("header")
+                .value_name("header")
+                .action(ArgAction::Append)
+                .long("header")
+                .help("Header key=value pair")
+                .required(false)
+        )
+        .arg(
+            Arg::new("method")
+                .value_name("method")
+                .long("method")
+                .help("HTTP Method to use i.e. GET or POST")
+                .required(false)
+        )
+        .arg(
+            Arg::new("hide_url")
+                .num_args(0)
+                .long("hide-url")
+                .help("Hide the requested url")
+                .required(false)
+        )
+        .arg(
+            Arg::new("hide_request_headers")
+                .num_args(0)
+                .long("hide-request-headers")
+                .help("Hide the request headers")
+                .required(false)
+        )
+        .arg(
+            Arg::new("hide_response_status")
+                .num_args(0)
+                .long("hide-response-status")
+                .help("Hide the response status code")
+                .required(false)
+        )
+        .arg(
+            Arg::new("hide_response_headers")
+                .num_args(0)
+                .long("hide-response-headers")
+                .help("Hide the response headers")
+                .required(false)
+        )
+        .arg(
+            Arg::new("hide_response_body")
+                .num_args(0)
+                .long("hide-response-body")
+                .help("Hide the response body")
+                .required(false)
         )
 }
 
@@ -521,6 +653,166 @@ mod command_builder_tests {
         };
         assert_eq!(service_name, "foo_service");
         assert_eq!(header, "foo_header_name");
+    }
+
+    #[test]
+    fn given_valid_call_service_command_when_no_environment_then_should_parse_and_map() {
+        let args = vec!["htrs", "call", "foo_service"];
+
+        let result = get_root_command().try_get_matches_from(args);
+        let matches = match result {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to get matches - {e}"),
+        };
+        let mapped_command = map_command(matches);
+
+        let RootCommands::Call(call_service_command_option) = mapped_command else {
+            panic!("Command was not RootCommands::Call");
+        };
+        assert_eq!(call_service_command_option.service, "foo_service");
+        assert_eq!(call_service_command_option.environment, None);
+        assert_eq!(call_service_command_option.path, None);
+        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
+        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
+        assert_eq!(call_service_command_option.method, None);
+        assert_eq!(call_service_command_option.display_options.hide_url, false);
+        assert_eq!(call_service_command_option.display_options.hide_request_headers, false);
+        assert_eq!(call_service_command_option.display_options.hide_response_status, false);
+        assert_eq!(call_service_command_option.display_options.hide_response_headers, false);
+        assert_eq!(call_service_command_option.display_options.hide_response_body, false);
+    }
+
+    #[test]
+    fn given_valid_call_service_command_when_environment_specified_then_should_parse_and_map() {
+        let args = vec!["htrs", "call", "foo_service", "--environment", "foo_environment"];
+
+        let result = get_root_command().try_get_matches_from(args);
+        let matches = match result {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to get matches - {e}"),
+        };
+        let mapped_command = map_command(matches);
+
+        let RootCommands::Call(call_service_command_option) = mapped_command else {
+            panic!("Command was not RootCommands::Call");
+        };
+        assert_eq!(call_service_command_option.service, "foo_service");
+        assert_eq!(call_service_command_option.environment, Some("foo_environment".to_string()));
+        assert_eq!(call_service_command_option.path, None);
+        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
+        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
+        assert_eq!(call_service_command_option.method, None);
+    }
+
+    #[rstest]
+    #[case(vec!["foo=bar"])]
+    #[case(vec!["foo=bar", "kek=lol"])]
+    fn given_valid_call_service_command_when_headers_passed_then_should_parse_and_map(
+        #[case] header_values: Vec<&str>
+    ) {
+        let mut args = vec!["htrs", "call", "foo_service"];
+        for header_value in &header_values {
+            args.extend(vec!["--header", header_value]);
+        }
+
+        let result = get_root_command().try_get_matches_from(args);
+        let matches = match result {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to get matches - {e}"),
+        };
+        let mapped_command = map_command(matches);
+
+        let RootCommands::Call(call_service_command_option) = mapped_command else {
+            panic!("Command was not RootCommands::Call");
+        };
+        assert_eq!(call_service_command_option.service, "foo_service");
+        assert_eq!(call_service_command_option.environment, None);
+        assert_eq!(call_service_command_option.path, None);
+        assert_eq!(call_service_command_option.header, header_values);
+        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
+        assert_eq!(call_service_command_option.method, None);
+    }
+
+    #[rstest]
+    #[case(vec!["foo=bar"])]
+    #[case(vec!["foo=bar", "kek=lol"])]
+    fn given_valid_call_service_command_when_query_params_passed_then_should_parse_and_map(
+        #[case] query_values: Vec<&str>
+    ) {
+        let mut args = vec!["htrs", "call", "foo_service"];
+        for header_value in &query_values {
+            args.extend(vec!["--query", header_value]);
+        }
+
+        let result = get_root_command().try_get_matches_from(args);
+        let matches = match result {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to get matches - {e}"),
+        };
+        let mapped_command = map_command(matches);
+
+        let RootCommands::Call(call_service_command_option) = mapped_command else {
+            panic!("Command was not RootCommands::Call");
+        };
+        assert_eq!(call_service_command_option.service, "foo_service");
+        assert_eq!(call_service_command_option.environment, None);
+        assert_eq!(call_service_command_option.path, None);
+        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
+        assert_eq!(call_service_command_option.query, query_values);
+        assert_eq!(call_service_command_option.method, None);
+    }
+
+    #[rstest]
+    #[case(true, false, false, false, false)]
+    #[case(false, true, false, false, false)]
+    #[case(false, false, true, false, false)]
+    #[case(false, false, false, true, false)]
+    #[case(false, false, false, false, true)]
+    fn given_valid_call_service_command_when_display_options_set_then_should_parse_and_map(
+        #[case] hide_url: bool,
+        #[case] hide_request_headers: bool,
+        #[case] hide_response_status: bool,
+        #[case] hide_response_headers: bool,
+        #[case] hide_response_body: bool,
+    ) {
+        let mut args = vec!["htrs", "call", "foo_service"];
+        if hide_url {
+            args.push("--hide-url");
+        }
+        if hide_request_headers {
+            args.push("--hide-request-headers");
+        }
+        if hide_response_status {
+          args.push("--hide-response-status");
+        }
+        if hide_response_headers {
+            args.push("--hide-response-headers");
+        }
+        if hide_response_body {
+            args.push("--hide-response-body");
+        }
+
+        let result = get_root_command().try_get_matches_from(args);
+        let matches = match result {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to get matches - {e}"),
+        };
+        let mapped_command = map_command(matches);
+
+        let RootCommands::Call(call_service_command_option) = mapped_command else {
+            panic!("Command was not RootCommands::Call");
+        };
+        assert_eq!(call_service_command_option.service, "foo_service");
+        assert_eq!(call_service_command_option.environment, None);
+        assert_eq!(call_service_command_option.path, None);
+        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
+        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
+        assert_eq!(call_service_command_option.method, None);
+        assert_eq!(call_service_command_option.display_options.hide_url, hide_url);
+        assert_eq!(call_service_command_option.display_options.hide_request_headers, hide_request_headers);
+        assert_eq!(call_service_command_option.display_options.hide_response_status, hide_response_status);
+        assert_eq!(call_service_command_option.display_options.hide_response_headers, hide_response_headers);
+        assert_eq!(call_service_command_option.display_options.hide_response_body, hide_response_body);
     }
 }
 
