@@ -168,6 +168,44 @@ pub fn map_command(args: ArgMatches) -> RootCommands {
                 }
             )
         },
+        Some(("configuration" | "config", config_matches)) => {
+            match config_matches.subcommand() {
+                Some(("header", header_configuration_command_matches)) => {
+                    match header_configuration_command_matches.subcommand() {
+                        Some(("set", header_configuration_set_matches)) => {
+                            let Some(header_name) = header_configuration_set_matches.get_one::<String>("header_name") else {
+                                panic!("Set header command missing header name");
+                            };
+                            let Some(header_value) = header_configuration_set_matches.get_one::<String>("header_value") else {
+                                panic!("Set header command missing header value");
+                            };
+                            RootCommands::Config(
+                                ConfigurationCommands::Header(
+                                    Set {
+                                        header: header_name.to_string(),
+                                        value: header_value.to_string(),
+                                    }
+                                )
+                            )
+                        },
+                        Some(("clear", header_configuration_clear_matches)) => {
+                            let Some(header_name) = header_configuration_clear_matches.get_one::<String>("header_name") else {
+                                panic!("Clear header command missing header name");
+                            };
+                            RootCommands::Config(
+                                ConfigurationCommands::Header(
+                                    Clear {
+                                        header: header_name.to_string(),
+                                    }
+                                )
+                            )
+                        },
+                        _ => panic!("Bad configuration header command")
+                    }
+                }
+                _ => panic!("Bad configuration command")
+            }
+        }
         _ => panic!("scrEEEEch")
     }
 }
@@ -191,7 +229,13 @@ pub fn get_root_command() -> Command {
         .version(env!("CARGO_PKG_VERSION"))
         .about("A flexible http cli client")
         .subcommand(get_service_command())
-        .subcommand(get_call_command());
+        .subcommand(get_call_command())
+        .subcommand(
+            Command::new("configuration")
+                .visible_alias("config")
+                .about("Global configuration")
+                .subcommand(get_header_configuration_command())
+        );
 
     command
 }
@@ -420,6 +464,7 @@ fn get_call_command() -> Command {
 mod command_builder_tests {
     use super::*;
     use rstest::rstest;
+    use ConfigurationCommands::Header;
 
     #[test]
     fn given_valid_add_service_command_then_should_parse_and_map() {
@@ -611,7 +656,7 @@ mod command_builder_tests {
         } = service_command else {
             panic!("Command was not ServiceCommands::Config");
         };
-        let ConfigurationCommands::Header(header_command) = config_command;
+        let Header(header_command) = config_command;
         let Set {
             header,
             value,
@@ -647,7 +692,7 @@ mod command_builder_tests {
         } = service_command else {
             panic!("Command was not ServiceCommands::Config");
         };
-        let ConfigurationCommands::Header(header_command) = config_command;
+        let Header(header_command) = config_command;
         let Clear { header } = header_command else {
             panic!("Command configuration was not HeaderCommands::Clear");
         };
@@ -813,6 +858,62 @@ mod command_builder_tests {
         assert_eq!(call_service_command_option.display_options.hide_response_status, hide_response_status);
         assert_eq!(call_service_command_option.display_options.hide_response_headers, hide_response_headers);
         assert_eq!(call_service_command_option.display_options.hide_response_body, hide_response_body);
+    }
+
+    #[rstest]
+    #[case("configuration")]
+    #[case("config")]
+    fn given_valid_configuration_command_when_set_header_then_should_parse_and_map(
+        #[case] config_alias: &str
+    ) {
+        let args = vec!["htrs", config_alias, "header", "set", "foo_header_name", "foo_header_value"];
+
+        let result = get_root_command().try_get_matches_from(args);
+        let matches = match result {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to get matches - {e}"),
+        };
+        let mapped_command = map_command(matches);
+
+        let RootCommands::Config(config_command) = mapped_command else {
+            panic!("Command was not RootCommands::Config");
+        };
+        let Header(header_command) = config_command;
+        let Set {
+            header,
+            value
+        } = header_command else {
+            panic!("Command was not HeaderCommands::Set");
+        };
+        assert_eq!(header, "foo_header_name");
+        assert_eq!(value, "foo_header_value");
+    }
+
+    #[rstest]
+    #[case("configuration")]
+    #[case("config")]
+    fn given_valid_configuration_command_when_clear_header_then_should_parse_and_map(
+        #[case] config_alias: &str
+    ) {
+        let args = vec!["htrs", config_alias, "header", "clear", "foo_header_name"];
+
+        let result = get_root_command().try_get_matches_from(args);
+        let matches = match result {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to get matches - {e}"),
+        };
+        let mapped_command = map_command(matches);
+
+        let RootCommands::Config(config_command) = mapped_command else {
+            panic!("Command was not RootCommands::Config");
+        };
+        let Header(header_command) = config_command;
+        let Clear {
+            header
+        } = header_command else {
+            panic!("Command was not HeaderCommands::Set");
+        };
+        assert_eq!(header, "foo_header_name");
     }
 }
 
