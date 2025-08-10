@@ -8,7 +8,7 @@ use crate::command_args::RootCommands::{Call, Service};
 use crate::commands::call_commands::execute_call_command;
 use crate::commands::service_commands::execute_service_command;
 use crate::config::HtrsConfig;
-use crate::outcomes::HtrsAction::{GenerateMarkdown, UpdateConfig};
+use crate::outcomes::HtrsAction::UpdateConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 
 pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<HtrsAction, HtrsError> {
@@ -35,6 +35,5 @@ pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<Htr
                 },
             }
         },
-        RootCommands::GenerateMarkdown => Ok(GenerateMarkdown)
     }
 }
