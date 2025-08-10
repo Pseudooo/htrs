@@ -1,226 +1,179 @@
 use crate::command_args::HeaderCommands::{Clear, Set};
 use crate::command_args::ServiceCommands::Environment;
-use crate::command_args::{CallOutputOptions, CallServiceOptions, ConfigurationCommands, EnvironmentCommands, RootCommands, ServiceCommands};
-use clap::parser::ValuesRef;
+use crate::command_args::{CallOutputOptions, CallServiceOptions, ConfigurationCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
 use clap::{Arg, ArgAction, ArgMatches, Command};
 
-pub fn map_command(args: ArgMatches) -> RootCommands {
-    match args.subcommand() {
-        Some(("service", service_matches)) => {
-            match service_matches.subcommand() {
-                Some(("add", add_service_matches)) => {
-                    let Some(name) = add_service_matches.get_one::<String>("name") else {
-                        panic!("bad add command")
-                    };
-                    RootCommands::Service(
-                        ServiceCommands::Add {
-                            name: name.to_string(),
-                        }
-                    )
-                },
-                Some(("remove" | "rm", remove_service_matches)) => {
-                    let Some(name) = remove_service_matches.get_one::<String>("name") else {
-                        panic!("bad remove command")
-                    };
-                    RootCommands::Service(
-                        ServiceCommands::Remove {
-                            name: name.to_string(),
-                        }
-                    )
-                },
-                Some(("list" | "ls", _)) => {
-                    RootCommands::Service(
-                        ServiceCommands::List
-                    )
-                },
-                Some(("environment" | "env", service_environment_matches)) => {
-                    match service_environment_matches.subcommand() {
-                        Some(("add", add_service_environment_matches)) => {
-                            let Some(service_name) = add_service_environment_matches.get_one::<String>("service_name") else {
-                                panic!("Add service environment missing service_name")
-                            };
-                            let Some(environment_name) = add_service_environment_matches.get_one::<String>("environment_name") else {
-                                panic!("Add service environment missing environment_name")
-                            };
-                            let Some(host) = add_service_environment_matches.get_one::<String>("host") else {
-                                panic!("Add service environment missing host")
-                            };
-                            let is_default = add_service_environment_matches.get_flag("default");
+trait MatchBinding<T> {
+    fn bind_field(&self, field_id: &str) -> T;
+}
 
-                            RootCommands::Service(
-                                Environment(EnvironmentCommands::Add {
-                                    service_name: service_name.to_string(),
-                                    name: environment_name.to_string(),
-                                    host: host.to_string(),
-                                    default: is_default,
-                                })
-                            )
-                        }
-                        Some(("list" | "ls", list_service_environment_matches)) => {
-                            let Some(service_name) = list_service_environment_matches.get_one::<String>("service_name") else {
-                                panic!("List service environments missing service name");
-                            };
-                            RootCommands::Service(
-                                Environment(EnvironmentCommands::List {
-                                    service_name: service_name.to_string(),
-                                })
-                            )
-                        },
-                        Some(("remove" | "rm", remove_service_environment_matches)) => {
-                            let Some(service_name) = remove_service_environment_matches.get_one::<String>("service_name") else {
-                                panic!("Remove service environment missing service name")
-                            };
-                            let Some(environment_name) = remove_service_environment_matches.get_one::<String>("environment_name") else {
-                                panic!("Remove service environment missing environment name")
-                            };
-                            RootCommands::Service(
-                                Environment(
-                                    EnvironmentCommands::Remove {
-                                        service_name: service_name.to_string(),
-                                        environment_name: environment_name.to_string(),
-                                    }
-                                )
-                            )
-                        }
-                        _ => panic!("Bad service environment command")
-                    }
-                },
-                Some(("configuration" | "config", service_configuration_matches)) => {
-                    let Some(service_name) = service_configuration_matches.get_one::<String>("service_name") else {
-                        panic!("Service configuration command missing service name");
-                    };
-                    match service_configuration_matches.subcommand() {
-                        Some(("header", service_configure_header_matches)) => {
-                            match service_configure_header_matches.subcommand() {
-                                Some(("set", service_configuration_set_header_matches)) => {
-                                    let Some(header_name) = service_configuration_set_header_matches.get_one::<String>("header_name") else {
-                                        panic!("Service configuration set header missing header name");
-                                    };
-                                    let Some(header_value) = service_configuration_set_header_matches.get_one::<String>("header_value") else {
-                                        panic!("Service configuration set header missing header value");
-                                    };
-                                    RootCommands::Service(
-                                        ServiceCommands::Config {
-                                            service_name: service_name.to_string(),
-                                            config_command: ConfigurationCommands::Header(
-                                                Set {
-                                                    header: header_name.to_string(),
-                                                    value: header_value.to_string(),
-                                                }
-                                            )
-                                        }
-                                    )
-                                },
-                                Some(("clear", service_configuration_clear_header_matches)) => {
-                                    let Some(header_name) = service_configuration_clear_header_matches.get_one::<String>("header_name") else {
-                                        panic!("Service configuration clear header missing header name");
-                                    };
-                                    RootCommands::Service(
-                                        ServiceCommands::Config {
-                                            service_name: service_name.to_string(),
-                                            config_command: ConfigurationCommands::Header(
-                                                Clear {
-                                                    header: header_name.to_string(),
-                                                }
-                                            )
-                                        }
-                                    )
-                                }
-                                _ => panic!("Bad service configuration header command")
-                            }
-                        },
-                        _ => panic!("Bad service configuration command")
-                    }
+impl MatchBinding<String> for ArgMatches {
+    fn bind_field(&self, field_id: &str) -> String {
+        let Some(field_value) = self.get_one::<String>(field_id) else {
+            panic!("Unexpected binding - no value found");
+        };
+        field_value.clone()
+    }
+}
+
+impl MatchBinding<Option<String>> for ArgMatches {
+    fn bind_field(&self, field_id: &str) -> Option<String> {
+        let Some(value) = self.get_one::<String>(field_id) else {
+            return None
+        };
+        Some(value.clone())
+    }
+}
+
+impl MatchBinding<bool> for ArgMatches {
+    fn bind_field(&self, field_id: &str) -> bool {
+        self.get_flag(field_id)
+    }
+}
+
+impl MatchBinding<Vec<String>> for ArgMatches {
+    fn bind_field(&self, field_id: &str) -> Vec<String> {
+        let binding = self.get_many::<String>(field_id);
+        let Some(binding_value) = binding else {
+            return vec![];
+        };
+        binding_value.cloned().collect()
+    }
+}
+
+impl RootCommands {
+    pub fn bind_from_matches(args: &ArgMatches) -> RootCommands {
+        match args.subcommand() {
+            Some(("service", service_matches)) => {
+                RootCommands::Service(
+                    ServiceCommands::bind_from_matches(service_matches)
+                )
+            },
+            Some(("call", call_matches)) => {
+                RootCommands::Call(
+                    CallServiceOptions::bind_from_matches(call_matches)
+                )
+            },
+            Some(("configuration" | "config", config_matches)) => {
+                RootCommands::Config(
+                    ConfigurationCommands::bind_from_matches(config_matches)
+                )
+            },
+            _ => panic!("Bad subcommand for RootCommands"),
+        }
+    }
+}
+
+impl ServiceCommands {
+    pub fn bind_from_matches(args: &ArgMatches) -> ServiceCommands {
+        match args.subcommand() {
+            Some(("add", add_service_matches)) => {
+                let service_name = add_service_matches.bind_field("service_name");
+                ServiceCommands::Add {
+                    name: service_name,
                 }
-                _ => panic!("Bad service command")
+            },
+            Some(("remove" | "rm", remove_service_matches)) => {
+                let service_name = remove_service_matches.bind_field("service_name");
+                ServiceCommands::Remove {
+                    name: service_name,
+                }
+            },
+            Some(("list" | "ls", _)) => {
+                ServiceCommands::List
+            },
+            Some(("environment" | "env", environment_matches)) => {
+                Environment(
+                    EnvironmentCommands::bind_from_matches(environment_matches)
+                )
+            },
+            Some(("configuration" | "config", config_matches)) => {
+                ServiceCommands::Config {
+                    service_name: config_matches.bind_field("service_name"),
+                    config_command: ConfigurationCommands::bind_from_matches(config_matches),
+                }
+            },
+            _ => panic!("Bad subcommand for ServiceCommands"),
+        }
+    }
+}
+
+impl EnvironmentCommands {
+    pub fn bind_from_matches(args: &ArgMatches) -> EnvironmentCommands {
+        match args.subcommand() {
+            Some(("add", add_environment_matches)) => {
+                EnvironmentCommands::Add {
+                    service_name: add_environment_matches.bind_field("service_name"),
+                    name: add_environment_matches.bind_field("environment_name"),
+                    host: add_environment_matches.bind_field("host"),
+                    default: add_environment_matches.bind_field("default"),
+                }
+            },
+            Some(("list" | "ls", list_environment_matches)) => {
+                EnvironmentCommands::List {
+                    service_name: list_environment_matches.bind_field("service_name"),
+                }
+            },
+            Some(("remove" | "rm", remove_environment_matches)) => {
+                EnvironmentCommands::Remove {
+                    service_name: remove_environment_matches.bind_field("service_name"),
+                    environment_name: remove_environment_matches.bind_field("environment_name"),
+                }
+            },
+            _ => panic!("Bad subcommand for EnvironmentCommands"),
+        }
+    }
+}
+
+impl ConfigurationCommands {
+    pub fn bind_from_matches(args: &ArgMatches) -> ConfigurationCommands {
+        match args.subcommand() {
+            Some(("header", header_matches)) => {
+                ConfigurationCommands::Header(
+                    HeaderCommands::bind_from_matches(header_matches)
+                )
             }
-        },
-        Some(("call", call_matches)) => {
-            let Some(service_name) = call_matches.get_one::<String>("service_name") else {
-                panic!("Call command missing service name");
-            };
-            let environment_name = map_optional_string_reference(call_matches.get_one("environment_name"));
-            let path = map_optional_string_reference(call_matches.get_one::<String>("path"));
-            let query = map_collection(call_matches.get_many::<String>("query"));
-            let header = map_collection(call_matches.get_many::<String>("header"));
-            let method = map_optional_string_reference(call_matches.get_one::<String>("method"));
-            let hide_url = call_matches.get_flag("hide_url");
-            let hide_request_headers = call_matches.get_flag("hide_request_headers");
-            let hide_response_status = call_matches.get_flag("hide_response_status");
-            let hide_response_headers = call_matches.get_flag("hide_response_headers");
-            let hide_response_body = call_matches.get_flag("hide_response_body");
+            _ => panic!("Bad subcommand for ConfigurationCommands"),
+        }
+    }
+}
 
-            RootCommands::Call(
-                CallServiceOptions {
-                    service: service_name.to_string(),
-                    environment: environment_name,
-                    path,
-                    query,
-                    header,
-                    method,
-                    display_options: CallOutputOptions {
-                        hide_url,
-                        hide_request_headers,
-                        hide_response_status,
-                        hide_response_headers,
-                        hide_response_body,
-                    },
+impl HeaderCommands {
+    pub fn bind_from_matches(args: &ArgMatches) -> HeaderCommands {
+        match args.subcommand() {
+            Some(("set", set_header_matches)) => {
+                HeaderCommands::Set {
+                    header: set_header_matches.bind_field("header_name"),
+                    value: set_header_matches.bind_field("header_value"),
                 }
-            )
-        },
-        Some(("configuration" | "config", config_matches)) => {
-            match config_matches.subcommand() {
-                Some(("header", header_configuration_command_matches)) => {
-                    match header_configuration_command_matches.subcommand() {
-                        Some(("set", header_configuration_set_matches)) => {
-                            let Some(header_name) = header_configuration_set_matches.get_one::<String>("header_name") else {
-                                panic!("Set header command missing header name");
-                            };
-                            let Some(header_value) = header_configuration_set_matches.get_one::<String>("header_value") else {
-                                panic!("Set header command missing header value");
-                            };
-                            RootCommands::Config(
-                                ConfigurationCommands::Header(
-                                    Set {
-                                        header: header_name.to_string(),
-                                        value: header_value.to_string(),
-                                    }
-                                )
-                            )
-                        },
-                        Some(("clear", header_configuration_clear_matches)) => {
-                            let Some(header_name) = header_configuration_clear_matches.get_one::<String>("header_name") else {
-                                panic!("Clear header command missing header name");
-                            };
-                            RootCommands::Config(
-                                ConfigurationCommands::Header(
-                                    Clear {
-                                        header: header_name.to_string(),
-                                    }
-                                )
-                            )
-                        },
-                        _ => panic!("Bad configuration header command")
-                    }
+            },
+            Some(("clear", clear_header_matches)) => {
+                HeaderCommands::Clear {
+                    header: clear_header_matches.bind_field("header_name"),
                 }
-                _ => panic!("Bad configuration command")
+            },
+            _ => panic!("Bad subcommand for HeaderCommands"),
+        }
+    }
+}
+
+impl CallServiceOptions {
+    fn bind_from_matches(args: &ArgMatches) -> CallServiceOptions {
+        CallServiceOptions {
+            service: args.bind_field("service_name"),
+            environment: args.bind_field("environment_name"),
+            path: args.bind_field("path"),
+            query: args.bind_field("query"),
+            header: args.bind_field("header"),
+            method: args.bind_field("method"),
+            display_options: CallOutputOptions {
+                hide_url: args.bind_field("hide_url"),
+                hide_request_headers: args.bind_field("hide_request_headers"),
+                hide_response_body: args.bind_field("hide_response_body"),
+                hide_response_headers: args.bind_field("hide_response_headers"),
+                hide_response_status: args.bind_field("hide_response_status"),
             }
         }
-        _ => panic!("scrEEEEch")
-    }
-}
-
-fn map_optional_string_reference(option: Option<&String>) -> Option<String> {
-    match option {
-        Some(s) => Some(s.clone()),
-        _ => None,
-    }
-}
-
-fn map_collection(values: Option<ValuesRef<String>>) -> Vec<String> {
-    match values {
-        Some(values) => values.cloned().collect(),
-        _ => vec![],
     }
 }
 
@@ -248,7 +201,7 @@ fn get_service_command() -> Command {
             Command::new("add")
                 .about("Create a new service")
                 .arg(
-                    Arg::new("name")
+                    Arg::new("service_name")
                         .help("Unique name of the service to create")
                         .required(true)
                 )
@@ -258,7 +211,7 @@ fn get_service_command() -> Command {
                 .visible_alias("rm")
                 .about("Remove a service")
                 .arg(
-                    Arg::new("name")
+                    Arg::new("service_name")
                         .help("Service name to remove")
                         .required(true)
                 )
@@ -472,7 +425,7 @@ mod command_builder_tests {
             Ok(res) => res,
             Err(e) => panic!("Failed to get matches - {e}")
         };
-        map_command(matches)
+        RootCommands::bind_from_matches(&matches)
     }
 
     #[test]
