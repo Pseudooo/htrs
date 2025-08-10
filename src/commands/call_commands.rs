@@ -57,8 +57,6 @@ pub fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Res
     for kvp in cmd.header {
         match kvp.split("=").collect::<Vec<&str>>().as_slice() {
             [key, value] => {
-
-
                 headers.insert(key.to_string(), value.to_string());
             }
             _ => return Err(HtrsError::new(&format!("Invalid header value {}", kvp))),
