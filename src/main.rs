@@ -4,12 +4,11 @@ mod commands;
 mod outcomes;
 mod command_builder;
 
-use crate::command_args::{CallOutputOptions, Cli, RootCommands};
+use crate::command_args::{CallOutputOptions, RootCommands};
 use crate::command_builder::get_root_command;
 use crate::commands::execute_command;
 use crate::config::{HtrsConfig, VersionedHtrsConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
-use clap_markdown::print_help_markdown;
 use reqwest::blocking::{Client, Response};
 use reqwest::{Method, Url};
 use std::collections::HashMap;
@@ -63,10 +62,6 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
                 },
                 Err(e) => Err(HtrsError::new(&e.to_string())),
             }
-        },
-        HtrsAction::GenerateMarkdown => {
-            print_help_markdown::<Cli>();
-            Ok(())
         },
     }
 }

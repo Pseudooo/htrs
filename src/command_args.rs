@@ -2,7 +2,6 @@ pub enum RootCommands {
     Service(ServiceCommands),
     Call(CallServiceOptions),
     Config(ConfigurationCommands),
-    GenerateMarkdown,
 }
 
 pub enum ServiceCommands {

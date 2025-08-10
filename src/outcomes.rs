@@ -36,5 +36,4 @@ pub enum HtrsAction {
         method: Method,
         display_options: CallOutputOptions,
     },
-    GenerateMarkdown
 }
