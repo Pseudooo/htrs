@@ -1,5 +1,5 @@
 use crate::command_args::ServiceCommands::Environment;
-use crate::command_args::{CallOutputOptions, CallServiceOptions, ConfigurationCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
+use crate::command_args::{CallOutputOptions, CallServiceOptions, ConfigurationCommands, EndpointCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
 use clap::{Arg, ArgAction, ArgMatches, Command};
 
 trait MatchBinding<T> {
@@ -92,6 +92,12 @@ impl ServiceCommands {
                     config_command: ConfigurationCommands::bind_from_matches(config_matches),
                 }
             },
+            Some(("endpoint", endpoint_matches)) => {
+                ServiceCommands::Endpoint {
+                    service_name: endpoint_matches.bind_field("service_name"),
+                    command: EndpointCommands::bind_from_matches(endpoint_matches),
+                }
+            }
             _ => panic!("Bad subcommand for ServiceCommands"),
         }
     }
@@ -120,6 +126,29 @@ impl EnvironmentCommands {
                 }
             },
             _ => panic!("Bad subcommand for EnvironmentCommands"),
+        }
+    }
+}
+
+impl EndpointCommands {
+    fn bind_from_matches(args: &ArgMatches) -> EndpointCommands {
+        match args.subcommand() {
+            Some(("add", add_endpoint_matches)) => {
+                EndpointCommands::Add {
+                    name: add_endpoint_matches.bind_field("endpoint_name"),
+                    path_template: add_endpoint_matches.bind_field("path_template"),
+                    query_parameters: add_endpoint_matches.bind_field("query_parameters"),
+                }
+            },
+            Some(("list", _)) => {
+                EndpointCommands::List
+            },
+            Some(("remove" | "rm", remove_endpoint_matches)) => {
+                EndpointCommands::Remove {
+                    name: remove_endpoint_matches.bind_field("endpoint_name"),
+                }
+            }
+            _ => panic!("Bad subcommand for EndpointCommands"),
         }
     }
 }
@@ -232,7 +261,8 @@ fn get_service_command() -> Command {
                         .required(true)
                 )
                 .subcommand(get_header_configuration_command())
-        );
+        )
+        .subcommand(get_endpoint_command());
 
     command
 }
@@ -413,9 +443,61 @@ fn get_call_command() -> Command {
         )
 }
 
+fn get_endpoint_command() -> Command {
+    Command::new("endpoint")
+        .about("Configure service endpoints")
+        .arg_required_else_help(true)
+        .arg(
+            Arg::new("service_name")
+                .value_name("service name")
+                .required(true)
+                .help("Service name to configure endpoints for")
+        )
+        .subcommand(
+            Command::new("add")
+                .about("Add a new service endpoint")
+                .arg(
+                    Arg::new("endpoint_name")
+                        .value_name("endpoint name")
+                        .required(true)
+                        .help("The unique endpoint name")
+                )
+                .arg(
+                    Arg::new("path_template")
+                        .value_name("path template")
+                        .required(true)
+                        .help("The templated path of endpoint")
+                )
+                .arg(
+                    Arg::new("query_parameters")
+                        .long("query-param")
+                        .short('q')
+                        .required(false)
+                        .action(ArgAction::Append)
+                        .help("Query parameter for endpoint")
+                )
+        )
+        .subcommand(
+            Command::new("list")
+                .about("List all endpoints for a service")
+        )
+        .subcommand(
+            Command::new("remove")
+                .visible_alias("rm")
+                .about("Remove an endpoint from a service")
+                .arg(
+                    Arg::new("endpoint_name")
+                        .value_name("endpoint name")
+                        .required(true)
+                        .help("The endpoint name to remove")
+                )
+        )
+}
+
 #[cfg(test)]
 mod command_builder_tests {
     use super::*;
+    use crate::command_args::EndpointCommands;
     use rstest::rstest;
     use ConfigurationCommands::Header;
 
@@ -802,6 +884,70 @@ mod command_builder_tests {
             panic!("Command was not HeaderCommands::Set");
         };
         assert_eq!(header, "foo_header_name");
+    }
+
+    #[test]
+    fn given_valid_service_endpoint_command_when_add_endpoint_then_should_parse_and_map() {
+        let args = vec!["htrs", "service", "endpoint", "foo_service", "add", "foo_endpoint", "/foo/my/path", "-q", "query_param1", "--query-param", "query_param2"];
+
+        let command = bind_command_from_vec(args);
+
+        let RootCommands::Service(service_command) = command else {
+            panic!("Command was not RootCommands::Service");
+        };
+        let ServiceCommands::Endpoint { service_name, command: endpoint_command} = service_command else {
+            panic!("Command was not ServiceCommands::Endpoint");
+        };
+        let EndpointCommands::Add {
+            name: endpoint_name,
+            path_template,
+            query_parameters
+        } = endpoint_command else {
+            panic!("Command was not EndpointCommands::Add");
+        };
+        assert_eq!(service_name, "foo_service");
+        assert_eq!(endpoint_name, "foo_endpoint");
+        assert_eq!(path_template, "/foo/my/path");
+        assert_eq!(query_parameters, vec!["query_param1", "query_param2"]);
+    }
+
+    #[test]
+    fn given_valid_service_endpoint_command_when_list_endpoints_then_should_parse_and_map() {
+        let args = vec!["htrs", "service", "endpoint", "foo_service", "list"];
+
+        let command = bind_command_from_vec(args);
+
+        let RootCommands::Service(service_command) = command else {
+            panic!("Command was not RootCommands::Service");
+        };
+        let ServiceCommands::Endpoint { service_name, command: endpoint_command} = service_command else {
+            panic!("Command was not ServiceCommands::Endpoint");
+        };
+        assert!(matches!(endpoint_command, EndpointCommands::List));
+        assert_eq!(service_name, "foo_service");
+    }
+
+    #[rstest]
+    #[case("remove")]
+    #[case("rm")]
+    fn given_valid_service_endpoint_command_when_remove_endpoint_then_should_parse_and_map(
+        #[case] remove_alias: &str
+    ) {
+        let args = vec!["htrs", "service", "endpoint", "foo_service", remove_alias, "foo_endpoint"];
+
+        let command = bind_command_from_vec(args);
+
+        let RootCommands::Service(service_command) = command else {
+            panic!("Command was not RootCommands::Service");
+        };
+        let ServiceCommands::Endpoint { service_name, command: endpoint_command} = service_command else {
+            panic!("Command was not ServiceCommands::Endpoint");
+        };
+        let EndpointCommands::Remove { name: endpoint_name } = endpoint_command else {
+            panic!("Command was not EndpointCommands::Remove");
+        };
+        assert_eq!(service_name, "foo_service");
+        assert_eq!(endpoint_name, "foo_endpoint");
     }
 }
 

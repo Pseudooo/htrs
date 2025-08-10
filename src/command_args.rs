@@ -17,6 +17,10 @@ pub enum ServiceCommands {
         config_command: ConfigurationCommands,
     },
     Environment(EnvironmentCommands),
+    Endpoint {
+        service_name: String,
+        command: EndpointCommands
+    }
 }
 
 pub enum EnvironmentCommands {
@@ -32,6 +36,18 @@ pub enum EnvironmentCommands {
     Remove {
         service_name: String,
         environment_name: String,
+    }
+}
+
+pub enum EndpointCommands {
+    Add {
+        name: String,
+        path_template: String,
+        query_parameters: Vec<String>,
+    },
+    List,
+    Remove {
+        name: String,
     }
 }
 
