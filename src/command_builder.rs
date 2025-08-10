@@ -466,18 +466,22 @@ mod command_builder_tests {
     use rstest::rstest;
     use ConfigurationCommands::Header;
 
+    fn bind_command_from_vec(args: Vec<&str>) -> RootCommands {
+        let result = get_root_command().try_get_matches_from(args);
+        let matches = match result {
+            Ok(res) => res,
+            Err(e) => panic!("Failed to get matches - {e}")
+        };
+        map_command(matches)
+    }
+
     #[test]
     fn given_valid_add_service_command_then_should_parse_and_map() {
         let args = vec!["htrs", "service", "add", "foo"];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(err) => panic!("Failed to get matches - {err}")
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Service(service_command) = mapped_command else {
+        let RootCommands::Service(service_command) = command else {
             panic!("Command was not service command");
         };
         let ServiceCommands::Add { name } = service_command else {
@@ -492,14 +496,9 @@ mod command_builder_tests {
     fn given_valid_remove_service_command_then_should_parse_and_map(#[case] remove_alias: &str) {
         let args = vec!["htrs", "service", remove_alias, "foo"];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}")
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Service(service_command) = mapped_command else {
+        let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
         let ServiceCommands::Remove { name } = service_command else {
@@ -514,13 +513,9 @@ mod command_builder_tests {
     fn given_valid_list_services_command_then_should_parse_and_map(#[case] list_alias: &str) {
         let args = vec!["htrs", "service", list_alias];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}")
-        };
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Service(service_command) = map_command(matches) else {
+        let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service")
         };
         assert!(matches!(service_command, ServiceCommands::List));
@@ -540,14 +535,9 @@ mod command_builder_tests {
             args.push("--default");
         }
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}")
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Service(service_command) = mapped_command else {
+        let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
         let Environment(environment_command) = service_command else {
@@ -579,14 +569,9 @@ mod command_builder_tests {
     ) {
         let args = vec!["htrs", "service", environment_alias, list_alias, "foo_service"];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}"),
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Service(service_command) = mapped_command else {
+        let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
         let Environment(environment_command) = service_command else {
@@ -609,14 +594,9 @@ mod command_builder_tests {
     ) {
         let args = vec!["htrs", "service", environment_alias, remove_alias, "foo_service", "foo_environment"];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}")
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Service(service_command) = mapped_command else {
+        let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
         let Environment(environment_command) = service_command else {
@@ -640,14 +620,9 @@ mod command_builder_tests {
     ) {
         let args = vec!["htrs", "service", config_alias, "foo_service", "header", "set", "foo_header_name", "foo_header_value"];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}"),
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Service(service_command) = mapped_command else {
+        let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service")
         };
         let ServiceCommands::Config {
@@ -676,14 +651,9 @@ mod command_builder_tests {
     ) {
         let args = vec!["htrs", "service", config_alias, "foo_service", "header", "clear", "foo_header_name"];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}")
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Service(service_command) = mapped_command else {
+        let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
         let ServiceCommands::Config {
@@ -704,14 +674,9 @@ mod command_builder_tests {
     fn given_valid_call_service_command_when_no_environment_then_should_parse_and_map() {
         let args = vec!["htrs", "call", "foo_service"];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}"),
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Call(call_service_command_option) = mapped_command else {
+        let RootCommands::Call(call_service_command_option) = command else {
             panic!("Command was not RootCommands::Call");
         };
         assert_eq!(call_service_command_option.service, "foo_service");
@@ -731,14 +696,9 @@ mod command_builder_tests {
     fn given_valid_call_service_command_when_environment_specified_then_should_parse_and_map() {
         let args = vec!["htrs", "call", "foo_service", "--environment", "foo_environment"];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}"),
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Call(call_service_command_option) = mapped_command else {
+        let RootCommands::Call(call_service_command_option) = command else {
             panic!("Command was not RootCommands::Call");
         };
         assert_eq!(call_service_command_option.service, "foo_service");
@@ -760,14 +720,9 @@ mod command_builder_tests {
             args.extend(vec!["--header", header_value]);
         }
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}"),
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Call(call_service_command_option) = mapped_command else {
+        let RootCommands::Call(call_service_command_option) = command else {
             panic!("Command was not RootCommands::Call");
         };
         assert_eq!(call_service_command_option.service, "foo_service");
@@ -789,14 +744,9 @@ mod command_builder_tests {
             args.extend(vec!["--query", header_value]);
         }
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}"),
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Call(call_service_command_option) = mapped_command else {
+        let RootCommands::Call(call_service_command_option) = command else {
             panic!("Command was not RootCommands::Call");
         };
         assert_eq!(call_service_command_option.service, "foo_service");
@@ -837,14 +787,9 @@ mod command_builder_tests {
             args.push("--hide-response-body");
         }
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}"),
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Call(call_service_command_option) = mapped_command else {
+        let RootCommands::Call(call_service_command_option) = command else {
             panic!("Command was not RootCommands::Call");
         };
         assert_eq!(call_service_command_option.service, "foo_service");
@@ -868,14 +813,9 @@ mod command_builder_tests {
     ) {
         let args = vec!["htrs", config_alias, "header", "set", "foo_header_name", "foo_header_value"];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}"),
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Config(config_command) = mapped_command else {
+        let RootCommands::Config(config_command) = command else {
             panic!("Command was not RootCommands::Config");
         };
         let Header(header_command) = config_command;
@@ -897,14 +837,9 @@ mod command_builder_tests {
     ) {
         let args = vec!["htrs", config_alias, "header", "clear", "foo_header_name"];
 
-        let result = get_root_command().try_get_matches_from(args);
-        let matches = match result {
-            Ok(res) => res,
-            Err(e) => panic!("Failed to get matches - {e}"),
-        };
-        let mapped_command = map_command(matches);
+        let command = bind_command_from_vec(args);
 
-        let RootCommands::Config(config_command) = mapped_command else {
+        let RootCommands::Config(config_command) = command else {
             panic!("Command was not RootCommands::Config");
         };
         let Header(header_command) = config_command;
