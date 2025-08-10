@@ -241,6 +241,7 @@ fn get_service_environment_command() -> Command {
     Command::new("environment")
         .visible_alias("env")
         .about("Service environment configuration commands")
+        .arg_required_else_help(true)
         .subcommand(
             Command::new("add")
                 .about("Add a new environment to a service")
