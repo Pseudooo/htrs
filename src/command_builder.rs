@@ -1,4 +1,3 @@
-use crate::command_args::HeaderCommands::{Clear, Set};
 use crate::command_args::ServiceCommands::Environment;
 use crate::command_args::{CallOutputOptions, CallServiceOptions, ConfigurationCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
 use clap::{Arg, ArgAction, ArgMatches, Command};
@@ -585,7 +584,7 @@ mod command_builder_tests {
             panic!("Command was not ServiceCommands::Config");
         };
         let Header(header_command) = config_command;
-        let Set {
+        let HeaderCommands::Set {
             header,
             value,
         } = header_command else {
@@ -616,7 +615,7 @@ mod command_builder_tests {
             panic!("Command was not ServiceCommands::Config");
         };
         let Header(header_command) = config_command;
-        let Clear { header } = header_command else {
+        let HeaderCommands::Clear { header } = header_command else {
             panic!("Command configuration was not HeaderCommands::Clear");
         };
         assert_eq!(service_name, "foo_service");
@@ -772,7 +771,7 @@ mod command_builder_tests {
             panic!("Command was not RootCommands::Config");
         };
         let Header(header_command) = config_command;
-        let Set {
+        let HeaderCommands::Set {
             header,
             value
         } = header_command else {
@@ -796,7 +795,7 @@ mod command_builder_tests {
             panic!("Command was not RootCommands::Config");
         };
         let Header(header_command) = config_command;
-        let Clear {
+        let HeaderCommands::Clear {
             header
         } = header_command else {
             panic!("Command was not HeaderCommands::Set");
