@@ -4,21 +4,22 @@ mod commands;
 mod outcomes;
 mod command_builder;
 
-use crate::command_args::{CallOutputOptions, Cli};
+use crate::command_args::{CallOutputOptions, Cli, RootCommands};
+use crate::command_builder::get_root_command;
 use crate::commands::execute_command;
 use crate::config::{HtrsConfig, VersionedHtrsConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
-use clap::Parser;
 use clap_markdown::print_help_markdown;
 use reqwest::blocking::{Client, Response};
 use reqwest::{Method, Url};
 use std::collections::HashMap;
 
 fn main() {
-    let parsed_args = Cli::parse();
+    let command_matches = get_root_command().get_matches();
+    let command = RootCommands::bind_from_matches(&command_matches);
 
     let mut config = VersionedHtrsConfig::load();
-    let cmd_result = execute_command(&mut config, parsed_args.command);
+    let cmd_result = execute_command(&mut config, command);
     let exec_result = match cmd_result {
         Err(e) => {
             println!("{}", e.details);
