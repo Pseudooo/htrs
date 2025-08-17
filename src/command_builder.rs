@@ -366,11 +366,6 @@ fn get_call_command(config: &HtrsConfig) -> Command {
     let mut command = Command::new("call")
         .about("Call a service")
         .arg(
-            Arg::new("service_name")
-                .value_name("service name")
-                .required(true)
-        )
-        .arg(
             Arg::new("environment_name")
                 .value_name("environment name")
                 .long("environment")
@@ -471,11 +466,16 @@ fn get_endpoint_command() -> Command {
 mod command_builder_tests {
     use super::*;
     use crate::command_args::EndpointCommands;
+    use crate::config::{Endpoint, ServiceConfig, ServiceEnvironmentConfig};
     use rstest::rstest;
     use ConfigurationCommands::Header;
 
     fn bind_command_from_vec(args: Vec<&str>) -> RootCommands {
-        let result = get_root_command(&HtrsConfig::new()).try_get_matches_from(args);
+        bind_command_from_vec_with_config(HtrsConfig::new(), args)
+    }
+
+    fn bind_command_from_vec_with_config(config: HtrsConfig, args: Vec<&str>) -> RootCommands {
+        let result = get_root_command(&config).try_get_matches_from(args);
         let matches = match result {
             Ok(res) => res,
             Err(e) => panic!("Failed to get matches - {e}")
@@ -678,141 +678,6 @@ mod command_builder_tests {
         assert_eq!(header, "foo_header_name");
     }
 
-    #[test]
-    fn given_valid_call_service_command_when_no_environment_then_should_parse_and_map() {
-        let args = vec!["htrs", "call", "foo_service"];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Call(call_service_command_option) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
-        assert_eq!(call_service_command_option.service, "foo_service");
-        assert_eq!(call_service_command_option.environment, None);
-        assert_eq!(call_service_command_option.path, None);
-        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.method, None);
-        assert_eq!(call_service_command_option.display_options.hide_url, false);
-        assert_eq!(call_service_command_option.display_options.hide_request_headers, false);
-        assert_eq!(call_service_command_option.display_options.hide_response_status, false);
-        assert_eq!(call_service_command_option.display_options.hide_response_headers, false);
-        assert_eq!(call_service_command_option.display_options.hide_response_body, false);
-    }
-
-    #[test]
-    fn given_valid_call_service_command_when_environment_specified_then_should_parse_and_map() {
-        let args = vec!["htrs", "call", "foo_service", "--environment", "foo_environment"];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Call(call_service_command_option) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
-        assert_eq!(call_service_command_option.service, "foo_service");
-        assert_eq!(call_service_command_option.environment, Some("foo_environment".to_string()));
-        assert_eq!(call_service_command_option.path, None);
-        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.method, None);
-    }
-
-    #[rstest]
-    #[case(vec!["foo=bar"])]
-    #[case(vec!["foo=bar", "kek=lol"])]
-    fn given_valid_call_service_command_when_headers_passed_then_should_parse_and_map(
-        #[case] header_values: Vec<&str>
-    ) {
-        let mut args = vec!["htrs", "call", "foo_service"];
-        for header_value in &header_values {
-            args.extend(vec!["--header", header_value]);
-        }
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Call(call_service_command_option) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
-        assert_eq!(call_service_command_option.service, "foo_service");
-        assert_eq!(call_service_command_option.environment, None);
-        assert_eq!(call_service_command_option.path, None);
-        assert_eq!(call_service_command_option.header, header_values);
-        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.method, None);
-    }
-
-    #[rstest]
-    #[case(vec!["foo=bar"])]
-    #[case(vec!["foo=bar", "kek=lol"])]
-    fn given_valid_call_service_command_when_query_params_passed_then_should_parse_and_map(
-        #[case] query_values: Vec<&str>
-    ) {
-        let mut args = vec!["htrs", "call", "foo_service"];
-        for header_value in &query_values {
-            args.extend(vec!["--query", header_value]);
-        }
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Call(call_service_command_option) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
-        assert_eq!(call_service_command_option.service, "foo_service");
-        assert_eq!(call_service_command_option.environment, None);
-        assert_eq!(call_service_command_option.path, None);
-        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.query, query_values);
-        assert_eq!(call_service_command_option.method, None);
-    }
-
-    #[rstest]
-    #[case(true, false, false, false, false)]
-    #[case(false, true, false, false, false)]
-    #[case(false, false, true, false, false)]
-    #[case(false, false, false, true, false)]
-    #[case(false, false, false, false, true)]
-    fn given_valid_call_service_command_when_display_options_set_then_should_parse_and_map(
-        #[case] hide_url: bool,
-        #[case] hide_request_headers: bool,
-        #[case] hide_response_status: bool,
-        #[case] hide_response_headers: bool,
-        #[case] hide_response_body: bool,
-    ) {
-        let mut args = vec!["htrs", "call", "foo_service"];
-        if hide_url {
-            args.push("--hide-url");
-        }
-        if hide_request_headers {
-            args.push("--hide-request-headers");
-        }
-        if hide_response_status {
-          args.push("--hide-response-status");
-        }
-        if hide_response_headers {
-            args.push("--hide-response-headers");
-        }
-        if hide_response_body {
-            args.push("--hide-response-body");
-        }
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Call(call_service_command_option) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
-        assert_eq!(call_service_command_option.service, "foo_service");
-        assert_eq!(call_service_command_option.environment, None);
-        assert_eq!(call_service_command_option.path, None);
-        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.method, None);
-        assert_eq!(call_service_command_option.display_options.hide_url, hide_url);
-        assert_eq!(call_service_command_option.display_options.hide_request_headers, hide_request_headers);
-        assert_eq!(call_service_command_option.display_options.hide_response_status, hide_response_status);
-        assert_eq!(call_service_command_option.display_options.hide_response_headers, hide_response_headers);
-        assert_eq!(call_service_command_option.display_options.hide_response_body, hide_response_body);
-    }
-
     #[rstest]
     #[case("configuration")]
     #[case("config")]
@@ -921,6 +786,30 @@ mod command_builder_tests {
         };
         assert_eq!(service_name, "foo_service");
         assert_eq!(endpoint_name, "foo_endpoint");
+    }
+
+    fn given_valid_call_endpoint_command_with_known_endpoint_then_should_parse_and_map() {
+        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "add", "foo_endpoint", "--foo_template", "foo_template", "--foo_value", "foo_value"];
+        let environment = ServiceEnvironmentConfig::new(
+            "foo_environment".to_string(),
+            "foo.host.com".to_string(),
+            true);
+        let endpoint = Endpoint {
+            name: "foo_endpoint".to_string(),
+            path_template: "/my/{foo_template}/path".to_string(),
+            query_parameters: vec!["foo_value".to_string()],
+        };
+        let mut service = ServiceConfig::new("foo_service".to_string());
+        service.endpoints.push(endpoint);
+        service.environments.push(environment);
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+
+        let command = bind_command_from_vec_with_config(config, args);
+
+        let RootCommands::Call(options) = command else {
+            panic!("Command was not RootCommands::Call");
+        };
     }
 }
 
