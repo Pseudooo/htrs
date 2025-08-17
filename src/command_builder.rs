@@ -1,6 +1,9 @@
 use crate::command_args::ServiceCommands::Environment;
 use crate::command_args::{CallOutputOptions, CallServiceOptions, ConfigurationCommands, EndpointCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
+use crate::config::HtrsConfig;
 use clap::{Arg, ArgAction, ArgMatches, Command};
+use lazy_static::lazy_static;
+use regex::Regex;
 
 trait MatchBinding<T> {
     fn bind_field(&self, field_id: &str) -> T;
@@ -205,12 +208,12 @@ impl CallServiceOptions {
     }
 }
 
-pub fn get_root_command() -> Command {
+pub fn get_root_command(config: &HtrsConfig) -> Command {
     let command = Command::new("htrs")
         .version(env!("CARGO_PKG_VERSION"))
         .about("A flexible http cli client")
         .subcommand(get_service_command())
-        .subcommand(get_call_command())
+        .subcommand(get_call_command(config))
         .subcommand(
             Command::new("configuration")
                 .visible_alias("config")
@@ -359,8 +362,8 @@ fn get_header_configuration_command() -> Command {
         )
 }
 
-fn get_call_command() -> Command {
-    Command::new("call")
+fn get_call_command(config: &HtrsConfig) -> Command {
+    let mut command = Command::new("call")
         .about("Call a service")
         .arg(
             Arg::new("service_name")
@@ -371,76 +374,46 @@ fn get_call_command() -> Command {
             Arg::new("environment_name")
                 .value_name("environment name")
                 .long("environment")
-                .short('e')
                 .required(false)
-        )
-        .arg(
-            Arg::new("path")
-                .value_name("path")
-                .long("path")
-                .short('p')
-                .help("Path to call on host")
-                .required(false)
-        )
-        .arg(
-            Arg::new("query")
-                .value_name("query")
-                .action(ArgAction::Append)
-                .long("query")
-                .short('q')
-                .help("Query string key=value pair")
-                .required(false)
-        )
-        .arg(
-            Arg::new("header")
-                .value_name("header")
-                .action(ArgAction::Append)
-                .long("header")
-                .help("Header key=value pair")
-                .required(false)
-        )
-        .arg(
-            Arg::new("method")
-                .value_name("method")
-                .long("method")
-                .help("HTTP Method to use i.e. GET or POST")
-                .required(false)
-        )
-        .arg(
-            Arg::new("hide_url")
-                .num_args(0)
-                .long("hide-url")
-                .help("Hide the requested url")
-                .required(false)
-        )
-        .arg(
-            Arg::new("hide_request_headers")
-                .num_args(0)
-                .long("hide-request-headers")
-                .help("Hide the request headers")
-                .required(false)
-        )
-        .arg(
-            Arg::new("hide_response_status")
-                .num_args(0)
-                .long("hide-response-status")
-                .help("Hide the response status code")
-                .required(false)
-        )
-        .arg(
-            Arg::new("hide_response_headers")
-                .num_args(0)
-                .long("hide-response-headers")
-                .help("Hide the response headers")
-                .required(false)
-        )
-        .arg(
-            Arg::new("hide_response_body")
-                .num_args(0)
-                .long("hide-response-body")
-                .help("Hide the response body")
-                .required(false)
-        )
+                .help("Environment to target")
+        );
+    for service in &config.services {
+        let mut service_command = Command::new(service.name.clone());
+        for endpoint in &service.endpoints {
+            let mut endpoint_command = Command::new(endpoint.name.clone());
+
+            let templated_params = get_endpoint_path_parameters(endpoint.path_template.as_str());
+            for templated_variable in &templated_params {
+                endpoint_command = endpoint_command.arg(
+                    Arg::new(templated_variable)
+                        .long(templated_variable)
+                        .required(true)
+                );
+            }
+
+            for param in &endpoint.query_parameters {
+                endpoint_command = endpoint_command.arg(
+                    Arg::new(param)
+                        .long(param)
+                        .required(true)
+                )
+            }
+            service_command = service_command.subcommand(endpoint_command);
+        }
+        command = command.subcommand(service_command);
+    }
+
+    return command;
+}
+
+fn get_endpoint_path_parameters(path_template: &str) -> Vec<String> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\{([A-Za-z0-1]|_|-)+}").unwrap();
+    }
+    RE.find_iter(path_template)
+        .filter_map(|s| s.as_str().parse().ok())
+        .map(|s: String| s[1..s.len() - 1].to_string())
+        .collect()
 }
 
 fn get_endpoint_command() -> Command {
@@ -502,7 +475,7 @@ mod command_builder_tests {
     use ConfigurationCommands::Header;
 
     fn bind_command_from_vec(args: Vec<&str>) -> RootCommands {
-        let result = get_root_command().try_get_matches_from(args);
+        let result = get_root_command(&HtrsConfig::new()).try_get_matches_from(args);
         let matches = match result {
             Ok(res) => res,
             Err(e) => panic!("Failed to get matches - {e}")

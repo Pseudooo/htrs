@@ -14,10 +14,11 @@ use reqwest::{Method, Url};
 use std::collections::HashMap;
 
 fn main() {
-    let command_matches = get_root_command().get_matches();
+    let mut config = VersionedHtrsConfig::load();
+
+    let command_matches = get_root_command(&config).get_matches();
     let command = RootCommands::bind_from_matches(&command_matches);
 
-    let mut config = VersionedHtrsConfig::load();
     let cmd_result = execute_command(&mut config, command);
     let exec_result = match cmd_result {
         Err(e) => {
