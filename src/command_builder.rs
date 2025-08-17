@@ -4,7 +4,7 @@ use crate::commands::call_commands::CallServiceEndpointCommand;
 use crate::config::HtrsConfig;
 use clap::{Arg, ArgAction, ArgMatches, Command};
 
-trait MatchBinding<T> {
+pub trait MatchBinding<T> {
     fn bind_field(&self, field_id: &str) -> T;
 }
 
@@ -43,7 +43,7 @@ impl MatchBinding<Vec<String>> for ArgMatches {
 }
 
 impl RootCommands {
-    pub fn bind_from_matches(args: &ArgMatches) -> RootCommands {
+    pub fn bind_from_matches(config: &HtrsConfig, args: &ArgMatches) -> RootCommands {
         match args.subcommand() {
             Some(("service", service_matches)) => {
                 RootCommands::Service(
@@ -52,7 +52,7 @@ impl RootCommands {
             },
             Some(("call", call_matches)) => {
                 RootCommands::Call(
-                    CallServiceOptions::bind_from_matches(call_matches)
+                    CallServiceEndpointCommand::bind_from_matches(config, call_matches)
                 )
             },
             Some(("configuration" | "config", config_matches)) => {
@@ -430,7 +430,7 @@ mod command_builder_tests {
             Ok(res) => res,
             Err(e) => panic!("Failed to get matches - {e}")
         };
-        RootCommands::bind_from_matches(&matches)
+        RootCommands::bind_from_matches(&config, &matches)
     }
 
     #[test]

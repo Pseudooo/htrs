@@ -1,8 +1,9 @@
 use crate::command_args::CallServiceOptions;
+use crate::command_builder::MatchBinding;
 use crate::config::{Endpoint, HtrsConfig, ServiceEnvironmentConfig};
 use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsAction, HtrsError};
-use clap::{Arg, Command};
+use clap::{Arg, ArgMatches, Command};
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::{Method, Url};
@@ -10,9 +11,10 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 pub struct CallServiceEndpointCommand {
-    pub service: String,
-    pub environment: Option<String>,
-    pub endpoint: Endpoint,
+    pub service_name: String,
+    pub environment_name: Option<String>,
+    pub path: Url,
+    pub query_parameters: HashMap<String, String>,
 }
 
 impl CallServiceEndpointCommand {
@@ -23,7 +25,7 @@ impl CallServiceEndpointCommand {
                 Arg::new("environment_name")
                     .value_name("environment name")
                     .required(false)
-                    .help("Environment to target")
+                    .help("Environment to target, will use default environment if none specified")
             );
 
         for service in &config.services {
@@ -54,6 +56,34 @@ impl CallServiceEndpointCommand {
 
         return command;
     }
+
+    pub fn bind_from_matches(config: &HtrsConfig, args: &ArgMatches) -> CallServiceEndpointCommand {
+        let environment_name: Option<String> = args.bind_field("environment_name");
+
+        let Some((service_name, service_matches)) = args.subcommand() else {
+            panic!("Bad service subcommand for CallServiceEndpointCommand");
+        };
+        let Some(service) = config.find_service_config(service_name) else {
+            panic!("Bad service name");
+        };
+
+        let Some((endpoint_name, endpoint_matches)) = service_matches.subcommand() else {
+            panic!("Bad endpoint subcommand for CallServiceEndpointCommand");
+        };
+        let Some(endpoint) = service.find_endpoint(endpoint_name) else {
+            panic!("Bad endpoint name");
+        };
+
+        let path = build_path_from_template(&endpoint.path_template, endpoint_matches);
+        let query_parameters = get_query_parameters_from_args(endpoint, endpoint_matches);
+
+        CallServiceEndpointCommand {
+            service_name: service_name.to_string(),
+            environment_name,
+            path,
+            query_parameters,
+        }
+    }
 }
 
 fn get_path_template_params(path_template: &str) -> Vec<String> {
@@ -64,6 +94,26 @@ fn get_path_template_params(path_template: &str) -> Vec<String> {
         .filter_map(|s| s.as_str().parse().ok())
         .map(|s: String| s[1..s.len() - 1].to_string())
         .collect()
+}
+
+fn build_path_from_template(path_template: &str, args: &ArgMatches) -> Url {
+    let mut path: String = path_template.to_string();
+    let template_value_names = get_path_template_params(path_template);
+    for template_value_name in template_value_names {
+        let template_value: String = args.bind_field(&template_value_name);
+        path = path.replace(&format!("{{{}}}", template_value_name.as_str()), &template_value)
+    }
+
+    return Url::from_str(&path).unwrap();
+}
+
+fn get_query_parameters_from_args(endpoint: &Endpoint, args: &ArgMatches) -> HashMap<String, String> {
+    let mut query_parameters = HashMap::new();
+    for parameter_name in &endpoint.query_parameters {
+        let parameter_value: String = args.bind_field(&parameter_name);
+        query_parameters.insert(parameter_name.to_string(), parameter_value);
+    }
+    return query_parameters;
 }
 
 pub fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<HtrsAction, HtrsError> {
