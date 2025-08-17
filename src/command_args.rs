@@ -1,6 +1,8 @@
+use crate::commands::call_commands::CallServiceEndpointCommand;
+
 pub enum RootCommands {
     Service(ServiceCommands),
-    Call(CallServiceOptions),
+    Call(CallServiceEndpointCommand),
     Config(ConfigurationCommands),
 }
 

@@ -17,7 +17,7 @@ fn main() {
     let mut config = VersionedHtrsConfig::load();
 
     let command_matches = get_root_command(&config).get_matches();
-    let command = RootCommands::bind_from_matches(&command_matches);
+    let command = RootCommands::bind_from_matches(&config, &command_matches);
 
     let cmd_result = execute_command(&mut config, command);
     let exec_result = match cmd_result {
