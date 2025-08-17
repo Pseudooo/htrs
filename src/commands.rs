@@ -1,5 +1,5 @@
 mod service_commands;
-mod call_commands;
+pub(crate) mod call_commands;
 
 use crate::command_args::ConfigurationCommands::Header;
 use crate::command_args::HeaderCommands::{Clear, Set};
@@ -10,6 +10,10 @@ use crate::commands::service_commands::execute_service_command;
 use crate::config::HtrsConfig;
 use crate::outcomes::HtrsAction::UpdateConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
+
+impl RootCommands {
+
+}
 
 pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<HtrsAction, HtrsError> {
     match cmd {

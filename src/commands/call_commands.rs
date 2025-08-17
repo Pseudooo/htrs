@@ -1,10 +1,70 @@
 use crate::command_args::CallServiceOptions;
-use crate::config::{HtrsConfig, ServiceEnvironmentConfig};
+use crate::config::{Endpoint, HtrsConfig, ServiceEnvironmentConfig};
 use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsAction, HtrsError};
+use clap::{Arg, Command};
+use lazy_static::lazy_static;
+use regex::Regex;
 use reqwest::{Method, Url};
 use std::collections::HashMap;
 use std::str::FromStr;
+
+pub struct CallServiceEndpointCommand {
+    pub service: String,
+    pub environment: Option<String>,
+    pub endpoint: Endpoint,
+}
+
+impl CallServiceEndpointCommand {
+    pub fn get_command(config: &HtrsConfig) -> Command {
+        let mut command = Command::new("call")
+            .about("Call a service endpoint")
+            .arg(
+                Arg::new("environment_name")
+                    .value_name("environment name")
+                    .required(false)
+                    .help("Environment to target")
+            );
+
+        for service in &config.services {
+            let mut service_command = Command::new(service.name.clone());
+            for endpoint in &service.endpoints {
+                let mut endpoint_command = Command::new(endpoint.name.clone());
+
+                let templated_params = get_path_template_params(&endpoint.path_template);
+                for templated_param in templated_params {
+                    endpoint_command = endpoint_command.arg(
+                        Arg::new(&templated_param)
+                            .long(&templated_param)
+                            .required(true)
+                    );
+                }
+
+                for param in &endpoint.query_parameters {
+                    endpoint_command = endpoint_command.arg(
+                        Arg::new(param)
+                            .long(param)
+                            .required(true)
+                    )
+                }
+                service_command = service_command.subcommand(endpoint_command);
+            }
+            command = command.subcommand(service_command);
+        }
+
+        return command;
+    }
+}
+
+fn get_path_template_params(path_template: &str) -> Vec<String> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"\{([A-Za-z0-1]|_|-)+}").unwrap();
+    }
+    RE.find_iter(path_template)
+        .filter_map(|s| s.as_str().parse().ok())
+        .map(|s: String| s[1..s.len() - 1].to_string())
+        .collect()
+}
 
 pub fn execute_call_command(config: &HtrsConfig, cmd: CallServiceOptions) -> Result<HtrsAction, HtrsError> {
     let service = match config.find_service_config(&cmd.service) {

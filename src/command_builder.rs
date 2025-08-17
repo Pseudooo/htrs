@@ -1,9 +1,8 @@
 use crate::command_args::ServiceCommands::Environment;
 use crate::command_args::{CallOutputOptions, CallServiceOptions, ConfigurationCommands, EndpointCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
+use crate::commands::call_commands::CallServiceEndpointCommand;
 use crate::config::HtrsConfig;
 use clap::{Arg, ArgAction, ArgMatches, Command};
-use lazy_static::lazy_static;
-use regex::Regex;
 
 trait MatchBinding<T> {
     fn bind_field(&self, field_id: &str) -> T;
@@ -213,7 +212,7 @@ pub fn get_root_command(config: &HtrsConfig) -> Command {
         .version(env!("CARGO_PKG_VERSION"))
         .about("A flexible http cli client")
         .subcommand(get_service_command())
-        .subcommand(get_call_command(config))
+        .subcommand(CallServiceEndpointCommand::get_command(&config))
         .subcommand(
             Command::new("configuration")
                 .visible_alias("config")
@@ -360,55 +359,6 @@ fn get_header_configuration_command() -> Command {
                         .required(true)
                 )
         )
-}
-
-fn get_call_command(config: &HtrsConfig) -> Command {
-    let mut command = Command::new("call")
-        .about("Call a service")
-        .arg(
-            Arg::new("environment_name")
-                .value_name("environment name")
-                .long("environment")
-                .required(false)
-                .help("Environment to target")
-        );
-    for service in &config.services {
-        let mut service_command = Command::new(service.name.clone());
-        for endpoint in &service.endpoints {
-            let mut endpoint_command = Command::new(endpoint.name.clone());
-
-            let templated_params = get_endpoint_path_parameters(endpoint.path_template.as_str());
-            for templated_variable in &templated_params {
-                endpoint_command = endpoint_command.arg(
-                    Arg::new(templated_variable)
-                        .long(templated_variable)
-                        .required(true)
-                );
-            }
-
-            for param in &endpoint.query_parameters {
-                endpoint_command = endpoint_command.arg(
-                    Arg::new(param)
-                        .long(param)
-                        .required(true)
-                )
-            }
-            service_command = service_command.subcommand(endpoint_command);
-        }
-        command = command.subcommand(service_command);
-    }
-
-    return command;
-}
-
-fn get_endpoint_path_parameters(path_template: &str) -> Vec<String> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\{([A-Za-z0-1]|_|-)+}").unwrap();
-    }
-    RE.find_iter(path_template)
-        .filter_map(|s| s.as_str().parse().ok())
-        .map(|s: String| s[1..s.len() - 1].to_string())
-        .collect()
 }
 
 fn get_endpoint_command() -> Command {
