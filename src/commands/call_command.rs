@@ -24,10 +24,12 @@ impl CallServiceEndpointCommand {
                     .value_name("environment name")
                     .required(false)
                     .help("Environment to target, will use default environment if none specified")
-            );
+            )
+            .arg_required_else_help(true);
 
         for service in &config.services {
-            let mut service_command = Command::new(service.name.clone());
+            let mut service_command = Command::new(service.name.clone())
+                .arg_required_else_help(true);
             for endpoint in &service.endpoints {
                 let mut endpoint_command = Command::new(endpoint.name.clone());
 
