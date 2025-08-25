@@ -396,7 +396,6 @@ fn get_endpoint_command() -> Command {
 mod command_builder_tests {
     use super::*;
     use crate::command_args::EndpointCommands;
-    use crate::config::{Endpoint, ServiceConfig, ServiceEnvironmentConfig};
     use rstest::rstest;
     use ConfigurationCommands::Header;
 
@@ -716,30 +715,6 @@ mod command_builder_tests {
         };
         assert_eq!(service_name, "foo_service");
         assert_eq!(endpoint_name, "foo_endpoint");
-    }
-
-    fn given_valid_call_endpoint_command_with_known_endpoint_then_should_parse_and_map() {
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "add", "foo_endpoint", "--foo_template", "foo_template", "--foo_value", "foo_value"];
-        let environment = ServiceEnvironmentConfig::new(
-            "foo_environment".to_string(),
-            "foo.host.com".to_string(),
-            true);
-        let endpoint = Endpoint {
-            name: "foo_endpoint".to_string(),
-            path_template: "/my/{foo_template}/path".to_string(),
-            query_parameters: vec!["foo_value".to_string()],
-        };
-        let mut service = ServiceConfig::new("foo_service".to_string());
-        service.endpoints.push(endpoint);
-        service.environments.push(environment);
-        let mut config = HtrsConfig::new();
-        config.services.push(service);
-
-        let command = bind_command_from_vec_with_config(config, args);
-
-        let RootCommands::Call(options) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
     }
 }
 
