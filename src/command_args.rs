@@ -1,6 +1,8 @@
+use crate::commands::call_command::CallServiceEndpointCommand;
+
 pub enum RootCommands {
     Service(ServiceCommands),
-    Call(CallServiceOptions),
+    Call(CallServiceEndpointCommand),
     Config(ConfigurationCommands),
 }
 
@@ -17,6 +19,10 @@ pub enum ServiceCommands {
         config_command: ConfigurationCommands,
     },
     Environment(EnvironmentCommands),
+    Endpoint {
+        service_name: String,
+        command: EndpointCommands
+    }
 }
 
 pub enum EnvironmentCommands {
@@ -35,6 +41,18 @@ pub enum EnvironmentCommands {
     }
 }
 
+pub enum EndpointCommands {
+    Add {
+        name: String,
+        path_template: String,
+        query_parameters: Vec<String>,
+    },
+    List,
+    Remove {
+        name: String,
+    }
+}
+
 pub enum ConfigurationCommands {
     Header(HeaderCommands),
 }
@@ -47,22 +65,4 @@ pub enum HeaderCommands {
     Clear {
         header: String,
     },
-}
-
-pub struct CallServiceOptions {
-    pub service: String,
-    pub environment: Option<String>,
-    pub path: Option<String>,
-    pub query: Vec<String>,
-    pub header: Vec<String>,
-    pub method: Option<String>,
-    pub display_options: CallOutputOptions,
-}
-
-pub struct CallOutputOptions {
-    pub hide_url: bool,
-    pub hide_request_headers: bool,
-    pub hide_response_status: bool,
-    pub hide_response_headers: bool,
-    pub hide_response_body: bool,
 }

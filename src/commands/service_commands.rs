@@ -1,8 +1,8 @@
 use crate::command_args::ConfigurationCommands::Header;
 use crate::command_args::HeaderCommands::{Clear, Set};
 use crate::command_args::ServiceCommands::{Add, Environment, Remove};
-use crate::command_args::{EnvironmentCommands, ServiceCommands};
-use crate::config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
+use crate::command_args::{EndpointCommands, EnvironmentCommands, ServiceCommands};
+use crate::config::{Endpoint, HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
 use crate::outcomes::HtrsAction::{PrintDialogue, UpdateConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 
@@ -65,6 +65,10 @@ pub fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -
         Environment(env_command) => {
             execute_environment_command(config, env_command)
         }
+
+        ServiceCommands::Endpoint { service_name, command} => {
+            execute_endpoint_command(config, service_name, command)
+        }
     }
 }
 
@@ -124,6 +128,45 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
 
             service.remove_environment(environment_name);
             Ok(UpdateConfig)
+        }
+    }
+}
+
+fn execute_endpoint_command(config: &mut HtrsConfig, service_name: &String, cmd: &EndpointCommands) -> Result<HtrsAction, HtrsError> {
+    let Some(service) = config.find_service_config_mut(&service_name) else {
+        return Err(HtrsError::new(&format!("Service `{}` not found", service_name)));
+    };
+    match cmd {
+        EndpointCommands::Add { name, path_template, query_parameters } => {
+            if service.endpoint_exists(&name) {
+                return Err(HtrsError::new(&format!("Endpoint `{}` already exists", name)));
+            }
+
+            service.endpoints.push(Endpoint {
+                name: name.to_string(),
+                path_template: path_template.to_string(),
+                query_parameters: query_parameters.clone(),
+            });
+            Ok(UpdateConfig)
+        },
+        EndpointCommands::List => {
+            if service.endpoints.len() == 0 {
+                return Ok(PrintDialogue(format!("No endpoints defined for `{}`", service_name)));
+            }
+
+            let dialogue = service.endpoints
+                .iter()
+                .map(|service| format!(" - {}", service.name))
+                .collect::<Vec<String>>()
+                .join("\n");
+            Ok(PrintDialogue(dialogue))
+        },
+        EndpointCommands::Remove { name } => {
+            let success = service.remove_endpoint(&name);
+            match success {
+                true => Ok(UpdateConfig),
+                false => Err(HtrsError::new(&format!("Endpoint `{}` not found", name))),
+            }
         }
     }
 }
@@ -480,5 +523,60 @@ mod service_command_tests {
         assert!(updated_service.is_some());
         let updated_service = updated_service.unwrap();
         assert_eq!(updated_service.environments.len(), 0);
+    }
+
+    #[test]
+    fn given_known_service_when_add_endpoint_then_update_with_result() {
+        let service = ServiceConfig::new("foo_service".to_string());
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = ServiceCommands::Endpoint {
+            service_name: "foo_service".to_string(),
+            command: EndpointCommands::Add {
+                name: "foo_endpoint".to_string(),
+                path_template: "/my/path".to_string(),
+                query_parameters: vec!["foo_param".to_string()],
+            },
+        };
+
+        let result = execute_service_command(&mut config, &command);
+
+        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result.unwrap(), UpdateConfig));
+        let updated_service = config.services.iter()
+            .find(|s| s.name == "foo_service")
+            .unwrap();
+        let new_endpoint = updated_service.endpoints.iter()
+            .find(|e| e.name == "foo_endpoint")
+            .unwrap();
+        assert_eq!(new_endpoint.path_template, "/my/path");
+        assert_eq!(new_endpoint.query_parameters, vec!["foo_param"]);
+    }
+
+    #[test]
+    fn given_known_service_with_known_endpoint_when_remove_then_update_with_result() {
+        let mut service = ServiceConfig::new("foo_service".to_string());
+        service.endpoints.push(Endpoint {
+            name: "foo_endpoint".to_string(),
+            path_template: "/my/path".to_string(),
+            query_parameters: vec![],
+        });
+        let mut config = HtrsConfig::new();
+        config.services.push(service);
+        let command = ServiceCommands::Endpoint {
+            service_name: "foo_service".to_string(),
+            command: EndpointCommands::Remove {
+                name: "foo_endpoint".to_string(),
+            },
+        };
+
+        let result = execute_service_command(&mut config, &command);
+
+        assert!(matches!(result, Ok(_)));
+        assert!(matches!(result.unwrap(), UpdateConfig));
+        let updated_service = config.services.iter()
+            .find(|s| s.name == "foo_service")
+            .unwrap();
+        assert_eq!(updated_service.endpoints.len(), 0);
     }
 }

@@ -1,8 +1,10 @@
 use crate::command_args::ServiceCommands::Environment;
-use crate::command_args::{CallOutputOptions, CallServiceOptions, ConfigurationCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
+use crate::command_args::{ConfigurationCommands, EndpointCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
+use crate::commands::call_command::CallServiceEndpointCommand;
+use crate::config::HtrsConfig;
 use clap::{Arg, ArgAction, ArgMatches, Command};
 
-trait MatchBinding<T> {
+pub trait MatchBinding<T> {
     fn bind_field(&self, field_id: &str) -> T;
 }
 
@@ -41,7 +43,7 @@ impl MatchBinding<Vec<String>> for ArgMatches {
 }
 
 impl RootCommands {
-    pub fn bind_from_matches(args: &ArgMatches) -> RootCommands {
+    pub fn bind_from_matches(config: &HtrsConfig, args: &ArgMatches) -> RootCommands {
         match args.subcommand() {
             Some(("service", service_matches)) => {
                 RootCommands::Service(
@@ -50,7 +52,7 @@ impl RootCommands {
             },
             Some(("call", call_matches)) => {
                 RootCommands::Call(
-                    CallServiceOptions::bind_from_matches(call_matches)
+                    CallServiceEndpointCommand::bind_from_matches(config, call_matches)
                 )
             },
             Some(("configuration" | "config", config_matches)) => {
@@ -92,6 +94,12 @@ impl ServiceCommands {
                     config_command: ConfigurationCommands::bind_from_matches(config_matches),
                 }
             },
+            Some(("endpoint", endpoint_matches)) => {
+                ServiceCommands::Endpoint {
+                    service_name: endpoint_matches.bind_field("service_name"),
+                    command: EndpointCommands::bind_from_matches(endpoint_matches),
+                }
+            }
             _ => panic!("Bad subcommand for ServiceCommands"),
         }
     }
@@ -120,6 +128,29 @@ impl EnvironmentCommands {
                 }
             },
             _ => panic!("Bad subcommand for EnvironmentCommands"),
+        }
+    }
+}
+
+impl EndpointCommands {
+    fn bind_from_matches(args: &ArgMatches) -> EndpointCommands {
+        match args.subcommand() {
+            Some(("add", add_endpoint_matches)) => {
+                EndpointCommands::Add {
+                    name: add_endpoint_matches.bind_field("endpoint_name"),
+                    path_template: add_endpoint_matches.bind_field("path_template"),
+                    query_parameters: add_endpoint_matches.bind_field("query_parameters"),
+                }
+            },
+            Some(("list", _)) => {
+                EndpointCommands::List
+            },
+            Some(("remove" | "rm", remove_endpoint_matches)) => {
+                EndpointCommands::Remove {
+                    name: remove_endpoint_matches.bind_field("endpoint_name"),
+                }
+            }
+            _ => panic!("Bad subcommand for EndpointCommands"),
         }
     }
 }
@@ -156,32 +187,12 @@ impl HeaderCommands {
     }
 }
 
-impl CallServiceOptions {
-    fn bind_from_matches(args: &ArgMatches) -> CallServiceOptions {
-        CallServiceOptions {
-            service: args.bind_field("service_name"),
-            environment: args.bind_field("environment_name"),
-            path: args.bind_field("path"),
-            query: args.bind_field("query"),
-            header: args.bind_field("header"),
-            method: args.bind_field("method"),
-            display_options: CallOutputOptions {
-                hide_url: args.bind_field("hide_url"),
-                hide_request_headers: args.bind_field("hide_request_headers"),
-                hide_response_body: args.bind_field("hide_response_body"),
-                hide_response_headers: args.bind_field("hide_response_headers"),
-                hide_response_status: args.bind_field("hide_response_status"),
-            }
-        }
-    }
-}
-
-pub fn get_root_command() -> Command {
+pub fn get_root_command(config: &HtrsConfig) -> Command {
     let command = Command::new("htrs")
         .version(env!("CARGO_PKG_VERSION"))
         .about("A flexible http cli client")
         .subcommand(get_service_command())
-        .subcommand(get_call_command())
+        .subcommand(CallServiceEndpointCommand::get_command(&config))
         .subcommand(
             Command::new("configuration")
                 .visible_alias("config")
@@ -232,7 +243,8 @@ fn get_service_command() -> Command {
                         .required(true)
                 )
                 .subcommand(get_header_configuration_command())
-        );
+        )
+        .subcommand(get_endpoint_command());
 
     command
 }
@@ -329,103 +341,75 @@ fn get_header_configuration_command() -> Command {
         )
 }
 
-fn get_call_command() -> Command {
-    Command::new("call")
-        .about("Call a service")
+fn get_endpoint_command() -> Command {
+    Command::new("endpoint")
+        .about("Configure service endpoints")
+        .arg_required_else_help(true)
         .arg(
             Arg::new("service_name")
                 .value_name("service name")
                 .required(true)
+                .help("Service name to configure endpoints for")
         )
-        .arg(
-            Arg::new("environment_name")
-                .value_name("environment name")
-                .long("environment")
-                .short('e')
-                .required(false)
+        .subcommand(
+            Command::new("add")
+                .about("Add a new service endpoint")
+                .arg(
+                    Arg::new("endpoint_name")
+                        .value_name("endpoint name")
+                        .required(true)
+                        .help("The unique endpoint name")
+                )
+                .arg(
+                    Arg::new("path_template")
+                        .value_name("path template")
+                        .required(true)
+                        .help("The templated path of endpoint")
+                )
+                .arg(
+                    Arg::new("query_parameters")
+                        .long("query-param")
+                        .short('q')
+                        .required(false)
+                        .action(ArgAction::Append)
+                        .help("Query parameter for endpoint")
+                )
         )
-        .arg(
-            Arg::new("path")
-                .value_name("path")
-                .long("path")
-                .short('p')
-                .help("Path to call on host")
-                .required(false)
+        .subcommand(
+            Command::new("list")
+                .about("List all endpoints for a service")
         )
-        .arg(
-            Arg::new("query")
-                .value_name("query")
-                .action(ArgAction::Append)
-                .long("query")
-                .short('q')
-                .help("Query string key=value pair")
-                .required(false)
-        )
-        .arg(
-            Arg::new("header")
-                .value_name("header")
-                .action(ArgAction::Append)
-                .long("header")
-                .help("Header key=value pair")
-                .required(false)
-        )
-        .arg(
-            Arg::new("method")
-                .value_name("method")
-                .long("method")
-                .help("HTTP Method to use i.e. GET or POST")
-                .required(false)
-        )
-        .arg(
-            Arg::new("hide_url")
-                .num_args(0)
-                .long("hide-url")
-                .help("Hide the requested url")
-                .required(false)
-        )
-        .arg(
-            Arg::new("hide_request_headers")
-                .num_args(0)
-                .long("hide-request-headers")
-                .help("Hide the request headers")
-                .required(false)
-        )
-        .arg(
-            Arg::new("hide_response_status")
-                .num_args(0)
-                .long("hide-response-status")
-                .help("Hide the response status code")
-                .required(false)
-        )
-        .arg(
-            Arg::new("hide_response_headers")
-                .num_args(0)
-                .long("hide-response-headers")
-                .help("Hide the response headers")
-                .required(false)
-        )
-        .arg(
-            Arg::new("hide_response_body")
-                .num_args(0)
-                .long("hide-response-body")
-                .help("Hide the response body")
-                .required(false)
+        .subcommand(
+            Command::new("remove")
+                .visible_alias("rm")
+                .about("Remove an endpoint from a service")
+                .arg(
+                    Arg::new("endpoint_name")
+                        .value_name("endpoint name")
+                        .required(true)
+                        .help("The endpoint name to remove")
+                )
         )
 }
 
 #[cfg(test)]
 mod command_builder_tests {
     use super::*;
+    use crate::command_args::EndpointCommands;
     use rstest::rstest;
     use ConfigurationCommands::Header;
 
     fn bind_command_from_vec(args: Vec<&str>) -> RootCommands {
-        let result = get_root_command().try_get_matches_from(args);
+        bind_command_from_vec_with_config(HtrsConfig::new(), args)
+    }
+
+    fn bind_command_from_vec_with_config(config: HtrsConfig, args: Vec<&str>) -> RootCommands {
+        let result = get_root_command(&config).try_get_matches_from(args);
         let matches = match result {
             Ok(res) => res,
             Err(e) => panic!("Failed to get matches - {e}")
         };
-        RootCommands::bind_from_matches(&matches)
+        RootCommands::bind_from_matches(&config, &matches)
     }
 
     #[test]
@@ -623,141 +607,6 @@ mod command_builder_tests {
         assert_eq!(header, "foo_header_name");
     }
 
-    #[test]
-    fn given_valid_call_service_command_when_no_environment_then_should_parse_and_map() {
-        let args = vec!["htrs", "call", "foo_service"];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Call(call_service_command_option) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
-        assert_eq!(call_service_command_option.service, "foo_service");
-        assert_eq!(call_service_command_option.environment, None);
-        assert_eq!(call_service_command_option.path, None);
-        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.method, None);
-        assert_eq!(call_service_command_option.display_options.hide_url, false);
-        assert_eq!(call_service_command_option.display_options.hide_request_headers, false);
-        assert_eq!(call_service_command_option.display_options.hide_response_status, false);
-        assert_eq!(call_service_command_option.display_options.hide_response_headers, false);
-        assert_eq!(call_service_command_option.display_options.hide_response_body, false);
-    }
-
-    #[test]
-    fn given_valid_call_service_command_when_environment_specified_then_should_parse_and_map() {
-        let args = vec!["htrs", "call", "foo_service", "--environment", "foo_environment"];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Call(call_service_command_option) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
-        assert_eq!(call_service_command_option.service, "foo_service");
-        assert_eq!(call_service_command_option.environment, Some("foo_environment".to_string()));
-        assert_eq!(call_service_command_option.path, None);
-        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.method, None);
-    }
-
-    #[rstest]
-    #[case(vec!["foo=bar"])]
-    #[case(vec!["foo=bar", "kek=lol"])]
-    fn given_valid_call_service_command_when_headers_passed_then_should_parse_and_map(
-        #[case] header_values: Vec<&str>
-    ) {
-        let mut args = vec!["htrs", "call", "foo_service"];
-        for header_value in &header_values {
-            args.extend(vec!["--header", header_value]);
-        }
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Call(call_service_command_option) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
-        assert_eq!(call_service_command_option.service, "foo_service");
-        assert_eq!(call_service_command_option.environment, None);
-        assert_eq!(call_service_command_option.path, None);
-        assert_eq!(call_service_command_option.header, header_values);
-        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.method, None);
-    }
-
-    #[rstest]
-    #[case(vec!["foo=bar"])]
-    #[case(vec!["foo=bar", "kek=lol"])]
-    fn given_valid_call_service_command_when_query_params_passed_then_should_parse_and_map(
-        #[case] query_values: Vec<&str>
-    ) {
-        let mut args = vec!["htrs", "call", "foo_service"];
-        for header_value in &query_values {
-            args.extend(vec!["--query", header_value]);
-        }
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Call(call_service_command_option) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
-        assert_eq!(call_service_command_option.service, "foo_service");
-        assert_eq!(call_service_command_option.environment, None);
-        assert_eq!(call_service_command_option.path, None);
-        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.query, query_values);
-        assert_eq!(call_service_command_option.method, None);
-    }
-
-    #[rstest]
-    #[case(true, false, false, false, false)]
-    #[case(false, true, false, false, false)]
-    #[case(false, false, true, false, false)]
-    #[case(false, false, false, true, false)]
-    #[case(false, false, false, false, true)]
-    fn given_valid_call_service_command_when_display_options_set_then_should_parse_and_map(
-        #[case] hide_url: bool,
-        #[case] hide_request_headers: bool,
-        #[case] hide_response_status: bool,
-        #[case] hide_response_headers: bool,
-        #[case] hide_response_body: bool,
-    ) {
-        let mut args = vec!["htrs", "call", "foo_service"];
-        if hide_url {
-            args.push("--hide-url");
-        }
-        if hide_request_headers {
-            args.push("--hide-request-headers");
-        }
-        if hide_response_status {
-          args.push("--hide-response-status");
-        }
-        if hide_response_headers {
-            args.push("--hide-response-headers");
-        }
-        if hide_response_body {
-            args.push("--hide-response-body");
-        }
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Call(call_service_command_option) = command else {
-            panic!("Command was not RootCommands::Call");
-        };
-        assert_eq!(call_service_command_option.service, "foo_service");
-        assert_eq!(call_service_command_option.environment, None);
-        assert_eq!(call_service_command_option.path, None);
-        assert_eq!(call_service_command_option.header, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.query, vec![] as Vec<String>);
-        assert_eq!(call_service_command_option.method, None);
-        assert_eq!(call_service_command_option.display_options.hide_url, hide_url);
-        assert_eq!(call_service_command_option.display_options.hide_request_headers, hide_request_headers);
-        assert_eq!(call_service_command_option.display_options.hide_response_status, hide_response_status);
-        assert_eq!(call_service_command_option.display_options.hide_response_headers, hide_response_headers);
-        assert_eq!(call_service_command_option.display_options.hide_response_body, hide_response_body);
-    }
-
     #[rstest]
     #[case("configuration")]
     #[case("config")]
@@ -802,6 +651,70 @@ mod command_builder_tests {
             panic!("Command was not HeaderCommands::Set");
         };
         assert_eq!(header, "foo_header_name");
+    }
+
+    #[test]
+    fn given_valid_service_endpoint_command_when_add_endpoint_then_should_parse_and_map() {
+        let args = vec!["htrs", "service", "endpoint", "foo_service", "add", "foo_endpoint", "/foo/my/path", "-q", "query_param1", "--query-param", "query_param2"];
+
+        let command = bind_command_from_vec(args);
+
+        let RootCommands::Service(service_command) = command else {
+            panic!("Command was not RootCommands::Service");
+        };
+        let ServiceCommands::Endpoint { service_name, command: endpoint_command} = service_command else {
+            panic!("Command was not ServiceCommands::Endpoint");
+        };
+        let EndpointCommands::Add {
+            name: endpoint_name,
+            path_template,
+            query_parameters
+        } = endpoint_command else {
+            panic!("Command was not EndpointCommands::Add");
+        };
+        assert_eq!(service_name, "foo_service");
+        assert_eq!(endpoint_name, "foo_endpoint");
+        assert_eq!(path_template, "/foo/my/path");
+        assert_eq!(query_parameters, vec!["query_param1", "query_param2"]);
+    }
+
+    #[test]
+    fn given_valid_service_endpoint_command_when_list_endpoints_then_should_parse_and_map() {
+        let args = vec!["htrs", "service", "endpoint", "foo_service", "list"];
+
+        let command = bind_command_from_vec(args);
+
+        let RootCommands::Service(service_command) = command else {
+            panic!("Command was not RootCommands::Service");
+        };
+        let ServiceCommands::Endpoint { service_name, command: endpoint_command} = service_command else {
+            panic!("Command was not ServiceCommands::Endpoint");
+        };
+        assert!(matches!(endpoint_command, EndpointCommands::List));
+        assert_eq!(service_name, "foo_service");
+    }
+
+    #[rstest]
+    #[case("remove")]
+    #[case("rm")]
+    fn given_valid_service_endpoint_command_when_remove_endpoint_then_should_parse_and_map(
+        #[case] remove_alias: &str
+    ) {
+        let args = vec!["htrs", "service", "endpoint", "foo_service", remove_alias, "foo_endpoint"];
+
+        let command = bind_command_from_vec(args);
+
+        let RootCommands::Service(service_command) = command else {
+            panic!("Command was not RootCommands::Service");
+        };
+        let ServiceCommands::Endpoint { service_name, command: endpoint_command} = service_command else {
+            panic!("Command was not ServiceCommands::Endpoint");
+        };
+        let EndpointCommands::Remove { name: endpoint_name } = endpoint_command else {
+            panic!("Command was not EndpointCommands::Remove");
+        };
+        assert_eq!(service_name, "foo_service");
+        assert_eq!(endpoint_name, "foo_endpoint");
     }
 }
 

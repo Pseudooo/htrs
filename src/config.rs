@@ -61,7 +61,8 @@ pub struct HtrsConfig {
 pub struct ServiceConfig {
     pub name: String,
     pub environments: Vec<ServiceEnvironmentConfig>,
-    pub headers: HashMap<String, String>
+    pub headers: HashMap<String, String>,
+    pub endpoints: Vec<Endpoint>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -69,6 +70,13 @@ pub struct ServiceEnvironmentConfig {
     pub name: String,
     pub host: String,
     pub default: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Endpoint {
+    pub name: String,
+    pub path_template: String,
+    pub query_parameters: Vec<String>,
 }
 
 impl HtrsConfig {
@@ -106,7 +114,12 @@ impl HtrsConfig {
 
 impl ServiceConfig {
     pub fn new(name: String) -> ServiceConfig {
-        ServiceConfig { name, environments: vec![], headers: HashMap::new() }
+        ServiceConfig {
+            name,
+            environments: vec![],
+            headers: HashMap::new(),
+            endpoints: vec![]
+        }
     }
 
     pub fn environment_exists(&self, name: &str) -> bool {
@@ -144,11 +157,35 @@ impl ServiceConfig {
         }
         None
     }
+
+    pub fn endpoint_exists(&self, name: &str) -> bool {
+        for endpoint in &self.endpoints {
+            if endpoint.name == name {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn find_endpoint(&self, name: &str) -> Option<&Endpoint> {
+        for endpoint in &self.endpoints {
+            if endpoint.name == name {
+                return Some(endpoint);
+            }
+        }
+        None
+    }
     
     pub fn remove_environment(&mut self, name: &str) -> bool {
         let init_len = self.environments.len();
         self.environments.retain(|x| x.name != name);
         return init_len != self.environments.len();
+    }
+
+    pub fn remove_endpoint(&mut self, name: &str) -> bool {
+        let init_len = self.endpoints.len();
+        self.endpoints.retain(|x| x.name != name);
+        return init_len != self.endpoints.len();
     }
 }
 

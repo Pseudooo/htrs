@@ -4,20 +4,21 @@ mod commands;
 mod outcomes;
 mod command_builder;
 
-use crate::command_args::{CallOutputOptions, RootCommands};
+use crate::command_args::RootCommands;
 use crate::command_builder::get_root_command;
 use crate::commands::execute_command;
 use crate::config::{HtrsConfig, VersionedHtrsConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
-use reqwest::blocking::{Client, Response};
-use reqwest::{Method, Url};
+use reqwest::blocking::Client;
+use reqwest::Url;
 use std::collections::HashMap;
 
 fn main() {
-    let command_matches = get_root_command().get_matches();
-    let command = RootCommands::bind_from_matches(&command_matches);
-
     let mut config = VersionedHtrsConfig::load();
+
+    let command_matches = get_root_command(&config).get_matches();
+    let command = RootCommands::bind_from_matches(&config, &command_matches);
+
     let cmd_result = execute_command(&mut config, command);
     let exec_result = match cmd_result {
         Err(e) => {
@@ -43,13 +44,12 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
             Ok(())
         },
         HtrsAction::MakeRequest {
-            url, headers, method, display_options
+            url: base_url, query_parameters, method
         } => {
             let client = Client::new();
-            let mut request_builder = client.request(method.clone(), url.clone());
-            for (key, value) in headers.iter() {
-                request_builder = request_builder.header(key, value);
-            }
+
+            let url = apply_query_params_to_url(base_url, query_parameters)?;
+            let request_builder = client.request(method.clone(), url.clone());
 
             let request = match request_builder.build() {
                 Ok(req) => req,
@@ -57,7 +57,7 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
             };
             match client.execute(request) {
                 Ok(res) => {
-                    print_response(method, url, headers, res, display_options);
+                    println!("Received {}", res.status());
                     Ok(())
                 },
                 Err(e) => Err(HtrsError::new(&e.to_string())),
@@ -66,37 +66,14 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
     }
 }
 
-fn print_response(method: Method, url: Url, request_headers: HashMap<String, String>, response: Response, display_options: CallOutputOptions) {
-    let mut output = String::new();
+fn apply_query_params_to_url(base_url: Url, query_params: HashMap<String, String>) -> Result<Url, HtrsError> {
+    let query_params_str = query_params.iter()
+        .map(|(k, v)| format!("{}={}", k, v))
+        .collect::<Vec<String>>()
+        .join("&");
 
-    if !display_options.hide_url {
-        output.push_str(&format!("{method} {url}\n"));
+    match base_url.join(&format!("?{query_params_str}")) {
+        Ok(url) => Ok(url),
+        Err(e) => Err(HtrsError::new(&format!("Failed to build url with query parameters: {e}"))),
     }
-
-    if !display_options.hide_request_headers {
-        for (key, value) in request_headers {
-            output.push_str(&format!(" ~ {key}: {value}\n"));
-        }
-    }
-
-    if !display_options.hide_response_status {
-        output.push_str(&format!("{}\n", response.status()));
-    }
-
-    if !display_options.hide_response_headers {
-        for (key, value) in response.headers() {
-            let header_str = match value.to_str() {
-                Ok(s) => s,
-                Err(e) => &e.to_string(),
-            };
-            output.push_str(&format!(" ~ {key}: {header_str}\n"));
-        }
-    }
-
-    if !display_options.hide_response_body {
-        let s = response.text().unwrap_or_else(|e| e.to_string());
-        output.push_str(&format!("{s}\n"));
-    }
-
-    println!("{}", output);
 }
