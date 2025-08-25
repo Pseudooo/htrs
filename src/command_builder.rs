@@ -1,6 +1,6 @@
 use crate::command_args::ServiceCommands::Environment;
 use crate::command_args::{ConfigurationCommands, EndpointCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
-use crate::commands::call_commands::CallServiceEndpointCommand;
+use crate::commands::call_command::CallServiceEndpointCommand;
 use crate::config::HtrsConfig;
 use clap::{Arg, ArgAction, ArgMatches, Command};
 

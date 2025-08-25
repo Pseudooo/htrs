@@ -1,5 +1,5 @@
 mod service_commands;
-pub(crate) mod call_commands;
+pub(crate) mod call_command;
 
 use crate::command_args::ConfigurationCommands::Header;
 use crate::command_args::HeaderCommands::{Clear, Set};
