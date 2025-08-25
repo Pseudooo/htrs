@@ -1,5 +1,5 @@
 use crate::command_args::ServiceCommands::Environment;
-use crate::command_args::{CallOutputOptions, CallServiceOptions, ConfigurationCommands, EndpointCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
+use crate::command_args::{ConfigurationCommands, EndpointCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
 use crate::commands::call_commands::CallServiceEndpointCommand;
 use crate::config::HtrsConfig;
 use clap::{Arg, ArgAction, ArgMatches, Command};
@@ -183,26 +183,6 @@ impl HeaderCommands {
                 }
             },
             _ => panic!("Bad subcommand for HeaderCommands"),
-        }
-    }
-}
-
-impl CallServiceOptions {
-    fn bind_from_matches(args: &ArgMatches) -> CallServiceOptions {
-        CallServiceOptions {
-            service: args.bind_field("service_name"),
-            environment: args.bind_field("environment_name"),
-            path: args.bind_field("path"),
-            query: args.bind_field("query"),
-            header: args.bind_field("header"),
-            method: args.bind_field("method"),
-            display_options: CallOutputOptions {
-                hide_url: args.bind_field("hide_url"),
-                hide_request_headers: args.bind_field("hide_request_headers"),
-                hide_response_body: args.bind_field("hide_response_body"),
-                hide_response_headers: args.bind_field("hide_response_headers"),
-                hide_response_status: args.bind_field("hide_response_status"),
-            }
         }
     }
 }
