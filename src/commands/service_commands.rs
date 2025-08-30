@@ -1,7 +1,4 @@
-use crate::command_args::ConfigurationCommands::Header;
-use crate::command_args::HeaderCommands::{Clear, Set};
-use crate::command_args::ServiceCommands::{Add, Environment, Remove};
-use crate::command_args::{ConfigurationCommands, EndpointCommands, EnvironmentCommands, ServiceCommands};
+use crate::command_args::{EndpointCommands, EnvironmentCommands};
 use crate::command_builder::{get_endpoint_command, get_header_configuration_command, get_service_environment_command, MatchBinding};
 use crate::config::{Endpoint, HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
 use crate::outcomes::HtrsAction::{PrintDialogue, UpdateConfig};
@@ -17,10 +14,6 @@ pub enum ServiceCommand {
         name: String,
     },
     List,
-    Config {
-        service: String,
-        config_command: ConfigurationCommands,
-    },
     Environment(EnvironmentCommands),
     Endpoint {
         service: String,
@@ -104,13 +97,6 @@ impl ServiceCommand {
                     EnvironmentCommands::bind_from_matches(environment_matches),
                 )
             },
-            Some(("configuration" | "config", config_matches)) => {
-                let service = config_matches.bind_field("service_name");
-                ServiceCommand::Config {
-                    service,
-                    config_command: ConfigurationCommands::bind_from_matches(config_matches),
-                }
-            }
             Some(("endpoint", endpoint_matches)) => {
                 let service = endpoint_matches.bind_field("service_name");
                 ServiceCommand::Endpoint {
@@ -123,74 +109,51 @@ impl ServiceCommand {
     }
 
     pub fn execute_command(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
-        todo!("Not done yet");
+        match self {
+            ServiceCommand::Add { name, alias } => add_new_service(config, name, alias),
+            ServiceCommand::Remove { name } => remove_service(config, name),
+            ServiceCommand::List => list_services(config),
+            ServiceCommand::Environment(environment_command) => execute_environment_command(config, environment_command),
+            ServiceCommand::Endpoint { service, command } => execute_endpoint_command(config, service, command),
+        }
     }
 }
 
-pub fn execute_service_command(config: &mut HtrsConfig, cmd: &ServiceCommands) -> Result<HtrsAction, HtrsError> {
-    match cmd {
-        Add { name } => {
-            for service in config.services.iter() {
-                if name.eq(service.name.as_str()) {
-                    return Err(HtrsError::new(&format!("Service \"{name}\" already exists")))
-                }
-            }
-
-            config.services.push(ServiceConfig::new(name.clone(), None));
-            Ok(UpdateConfig)
-        },
-
-        Remove { name } => {
-            if config.service_defined(name) {
-                config.services.retain(|x| !x.name.eq(name));
-                Ok(UpdateConfig)
-            } else {
-                Err(HtrsError::new(&format!("Service \"{name}\" does not exist")))
-            }
-        }
-
-        ServiceCommands::List => {
-            if config.services.len() == 0 {
-                return Ok(PrintDialogue("No services exist".to_string()));
-            }
-
-            let dialogue = config.services
-                .iter()
-                .map(|service| format!(" - {}", service.name))
-                .collect::<Vec<String>>()
-                .join("\n");
-            Ok(PrintDialogue(dialogue))
-        },
-
-        ServiceCommands::Config { service_name, config_command } => {
-            let Some(service) = config.find_service_config_mut(&service_name) else {
-                return Err(HtrsError::new(&format!("Service \"{}\" does not exist", service_name)))
-            };
-
-            let Header(header_cmd) = config_command;
-            match header_cmd {
-                Set { header, value } => {
-                    service.headers.insert(header.clone(), value.clone());
-                    Ok(UpdateConfig)
-                },
-                Clear { header } => {
-                    if config.headers.remove(header) == None {
-                        Err(HtrsError::new(&format!("No header `{}` defined", header)))
-                    } else {
-                        Ok(UpdateConfig)
-                    }
-                },
-            }
-        },
-
-        Environment(env_command) => {
-            execute_environment_command(config, env_command)
-        }
-
-        ServiceCommands::Endpoint { service_name, command} => {
-            execute_endpoint_command(config, service_name, command)
+fn add_new_service(config: &mut HtrsConfig, name: &str, alias: &Option<String>) -> Result<HtrsAction, HtrsError> {
+    if config.get_service(name).is_some() {
+        return Err(HtrsError::new(format!("A service already exists with the name or alias '{name}'").as_str()));
+    }
+    if let Some(alias) = alias {
+        if config.get_service(alias).is_some() {
+            return Err(HtrsError::new(format!("A service already exists with the name or alias '{alias}").as_str()));
         }
     }
+
+    config.services.push(ServiceConfig::new(name.to_string(), alias.clone()));
+    Ok(UpdateConfig)
+}
+
+fn remove_service(config: &mut HtrsConfig, name: &str) -> Result<HtrsAction, HtrsError> {
+    match config.remove_service(name) {
+        true => Ok(UpdateConfig),
+        false => Err(HtrsError::new(format!("Service '{}' not found", name).as_str())),
+    }
+}
+
+fn list_services(config: &HtrsConfig) -> Result<HtrsAction, HtrsError> {
+    if config.services.len() == 0 {
+        return Ok(PrintDialogue("No services defined".to_string()));
+    }
+
+    let dialogue = config.services
+        .iter()
+        .map(|s| match &s.alias {
+            Some(alias) => format!(" - {} ({})", s.name, alias),
+            None => format!(" - {}", s.name),
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+    Ok(PrintDialogue(dialogue))
 }
 
 fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommands) -> Result<HtrsAction, HtrsError> {
@@ -221,7 +184,7 @@ fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommand
         },
 
         EnvironmentCommands::List { service_name } => {
-            let Some(service) = config.find_service_config(&service_name) else {
+            let Some(service) = config.get_service(&service_name) else {
                 return Err(HtrsError::new(&format!("Service `{}` not found", service_name)))
             };
 
@@ -294,7 +257,7 @@ fn execute_endpoint_command(config: &mut HtrsConfig, service_name: &String, cmd:
 }
 
 #[cfg(test)]
-mod service_command_tests {
+mod service_command_binding_tests {
     use super::*;
     use clap::Error;
     use rstest::rstest;
@@ -364,5 +327,128 @@ mod service_command_tests {
 
         assert!(result.is_ok(), "{}", result.err().unwrap().to_string());
         assert!(matches!(result.ok().unwrap(), ServiceCommand::List), "Command was not ServiceCommand::List");
+    }
+}
+
+#[cfg(test)]
+mod service_command_execution_tests {
+    use super::*;
+    use crate::test_helpers::{HtrsConfigBuilder, HtrsServiceBuilder};
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(Some("foo_alias".to_string()))]
+    #[case(None)]
+    fn given_add_service_command_when_valid_then_should_add_service(
+        #[case] alias: Option<String>
+    ) {
+        let mut config = HtrsConfigBuilder::new()
+            .build();
+        let command = ServiceCommand::Add {
+            name: "foo_service".to_string(),
+            alias: alias.clone(),
+        };
+
+        let result = command.execute_command(&mut config);
+
+        assert!(result.is_ok(), "{}", result.err().unwrap().to_string());
+        let action = result.unwrap();
+        assert!(matches!(action, HtrsAction::UpdateConfig), "Returned action was not HtrsAction::UpdateConfig");
+
+        let new_service = config.get_service("foo_service");
+        assert!(new_service.is_some(), "Service with name 'foo_service' not found");
+        assert_eq!(new_service.unwrap().name, "foo_service");
+        assert_eq!(new_service.unwrap().alias, alias);
+    }
+
+    #[rstest]
+    #[case("existing_name", "new_alias")]
+    #[case("new_name", "existing_alias")]
+    fn given_add_service_command_when_service_exists_then_should_error(
+        #[case] name: String,
+        #[case] alias: String,
+    ) {
+        let mut config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("existing_name")
+                    .with_alias("existing_alias")
+            )
+            .build();
+        let command = ServiceCommand::Add {
+            name,
+            alias: Some(alias),
+        };
+
+        let result = command.execute_command(&mut config);
+
+        assert!(result.is_err());
+        assert_eq!(config.services.len(), 1);
+    }
+
+    #[rstest]
+    #[case("foo_service")]
+    #[case("foo_alias")]
+    fn given_known_service_when_execute_remove_command_then_should_remove(
+        #[case] service: String
+    ) {
+        let mut config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_alias("foo_alias")
+            )
+            .build();
+        let command = ServiceCommand::Remove {
+            name: service
+        };
+
+        let result = command.execute_command(&mut config);
+
+        assert!(result.is_ok(), "{}", result.err().unwrap().to_string());
+        assert_eq!(config.services.len(), 0);
+    }
+
+    #[test]
+    fn given_unknown_service_when_remove_then_should_error() {
+        let mut config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_alias("foo_alias")
+            )
+            .build();
+        let command = ServiceCommand::Remove {
+            name: "foo".to_string(),
+        };
+
+        let result = command.execute_command(&mut config);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn given_known_services_when_execute_list_command_then_should_list() {
+        let mut config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("service1")
+                    .with_alias("alias1")
+            )
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("service2")
+            )
+            .build();
+        let command = ServiceCommand::List;
+
+        let result = command.execute_command(&mut config);
+
+        assert!(result.is_ok(), "{}", result.err().unwrap().to_string());
+        let PrintDialogue(text) = result.unwrap() else {
+            panic!("Action was not HtrsAction::PrintDialogue");
+        };
+        assert!(text.contains(" - service1 (alias1)"), "Returned text did not contain service1");
+        assert!(text.contains("- service2"), "Returned text did not contain service2");
     }
 }
