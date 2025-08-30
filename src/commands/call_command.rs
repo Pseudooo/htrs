@@ -63,7 +63,7 @@ impl CallServiceEndpointCommand {
         let Some((service_name, service_matches)) = args.subcommand() else {
             panic!("Bad service subcommand for CallServiceEndpointCommand");
         };
-        let Some(service) = config.find_service_config(service_name) else {
+        let Some(service) = config.get_service(service_name) else {
             panic!("Bad service name");
         };
 
@@ -86,7 +86,7 @@ impl CallServiceEndpointCommand {
     }
 
     pub fn execute_command(&self, config: &HtrsConfig) -> Result<HtrsAction, HtrsError> {
-        let service = config.find_service_config(&self.service_name).unwrap();
+        let service = config.get_service(&self.service_name).unwrap();
         let environment = match &self.environment_name {
             Some(environment_name) => service.find_environment(&environment_name).unwrap(),
             None => {

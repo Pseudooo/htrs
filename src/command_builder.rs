@@ -326,52 +326,6 @@ mod command_builder_tests {
         RootCommands::bind_from_matches(&config, &matches)
     }
 
-    #[test]
-    fn given_valid_add_service_command_then_should_parse_and_map() {
-        let args = vec!["htrs", "service", "add", "foo"];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Service(service_command) = command else {
-            panic!("Command was not service command");
-        };
-        let ServiceCommand::Add { name, .. } = service_command else {
-            panic!("Command was not add service command");
-        };
-        assert_eq!(name, "foo")
-    }
-
-    #[rstest]
-    #[case("remove")]
-    #[case("rm")]
-    fn given_valid_remove_service_command_then_should_parse_and_map(#[case] remove_alias: &str) {
-        let args = vec!["htrs", "service", remove_alias, "foo"];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Service(service_command) = command else {
-            panic!("Command was not RootCommands::Service");
-        };
-        let ServiceCommand::Remove { name, .. } = service_command else {
-            panic!("Command was not ServiceCommands::Remove")
-        };
-        assert_eq!(name, "foo");
-    }
-
-    #[rstest]
-    #[case("list")]
-    #[case("ls")]
-    fn given_valid_list_services_command_then_should_parse_and_map(#[case] list_alias: &str) {
-        let args = vec!["htrs", "service", list_alias];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Service(service_command) = command else {
-            panic!("Command was not RootCommands::Service")
-        };
-        assert!(matches!(service_command, ServiceCommand::List));
-    }
-
     #[rstest]
     #[case("environment", true)]
     #[case("environment", false)]
@@ -461,64 +415,6 @@ mod command_builder_tests {
         };
         assert_eq!(service_name, "foo_service");
         assert_eq!(environment_name, "foo_environment");
-    }
-
-    #[rstest]
-    #[case("configuration")]
-    #[case("config")]
-    fn given_valid_service_configuration_set_header_command_then_should_parse_and_map(
-        #[case] config_alias: &str
-    ) {
-        let args = vec!["htrs", "service", config_alias, "foo_service", "header", "set", "foo_header_name", "foo_header_value"];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Service(service_command) = command else {
-            panic!("Command was not RootCommands::Service")
-        };
-        let ServiceCommand::Config {
-            service,
-            config_command,
-        } = service_command else {
-            panic!("Command was not ServiceCommands::Config");
-        };
-        let Header(header_command) = config_command;
-        let HeaderCommands::Set {
-            header,
-            value,
-        } = header_command else {
-            panic!("Command Configuration was not HeaderCommands::Set");
-        };
-        assert_eq!(service, "foo_service");
-        assert_eq!(header, "foo_header_name");
-        assert_eq!(value, "foo_header_value");
-    }
-
-    #[rstest]
-    #[case("configuration")]
-    #[case("config")]
-    fn given_valid_service_configuration_clear_header_command_then_should_parse_and_map(
-        #[case] config_alias: &str
-    ) {
-        let args = vec!["htrs", "service", config_alias, "foo_service", "header", "clear", "foo_header_name"];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Service(service_command) = command else {
-            panic!("Command was not RootCommands::Service");
-        };
-        let ServiceCommand::Config {
-            service,
-            config_command,
-        } = service_command else {
-            panic!("Command was not ServiceCommands::Config");
-        };
-        let Header(header_command) = config_command;
-        let HeaderCommands::Clear { header } = header_command else {
-            panic!("Command configuration was not HeaderCommands::Clear");
-        };
-        assert_eq!(service, "foo_service");
-        assert_eq!(header, "foo_header_name");
     }
 
     #[rstest]

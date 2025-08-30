@@ -86,18 +86,15 @@ impl HtrsConfig {
         HtrsConfig { services: Vec::new(), headers: HashMap::new() }
     }
 
-    pub fn service_defined(&self, name: &str) -> bool {
-        for service in &self.services {
-            if service.name == name {
-                return true;
-            }
-        }
-        return false;
+    pub fn remove_service(&mut self, name: &str) -> bool {
+        let init_length = self.services.len();
+        self.services.retain(|service| service.name != name && service.alias != Some(name.to_string()));
+        return init_length != self.services.len();
     }
 
-    pub fn find_service_config(&self, name: &str) -> Option<&ServiceConfig> {
+    pub fn get_service(&self, name: &str) -> Option<&ServiceConfig> {
         for service in &self.services {
-            if service.name == name {
+            if service.name == name || service.alias == Some(name.to_string()) {
                 return Some(service);
             }
         }
