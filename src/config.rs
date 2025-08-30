@@ -60,6 +60,7 @@ pub struct HtrsConfig {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
     pub name: String,
+    pub alias: Option<String>,
     pub environments: Vec<ServiceEnvironmentConfig>,
     pub headers: HashMap<String, String>,
     pub endpoints: Vec<Endpoint>,
@@ -68,6 +69,7 @@ pub struct ServiceConfig {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ServiceEnvironmentConfig {
     pub name: String,
+    pub alias: Option<String>,
     pub host: String,
     pub default: bool,
 }
@@ -113,9 +115,10 @@ impl HtrsConfig {
 }
 
 impl ServiceConfig {
-    pub fn new(name: String) -> ServiceConfig {
+    pub fn new(name: String, alias: Option<String>) -> ServiceConfig {
         ServiceConfig {
             name,
+            alias,
             environments: vec![],
             headers: HashMap::new(),
             endpoints: vec![]
@@ -190,7 +193,7 @@ impl ServiceConfig {
 }
 
 impl ServiceEnvironmentConfig {
-    pub fn new(name: String, host: String, default: bool) -> ServiceEnvironmentConfig {
-        ServiceEnvironmentConfig { name, host, default }
+    pub fn new(name: String, alias: Option<String>, host: String, default: bool) -> ServiceEnvironmentConfig {
+        ServiceEnvironmentConfig { name, alias, host, default }
     }
 }
