@@ -40,13 +40,11 @@ We've specified our environment `prod` as the default so we don't need to specif
 Command:
 ```
 > htrs call aviation get-flights
-200 OK | GET | https://api.aviationstack.com//v1/flights
+401 Unauthorized | GET | https://api.aviationstack.com/v1/flights
 {
-  "success": false,
   "error": {
-    "code": 101,
-    "type": "missing_access_key",
-    "info": "You have not supplied an API Access Key. [Required format: access_key=YOUR_ACCESS_KEY]"
+    "code": "missing_access_key",
+    "message": "You have not supplied an API Access Key. [Required format: access_key=YOUR_ACCESS_KEY]"
   }
 }
 ```
