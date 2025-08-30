@@ -214,6 +214,7 @@ mod command_builder_tests {
 
             ServiceConfig {
                 name: name.clone(),
+                alias: None,
                 headers: HashMap::new(),
                 endpoints: self.endpoints.clone(),
                 environments: self.environments.clone(),

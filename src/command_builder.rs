@@ -1,6 +1,6 @@
-use crate::command_args::ServiceCommands::Environment;
-use crate::command_args::{ConfigurationCommands, EndpointCommands, EnvironmentCommands, HeaderCommands, RootCommands, ServiceCommands};
+use crate::command_args::{ConfigurationCommands, EndpointCommands, EnvironmentCommands, HeaderCommands, RootCommands};
 use crate::commands::call_command::CallServiceEndpointCommand;
+use crate::commands::service_commands::ServiceCommand;
 use crate::config::HtrsConfig;
 use clap::{Arg, ArgAction, ArgMatches, Command};
 
@@ -47,7 +47,7 @@ impl RootCommands {
         match args.subcommand() {
             Some(("service", service_matches)) => {
                 RootCommands::Service(
-                    ServiceCommands::bind_from_matches(service_matches)
+                    ServiceCommand::bind_from_matches(service_matches)
                 )
             },
             Some(("call", call_matches)) => {
@@ -61,46 +61,6 @@ impl RootCommands {
                 )
             },
             _ => panic!("Bad subcommand for RootCommands"),
-        }
-    }
-}
-
-impl ServiceCommands {
-    pub fn bind_from_matches(args: &ArgMatches) -> ServiceCommands {
-        match args.subcommand() {
-            Some(("add", add_service_matches)) => {
-                let service_name = add_service_matches.bind_field("service_name");
-                ServiceCommands::Add {
-                    name: service_name,
-                }
-            },
-            Some(("remove" | "rm", remove_service_matches)) => {
-                let service_name = remove_service_matches.bind_field("service_name");
-                ServiceCommands::Remove {
-                    name: service_name,
-                }
-            },
-            Some(("list" | "ls", _)) => {
-                ServiceCommands::List
-            },
-            Some(("environment" | "env", environment_matches)) => {
-                Environment(
-                    EnvironmentCommands::bind_from_matches(environment_matches)
-                )
-            },
-            Some(("configuration" | "config", config_matches)) => {
-                ServiceCommands::Config {
-                    service_name: config_matches.bind_field("service_name"),
-                    config_command: ConfigurationCommands::bind_from_matches(config_matches),
-                }
-            },
-            Some(("endpoint", endpoint_matches)) => {
-                ServiceCommands::Endpoint {
-                    service_name: endpoint_matches.bind_field("service_name"),
-                    command: EndpointCommands::bind_from_matches(endpoint_matches),
-                }
-            }
-            _ => panic!("Bad subcommand for ServiceCommands"),
         }
     }
 }
@@ -133,7 +93,7 @@ impl EnvironmentCommands {
 }
 
 impl EndpointCommands {
-    fn bind_from_matches(args: &ArgMatches) -> EndpointCommands {
+    pub fn bind_from_matches(args: &ArgMatches) -> EndpointCommands {
         match args.subcommand() {
             Some(("add", add_endpoint_matches)) => {
                 EndpointCommands::Add {
@@ -191,8 +151,8 @@ pub fn get_root_command(config: &HtrsConfig) -> Command {
     let command = Command::new("htrs")
         .version(env!("CARGO_PKG_VERSION"))
         .about("A flexible http cli client")
-        .subcommand(get_service_command())
-        .subcommand(CallServiceEndpointCommand::get_command(&config))
+        .subcommand(ServiceCommand::get_command(config))
+        .subcommand(CallServiceEndpointCommand::get_command(config))
         .subcommand(
             Command::new("configuration")
                 .visible_alias("config")
@@ -203,53 +163,7 @@ pub fn get_root_command(config: &HtrsConfig) -> Command {
     command
 }
 
-fn get_service_command() -> Command {
-    let command = Command::new("service")
-        .about("Service configuration commands")
-        .arg_required_else_help(true)
-        .subcommand(
-            Command::new("add")
-                .about("Create a new service")
-                .arg(
-                    Arg::new("service_name")
-                        .help("Unique name of the service to create")
-                        .required(true)
-                )
-        )
-        .subcommand(
-            Command::new("remove")
-                .visible_alias("rm")
-                .about("Remove a service")
-                .arg(
-                    Arg::new("service_name")
-                        .help("Service name to remove")
-                        .required(true)
-                )
-        )
-        .subcommand(
-            Command::new("list")
-                .visible_alias("ls")
-                .about("List all services")
-        )
-        .subcommand(get_service_environment_command())
-        .subcommand(
-            Command::new("configuration")
-                .visible_alias("config")
-                .about("Service configuration")
-                .arg(
-                    Arg::new("service_name")
-                        .value_name("Service name")
-                        .help("Service name to configure")
-                        .required(true)
-                )
-                .subcommand(get_header_configuration_command())
-        )
-        .subcommand(get_endpoint_command());
-
-    command
-}
-
-fn get_service_environment_command() -> Command {
+pub fn get_service_environment_command() -> Command {
     Command::new("environment")
         .visible_alias("env")
         .about("Service environment configuration commands")
@@ -310,7 +224,7 @@ fn get_service_environment_command() -> Command {
         )
 }
 
-fn get_header_configuration_command() -> Command {
+pub fn get_header_configuration_command() -> Command {
     Command::new("header")
         .about("Configure headers")
         .subcommand(
@@ -341,7 +255,7 @@ fn get_header_configuration_command() -> Command {
         )
 }
 
-fn get_endpoint_command() -> Command {
+pub fn get_endpoint_command() -> Command {
     Command::new("endpoint")
         .about("Configure service endpoints")
         .arg_required_else_help(true)
@@ -421,7 +335,7 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not service command");
         };
-        let ServiceCommands::Add { name } = service_command else {
+        let ServiceCommand::Add { name, .. } = service_command else {
             panic!("Command was not add service command");
         };
         assert_eq!(name, "foo")
@@ -438,7 +352,7 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
-        let ServiceCommands::Remove { name } = service_command else {
+        let ServiceCommand::Remove { name, .. } = service_command else {
             panic!("Command was not ServiceCommands::Remove")
         };
         assert_eq!(name, "foo");
@@ -455,7 +369,7 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service")
         };
-        assert!(matches!(service_command, ServiceCommands::List));
+        assert!(matches!(service_command, ServiceCommand::List));
     }
 
     #[rstest]
@@ -477,7 +391,7 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
-        let Environment(environment_command) = service_command else {
+        let ServiceCommand::Environment(environment_command) = service_command else {
             panic!("Command was not ServiceCommands::Environment");
         };
         let EnvironmentCommands::Add {
@@ -511,7 +425,7 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
-        let Environment(environment_command) = service_command else {
+        let ServiceCommand::Environment(environment_command) = service_command else {
             panic!("Command was not ServiceCommands::Environment");
         };
         let EnvironmentCommands::List { service_name } = environment_command else {
@@ -536,7 +450,7 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
-        let Environment(environment_command) = service_command else {
+        let ServiceCommand::Environment(environment_command) = service_command else {
             panic!("Command was not ServiceCommands::Environment");
         };
         let EnvironmentCommands::Remove {
@@ -562,8 +476,8 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service")
         };
-        let ServiceCommands::Config {
-            service_name,
+        let ServiceCommand::Config {
+            service,
             config_command,
         } = service_command else {
             panic!("Command was not ServiceCommands::Config");
@@ -575,7 +489,7 @@ mod command_builder_tests {
         } = header_command else {
             panic!("Command Configuration was not HeaderCommands::Set");
         };
-        assert_eq!(service_name, "foo_service");
+        assert_eq!(service, "foo_service");
         assert_eq!(header, "foo_header_name");
         assert_eq!(value, "foo_header_value");
     }
@@ -593,8 +507,8 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
-        let ServiceCommands::Config {
-            service_name,
+        let ServiceCommand::Config {
+            service,
             config_command,
         } = service_command else {
             panic!("Command was not ServiceCommands::Config");
@@ -603,7 +517,7 @@ mod command_builder_tests {
         let HeaderCommands::Clear { header } = header_command else {
             panic!("Command configuration was not HeaderCommands::Clear");
         };
-        assert_eq!(service_name, "foo_service");
+        assert_eq!(service, "foo_service");
         assert_eq!(header, "foo_header_name");
     }
 
@@ -662,7 +576,7 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
-        let ServiceCommands::Endpoint { service_name, command: endpoint_command} = service_command else {
+        let ServiceCommand::Endpoint { service, command: endpoint_command} = service_command else {
             panic!("Command was not ServiceCommands::Endpoint");
         };
         let EndpointCommands::Add {
@@ -672,7 +586,7 @@ mod command_builder_tests {
         } = endpoint_command else {
             panic!("Command was not EndpointCommands::Add");
         };
-        assert_eq!(service_name, "foo_service");
+        assert_eq!(service, "foo_service");
         assert_eq!(endpoint_name, "foo_endpoint");
         assert_eq!(path_template, "/foo/my/path");
         assert_eq!(query_parameters, vec!["query_param1", "query_param2"]);
@@ -687,11 +601,11 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
-        let ServiceCommands::Endpoint { service_name, command: endpoint_command} = service_command else {
+        let ServiceCommand::Endpoint { service, command: endpoint_command} = service_command else {
             panic!("Command was not ServiceCommands::Endpoint");
         };
         assert!(matches!(endpoint_command, EndpointCommands::List));
-        assert_eq!(service_name, "foo_service");
+        assert_eq!(service, "foo_service");
     }
 
     #[rstest]
@@ -707,13 +621,13 @@ mod command_builder_tests {
         let RootCommands::Service(service_command) = command else {
             panic!("Command was not RootCommands::Service");
         };
-        let ServiceCommands::Endpoint { service_name, command: endpoint_command} = service_command else {
+        let ServiceCommand::Endpoint { service, command: endpoint_command} = service_command else {
             panic!("Command was not ServiceCommands::Endpoint");
         };
         let EndpointCommands::Remove { name: endpoint_name } = endpoint_command else {
             panic!("Command was not EndpointCommands::Remove");
         };
-        assert_eq!(service_name, "foo_service");
+        assert_eq!(service, "foo_service");
         assert_eq!(endpoint_name, "foo_endpoint");
     }
 }
