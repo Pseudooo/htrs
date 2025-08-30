@@ -29,7 +29,7 @@ pub enum ServiceCommand {
 }
 
 impl ServiceCommand {
-    pub fn get_command(config: &HtrsConfig) -> Command {
+    pub fn get_command() -> Command {
         Command::new("service")
             .about("Service commands")
             .arg_required_else_help(true)
@@ -297,9 +297,10 @@ fn execute_endpoint_command(config: &mut HtrsConfig, service_name: &String, cmd:
 mod service_command_tests {
     use super::*;
     use clap::Error;
+    use rstest::rstest;
 
     fn get_parsed_command(args: Vec<&str>) -> Result<ServiceCommand, Error> {
-        let command = ServiceCommand::get_command(&HtrsConfig::new());
+        let command = ServiceCommand::get_command();
         let matches = command.try_get_matches_from(args)?;
         Ok(ServiceCommand::bind_from_matches(&matches))
     }
@@ -332,5 +333,36 @@ mod service_command_tests {
         };
         assert_eq!(name, "foo_service");
         assert_eq!(alias, Some("foo_alias".to_string()));
+    }
+
+    #[rstest]
+    #[case("remove")]
+    #[case("rm")]
+    fn given_valid_remove_service_command_then_should_parse_and_map(
+        #[case] remove_cmd: &str
+    ) {
+        let args = vec!["htrs", remove_cmd, "foo_service"];
+
+        let result = get_parsed_command(args);
+
+        assert!(result.is_ok(), "{}", result.err().unwrap().to_string());
+        let ServiceCommand::Remove{name} = result.unwrap() else {
+            panic!("Command was not ServiceCommand::Remove");
+        };
+        assert_eq!(name, "foo_service");
+    }
+
+    #[rstest]
+    #[case("list")]
+    #[case("ls")]
+    fn given_valid_list_services_command_then_should_parse_and_map(
+        #[case] list_cmd: &str
+    ) {
+        let args = vec!["htrs", list_cmd];
+
+        let result = get_parsed_command(args);
+
+        assert!(result.is_ok(), "{}", result.err().unwrap().to_string());
+        assert!(matches!(result.ok().unwrap(), ServiceCommand::List), "Command was not ServiceCommand::List");
     }
 }
