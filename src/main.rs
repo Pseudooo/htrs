@@ -10,7 +10,7 @@ use crate::commands::execute_command;
 use crate::config::{HtrsConfig, VersionedHtrsConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 use reqwest::blocking::Client;
-use reqwest::Url;
+use reqwest::{Method, Url};
 use std::collections::HashMap;
 
 fn main() {
@@ -46,27 +46,17 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
         HtrsAction::MakeRequest {
             url: base_url, query_parameters, method
         } => {
-            let client = Client::new();
-
             let url = apply_query_params_to_url(base_url, query_parameters)?;
-            let request_builder = client.request(method.clone(), url.clone());
-
-            let request = match request_builder.build() {
-                Ok(req) => req,
-                Err(e) => return Err(HtrsError::new(&e.to_string())),
-            };
-            match client.execute(request) {
-                Ok(res) => {
-                    println!("Received {}", res.status());
-                    Ok(())
-                },
-                Err(e) => Err(HtrsError::new(&e.to_string())),
-            }
+            execute_request(method, url)
         },
     }
 }
 
 fn apply_query_params_to_url(base_url: Url, query_params: HashMap<String, String>) -> Result<Url, HtrsError> {
+    if query_params.len() == 0 {
+        return Ok(base_url);
+    }
+
     let query_params_str = query_params.iter()
         .map(|(k, v)| format!("{}={}", k, v))
         .collect::<Vec<String>>()
@@ -77,3 +67,25 @@ fn apply_query_params_to_url(base_url: Url, query_params: HashMap<String, String
         Err(e) => Err(HtrsError::new(&format!("Failed to build url with query parameters: {e}"))),
     }
 }
+
+fn execute_request(method: Method, url: Url) -> Result<(), HtrsError> {
+    let client = Client::new();
+    let  request = match client.request(method.clone(), url.clone()).build() {
+        Ok(request) => request,
+        Err(e) => return Err(HtrsError::new(&e.to_string())),
+    };
+
+    match client.execute(request) {
+        Ok(response) => {
+            println!("{} | {} | {}", response.status(), &method, url);
+            let response_text = response.text()
+                .unwrap_or_else(|e| format!("<Failed to read response body: {}>", e));
+            println!("{}", response_text);
+            Ok(())
+        },
+        Err(e) => {
+            Err(HtrsError::new(&e.to_string()))
+        }
+    }
+}
+

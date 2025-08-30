@@ -97,10 +97,13 @@ impl CallServiceEndpointCommand {
             }
         };
 
-        let url_string = format!("https://{}/{}", environment.host, self.path);
-        let url = match Url::parse(&url_string) {
+        let base_url = match Url::parse(format!("https://{}/", environment.host).as_str()) {
             Ok(url) => url,
-            Err(e) => return Err(HtrsError::new(&format!("Failed to build url: {e}")))
+            Err(e) => return Err(HtrsError::new(format!("Failed to build url from given host: {e}").as_str())),
+        };
+        let url = match base_url.join(self.path.as_str()) {
+            Ok(url) => url,
+            Err(e) => return Err(HtrsError::new(format!("Failed to build url for endpoint: {e}").as_str())),
         };
 
         Ok(MakeRequest {
