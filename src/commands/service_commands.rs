@@ -449,6 +449,6 @@ mod service_command_execution_tests {
             panic!("Action was not HtrsAction::PrintDialogue");
         };
         assert!(text.contains(" - service1 (alias1)"), "Returned text did not contain service1");
-        assert!(text.contains("- service2"), "Returned text did not contain service2");
+        assert!(text.contains(" - service2"), "Returned text did not contain service2");
     }
 }
