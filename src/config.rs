@@ -169,24 +169,6 @@ impl Service {
         self.endpoints.retain(|x| x.name != name);
         return init_len != self.endpoints.len();
     }
-
-    pub fn endpoint_exists(&self, name: &str) -> bool {
-        for endpoint in &self.endpoints {
-            if endpoint.name == name {
-                return true;
-            }
-        }
-        false
-    }
-
-    pub fn find_endpoint(&self, name: &str) -> Option<&Endpoint> {
-        for endpoint in &self.endpoints {
-            if endpoint.name == name {
-                return Some(endpoint);
-            }
-        }
-        None
-    }
 }
 
 impl Environment {

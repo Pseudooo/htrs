@@ -7,18 +7,6 @@ pub enum RootCommands {
     Config(ConfigurationCommands),
 }
 
-pub enum EndpointCommands {
-    Add {
-        name: String,
-        path_template: String,
-        query_parameters: Vec<String>,
-    },
-    List,
-    Remove {
-        name: String,
-    }
-}
-
 pub enum ConfigurationCommands {
     Header(HeaderCommands),
 }
