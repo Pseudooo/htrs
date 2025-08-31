@@ -1,6 +1,7 @@
-use crate::command_args::{EndpointCommands, EnvironmentCommands};
-use crate::command_builder::{get_endpoint_command, get_header_configuration_command, get_service_environment_command, MatchBinding};
-use crate::config::{Endpoint, HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
+use crate::command_args::EndpointCommands;
+use crate::command_builder::{get_endpoint_command, get_header_configuration_command, MatchBinding};
+use crate::commands::environment_commands::EnvironmentCommand;
+use crate::config::{Endpoint, HtrsConfig, ServiceConfig};
 use crate::outcomes::HtrsAction::{PrintDialogue, UpdateConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgMatches, Command};
@@ -14,7 +15,7 @@ pub enum ServiceCommand {
         name: String,
     },
     List,
-    Environment(EnvironmentCommands),
+    Environment(EnvironmentCommand),
     Endpoint {
         service: String,
         command: EndpointCommands,
@@ -57,7 +58,7 @@ impl ServiceCommand {
                     .visible_alias("ls")
                     .about("List all services")
             )
-            .subcommand(get_service_environment_command())
+            .subcommand(EnvironmentCommand::get_command())
             .subcommand(
                 Command::new("configuration")
                     .visible_alias("config")
@@ -94,7 +95,7 @@ impl ServiceCommand {
             },
             Some(("environment" | "env", environment_matches)) => {
                 ServiceCommand::Environment(
-                    EnvironmentCommands::bind_from_matches(environment_matches),
+                    EnvironmentCommand::bind_from_matches(environment_matches),
                 )
             },
             Some(("endpoint", endpoint_matches)) => {
@@ -113,7 +114,7 @@ impl ServiceCommand {
             ServiceCommand::Add { name, alias } => add_new_service(config, name, alias),
             ServiceCommand::Remove { name } => remove_service(config, name),
             ServiceCommand::List => list_services(config),
-            ServiceCommand::Environment(environment_command) => execute_environment_command(config, environment_command),
+            ServiceCommand::Environment(environment_command) => environment_command.execute_command(config),
             ServiceCommand::Endpoint { service, command } => execute_endpoint_command(config, service, command),
         }
     }
@@ -156,69 +157,8 @@ fn list_services(config: &HtrsConfig) -> Result<HtrsAction, HtrsError> {
     Ok(PrintDialogue(dialogue))
 }
 
-fn execute_environment_command(config: &mut HtrsConfig, cmd: &EnvironmentCommands) -> Result<HtrsAction, HtrsError> {
-    match cmd {
-        EnvironmentCommands::Add { service_name, name: environment_name, host, default } => {
-            let Some(service) = config.find_service_config_mut(&service_name) else {
-                return Err(HtrsError::new(&format!("Service `{}` not found", service_name)))
-            };
-
-            if service.environment_exists(&environment_name) {
-                return Err(HtrsError::new(&format!("Service `{}` already has an environmnt called `{}`", service_name, environment_name)))
-            }
-
-            if *default {
-                if let Some(curr_default_environment) = service.find_default_environment_mut() {
-                    curr_default_environment.default = false;
-                }
-            }
-
-            let new_env = ServiceEnvironmentConfig::new(
-                environment_name.clone(),
-                None,
-                host.clone(),
-                *default,
-            );
-            service.environments.push(new_env);
-            Ok(UpdateConfig)
-        },
-
-        EnvironmentCommands::List { service_name } => {
-            let Some(service) = config.get_service(&service_name) else {
-                return Err(HtrsError::new(&format!("Service `{}` not found", service_name)))
-            };
-
-            if service.environments.len() == 0 {
-                return Ok(PrintDialogue(format!("No environments defined for `{}`", service_name)));
-            }
-
-            let dialogue = service.environments.iter()
-                .map(|env| match env.default {
-                    true => format!(" - {} (default)", env.name),
-                    false => format!(" - {}", env.name),
-                })
-                .collect::<Vec<String>>()
-                .join("\n");
-            Ok(PrintDialogue(dialogue))
-        },
-
-        EnvironmentCommands::Remove { service_name, environment_name } => {
-            let Some(service) = config.find_service_config_mut(&service_name) else {
-                return Err(HtrsError::new(&format!("Service `{}` not found", service_name)));
-            };
-
-            if !service.environment_exists(&environment_name) {
-                return Err(HtrsError::new(&format!("Service `{}` has no environment `{}`", service_name, environment_name)));
-            }
-
-            service.remove_environment(environment_name);
-            Ok(UpdateConfig)
-        }
-    }
-}
-
 fn execute_endpoint_command(config: &mut HtrsConfig, service_name: &String, cmd: &EndpointCommands) -> Result<HtrsAction, HtrsError> {
-    let Some(service) = config.find_service_config_mut(&service_name) else {
+    let Some(service) = config.get_service_mut(&service_name) else {
         return Err(HtrsError::new(&format!("Service `{}` not found", service_name)));
     };
     match cmd {

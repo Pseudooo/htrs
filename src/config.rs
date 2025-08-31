@@ -109,15 +109,6 @@ impl HtrsConfig {
         }
         None
     }
-
-    pub fn find_service_config_mut(&mut self, name: &str) -> Option<&mut ServiceConfig> {
-        for service in &mut self.services {
-            if service.name == name {
-                return Some(service);
-            }
-        }
-        None
-    }
 }
 
 impl ServiceConfig {
@@ -140,40 +131,28 @@ impl ServiceConfig {
         None
     }
 
-    pub fn environment_exists(&self, name: &str) -> bool {
-        for environment in &self.environments {
-            if environment.name == name {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    pub fn find_environment(&self, name: &str) -> Option<&ServiceEnvironmentConfig> {
-        for environment in &self.environments {
-            if environment.name == name {
-                return Some(environment);
-            }
-        }
-        None
-    }
-
-    pub fn find_default_environment(&self) -> Option<&ServiceEnvironmentConfig> {
+    pub fn get_default_environment(&self) -> Option<&ServiceEnvironmentConfig> {
         for environment in &self.environments {
             if environment.default {
-                return Some(environment);
+                return Some(environment)
             }
         }
         None
     }
-    
-    pub fn find_default_environment_mut(&mut self) -> Option<&mut ServiceEnvironmentConfig> {
+
+    pub fn get_default_environment_mut(&mut self) -> Option<&mut ServiceEnvironmentConfig> {
         for environment in &mut self.environments {
             if environment.default {
-                return Some(environment);
+                return Some(environment)
             }
         }
         None
+    }
+
+    pub fn remove_environment(&mut self, name: &str) -> bool {
+        let init_len = self.environments.len();
+        self.environments.retain(|x| x.name != name && x.alias != Some(name.to_string()));
+        return init_len != self.environments.len();
     }
 
     pub fn endpoint_exists(&self, name: &str) -> bool {
@@ -192,12 +171,6 @@ impl ServiceConfig {
             }
         }
         None
-    }
-    
-    pub fn remove_environment(&mut self, name: &str) -> bool {
-        let init_len = self.environments.len();
-        self.environments.retain(|x| x.name != name && x.alias != Some(name.to_string()));
-        return init_len != self.environments.len();
     }
 
     pub fn remove_endpoint(&mut self, name: &str) -> bool {

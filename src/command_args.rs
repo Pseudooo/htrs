@@ -7,22 +7,6 @@ pub enum RootCommands {
     Config(ConfigurationCommands),
 }
 
-pub enum EnvironmentCommands {
-    Add {
-        service_name: String,
-        name: String,
-        host: String,
-        default: bool,
-    },
-    List {
-        service_name: String
-    },
-    Remove {
-        service_name: String,
-        environment_name: String,
-    }
-}
-
 pub enum EndpointCommands {
     Add {
         name: String,

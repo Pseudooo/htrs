@@ -151,7 +151,7 @@ fn add_new_environment(config: &mut HtrsConfig, service_name: &str, name: &str, 
 
     // If the new environment is the default need to replace existing default
     if *default {
-        if let Some(existing_default) = service.get_default_environment() {
+        if let Some(existing_default) = service.get_default_environment_mut() {
             existing_default.default = false;
         }
     }

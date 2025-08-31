@@ -1,4 +1,4 @@
-use crate::command_args::{ConfigurationCommands, EndpointCommands, EnvironmentCommands, HeaderCommands, RootCommands};
+use crate::command_args::{ConfigurationCommands, EndpointCommands, HeaderCommands, RootCommands};
 use crate::commands::call_command::CallServiceEndpointCommand;
 use crate::commands::service_commands::ServiceCommand;
 use crate::config::HtrsConfig;
@@ -61,33 +61,6 @@ impl RootCommands {
                 )
             },
             _ => panic!("Bad subcommand for RootCommands"),
-        }
-    }
-}
-
-impl EnvironmentCommands {
-    pub fn bind_from_matches(args: &ArgMatches) -> EnvironmentCommands {
-        match args.subcommand() {
-            Some(("add", add_environment_matches)) => {
-                EnvironmentCommands::Add {
-                    service_name: add_environment_matches.bind_field("service_name"),
-                    name: add_environment_matches.bind_field("environment_name"),
-                    host: add_environment_matches.bind_field("host"),
-                    default: add_environment_matches.bind_field("default"),
-                }
-            },
-            Some(("list" | "ls", list_environment_matches)) => {
-                EnvironmentCommands::List {
-                    service_name: list_environment_matches.bind_field("service_name"),
-                }
-            },
-            Some(("remove" | "rm", remove_environment_matches)) => {
-                EnvironmentCommands::Remove {
-                    service_name: remove_environment_matches.bind_field("service_name"),
-                    environment_name: remove_environment_matches.bind_field("environment_name"),
-                }
-            },
-            _ => panic!("Bad subcommand for EnvironmentCommands"),
         }
     }
 }
@@ -161,67 +134,6 @@ pub fn get_root_command(config: &HtrsConfig) -> Command {
         );
 
     command
-}
-
-pub fn get_service_environment_command() -> Command {
-    Command::new("environment")
-        .visible_alias("env")
-        .about("Service environment configuration commands")
-        .arg_required_else_help(true)
-        .subcommand(
-            Command::new("add")
-                .about("Add a new environment to a service")
-                .arg(
-                    Arg::new("service_name")
-                        .value_name("service name")
-                        .help("Service to configure")
-                        .required(true)
-                )
-                .arg(
-                    Arg::new("environment_name")
-                        .value_name("environment name")
-                        .help("Unique environment name to add")
-                        .required(true)
-                )
-                .arg(
-                    Arg::new("host")
-                        .value_name("host")
-                        .help("Hostname of the service for this environment")
-                        .required(true)
-                )
-                .arg(
-                    Arg::new("default")
-                        .long("default")
-                        .num_args(0)
-                        .required(false)
-                        .help("Set as the default environment for the service")
-                )
-        )
-        .subcommand(
-            Command::new("list")
-                .visible_alias("ls")
-                .about("List all environments for service")
-                .arg(
-                    Arg::new("service_name")
-                        .value_name("service name")
-                        .required(true)
-                )
-        )
-        .subcommand(
-            Command::new("remove")
-                .visible_alias("rm")
-                .about("Remove an environment from the service")
-                .arg(
-                    Arg::new("service_name")
-                        .help("Service to remove environment from")
-                        .required(true)
-                )
-                .arg(
-                    Arg::new("environment_name")
-                        .help("Environment to remove")
-                        .required(true)
-                )
-        )
 }
 
 pub fn get_header_configuration_command() -> Command {
@@ -324,97 +236,6 @@ mod command_builder_tests {
             Err(e) => panic!("Failed to get matches - {e}")
         };
         RootCommands::bind_from_matches(&config, &matches)
-    }
-
-    #[rstest]
-    #[case("environment", true)]
-    #[case("environment", false)]
-    #[case("env", true)]
-    #[case("env", false)]
-    fn given_valid_add_service_environment_command_then_should_parse_and_map(
-        #[case] environment_alias: &str,
-        #[case] set_default: bool
-    ) {
-        let mut args = vec!["htrs", "service", environment_alias, "add", "foo_service", "foo_environment", "foo_host"];
-        if set_default {
-            args.push("--default");
-        }
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Service(service_command) = command else {
-            panic!("Command was not RootCommands::Service");
-        };
-        let ServiceCommand::Environment(environment_command) = service_command else {
-            panic!("Command was not ServiceCommands::Environment");
-        };
-        let EnvironmentCommands::Add {
-            service_name,
-            name,
-            host,
-            default
-        } = environment_command else {
-            panic!("Command was not EnvironmentCommands::Add");
-        };
-
-        assert_eq!(service_name, "foo_service");
-        assert_eq!(name, "foo_environment");
-        assert_eq!(host, "foo_host");
-        assert_eq!(default, set_default);
-    }
-
-    #[rstest]
-    #[case("environment", "list")]
-    #[case("environment", "ls")]
-    #[case("env", "list")]
-    #[case("env", "ls")]
-    fn given_valid_list_service_environments_command_then_should_parse_and_map(
-        #[case] environment_alias: &str,
-        #[case] list_alias: &str
-    ) {
-        let args = vec!["htrs", "service", environment_alias, list_alias, "foo_service"];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Service(service_command) = command else {
-            panic!("Command was not RootCommands::Service");
-        };
-        let ServiceCommand::Environment(environment_command) = service_command else {
-            panic!("Command was not ServiceCommands::Environment");
-        };
-        let EnvironmentCommands::List { service_name } = environment_command else {
-            panic!("Command was not EnvironmentCommands::List");
-        };
-        assert_eq!(service_name, "foo_service");
-    }
-
-    #[rstest]
-    #[case("environment", "remove")]
-    #[case("environment", "rm")]
-    #[case("env", "remove")]
-    #[case("env", "rm")]
-    fn given_valid_remove_service_environment_command_then_should_parse_and_map(
-        #[case] environment_alias: &str,
-        #[case] remove_alias: &str
-    ) {
-        let args = vec!["htrs", "service", environment_alias, remove_alias, "foo_service", "foo_environment"];
-
-        let command = bind_command_from_vec(args);
-
-        let RootCommands::Service(service_command) = command else {
-            panic!("Command was not RootCommands::Service");
-        };
-        let ServiceCommand::Environment(environment_command) = service_command else {
-            panic!("Command was not ServiceCommands::Environment");
-        };
-        let EnvironmentCommands::Remove {
-            service_name,
-            environment_name
-        } = environment_command else {
-            panic!("Command was not EnvironmentCommands::Remove");
-        };
-        assert_eq!(service_name, "foo_service");
-        assert_eq!(environment_name, "foo_environment");
     }
 
     #[rstest]

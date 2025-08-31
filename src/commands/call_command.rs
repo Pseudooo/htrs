@@ -93,9 +93,9 @@ impl CallServiceEndpointCommand {
     pub fn execute_command(&self, config: &HtrsConfig) -> Result<HtrsAction, HtrsError> {
         let service = config.get_service(&self.service_name).unwrap();
         let environment = match &self.environment_name {
-            Some(environment_name) => service.find_environment(&environment_name).unwrap(),
+            Some(environment_name) => service.get_environment(&environment_name).unwrap(),
             None => {
-                let Some(environment) = service.find_default_environment() else {
+                let Some(environment) = service.get_default_environment() else {
                     return Err(HtrsError::new(&format!("No default environment defined for service {}", self.service_name)));
                 };
                 environment
