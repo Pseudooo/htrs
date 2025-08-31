@@ -1,5 +1,5 @@
 use crate::command_builder::MatchBinding;
-use crate::config::{HtrsConfig, ServiceEnvironmentConfig};
+use crate::config::{Environment, HtrsConfig};
 use crate::outcomes::HtrsAction::{PrintDialogue, UpdateConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgMatches, Command};
@@ -157,7 +157,7 @@ fn add_new_environment(config: &mut HtrsConfig, service_name: &str, name: &str, 
     }
 
     service.environments.push(
-        ServiceEnvironmentConfig::new(
+        Environment::new(
             name.to_string(),
             alias.clone(),
             host.to_string(),

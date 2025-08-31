@@ -53,21 +53,21 @@ impl VersionedHtrsConfig {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct HtrsConfig {
-    pub services: Vec<ServiceConfig>,
+    pub services: Vec<Service>,
     pub headers: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct ServiceConfig {
+pub struct Service {
     pub name: String,
     pub alias: Option<String>,
-    pub environments: Vec<ServiceEnvironmentConfig>,
+    pub environments: Vec<Environment>,
     pub headers: HashMap<String, String>,
     pub endpoints: Vec<Endpoint>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct ServiceEnvironmentConfig {
+pub struct Environment {
     pub name: String,
     pub alias: Option<String>,
     pub host: String,
@@ -92,7 +92,7 @@ impl HtrsConfig {
         return init_length != self.services.len();
     }
 
-    pub fn get_service(&self, name: &str) -> Option<&ServiceConfig> {
+    pub fn get_service(&self, name: &str) -> Option<&Service> {
         for service in &self.services {
             if service.name == name || service.alias == Some(name.to_string()) {
                 return Some(service);
@@ -101,7 +101,7 @@ impl HtrsConfig {
         None
     }
 
-    pub fn get_service_mut(&mut self, name: &str) -> Option<&mut ServiceConfig> {
+    pub fn get_service_mut(&mut self, name: &str) -> Option<&mut Service> {
         for service in &mut self.services {
             if service.name == name || service.alias == Some(name.to_string()) {
                 return Some(service);
@@ -111,9 +111,9 @@ impl HtrsConfig {
     }
 }
 
-impl ServiceConfig {
-    pub fn new(name: String, alias: Option<String>) -> ServiceConfig {
-        ServiceConfig {
+impl Service {
+    pub fn new(name: String, alias: Option<String>) -> Service {
+        Service {
             name,
             alias,
             environments: vec![],
@@ -122,7 +122,7 @@ impl ServiceConfig {
         }
     }
 
-    pub fn get_environment(&self, name: &str) -> Option<&ServiceEnvironmentConfig> {
+    pub fn get_environment(&self, name: &str) -> Option<&Environment> {
         for environment in &self.environments {
             if environment.name == name || environment.alias == Some(name.to_string()) {
                 return Some(environment);
@@ -131,7 +131,7 @@ impl ServiceConfig {
         None
     }
 
-    pub fn get_default_environment(&self) -> Option<&ServiceEnvironmentConfig> {
+    pub fn get_default_environment(&self) -> Option<&Environment> {
         for environment in &self.environments {
             if environment.default {
                 return Some(environment)
@@ -140,7 +140,7 @@ impl ServiceConfig {
         None
     }
 
-    pub fn get_default_environment_mut(&mut self) -> Option<&mut ServiceEnvironmentConfig> {
+    pub fn get_default_environment_mut(&mut self) -> Option<&mut Environment> {
         for environment in &mut self.environments {
             if environment.default {
                 return Some(environment)
@@ -180,8 +180,8 @@ impl ServiceConfig {
     }
 }
 
-impl ServiceEnvironmentConfig {
-    pub fn new(name: String, alias: Option<String>, host: String, default: bool) -> ServiceEnvironmentConfig {
-        ServiceEnvironmentConfig { name, alias, host, default }
+impl Environment {
+    pub fn new(name: String, alias: Option<String>, host: String, default: bool) -> Environment {
+        Environment { name, alias, host, default }
     }
 }
