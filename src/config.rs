@@ -101,6 +101,15 @@ impl HtrsConfig {
         None
     }
 
+    pub fn get_service_mut(&mut self, name: &str) -> Option<&mut ServiceConfig> {
+        for service in &mut self.services {
+            if service.name == name || service.alias == Some(name.to_string()) {
+                return Some(service);
+            }
+        }
+        None
+    }
+
     pub fn find_service_config_mut(&mut self, name: &str) -> Option<&mut ServiceConfig> {
         for service in &mut self.services {
             if service.name == name {
@@ -120,6 +129,15 @@ impl ServiceConfig {
             headers: HashMap::new(),
             endpoints: vec![]
         }
+    }
+
+    pub fn get_environment(&self, name: &str) -> Option<&ServiceEnvironmentConfig> {
+        for environment in &self.environments {
+            if environment.name == name || environment.alias == Some(name.to_string()) {
+                return Some(environment);
+            }
+        }
+        None
     }
 
     pub fn environment_exists(&self, name: &str) -> bool {
@@ -178,7 +196,7 @@ impl ServiceConfig {
     
     pub fn remove_environment(&mut self, name: &str) -> bool {
         let init_len = self.environments.len();
-        self.environments.retain(|x| x.name != name);
+        self.environments.retain(|x| x.name != name && x.alias != Some(name.to_string()));
         return init_len != self.environments.len();
     }
 
