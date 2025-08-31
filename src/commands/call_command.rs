@@ -30,6 +30,11 @@ impl CallServiceEndpointCommand {
         for service in &config.services {
             let mut service_command = Command::new(service.name.clone())
                 .arg_required_else_help(true);
+            if let Some(alias) = &service.alias {
+                service_command = service_command.visible_alias(alias);
+            }
+
+
             for endpoint in &service.endpoints {
                 let mut endpoint_command = Command::new(endpoint.name.clone());
 
