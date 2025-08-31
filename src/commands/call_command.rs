@@ -30,6 +30,11 @@ impl CallServiceEndpointCommand {
         for service in &config.services {
             let mut service_command = Command::new(service.name.clone())
                 .arg_required_else_help(true);
+            if let Some(alias) = &service.alias {
+                service_command = service_command.visible_alias(alias);
+            }
+
+
             for endpoint in &service.endpoints {
                 let mut endpoint_command = Command::new(endpoint.name.clone());
 
@@ -63,7 +68,7 @@ impl CallServiceEndpointCommand {
         let Some((service_name, service_matches)) = args.subcommand() else {
             panic!("Bad service subcommand for CallServiceEndpointCommand");
         };
-        let Some(service) = config.find_service_config(service_name) else {
+        let Some(service) = config.get_service(service_name) else {
             panic!("Bad service name");
         };
 
@@ -86,11 +91,11 @@ impl CallServiceEndpointCommand {
     }
 
     pub fn execute_command(&self, config: &HtrsConfig) -> Result<HtrsAction, HtrsError> {
-        let service = config.find_service_config(&self.service_name).unwrap();
+        let service = config.get_service(&self.service_name).unwrap();
         let environment = match &self.environment_name {
-            Some(environment_name) => service.find_environment(&environment_name).unwrap(),
+            Some(environment_name) => service.get_environment(&environment_name).unwrap(),
             None => {
-                let Some(environment) = service.find_default_environment() else {
+                let Some(environment) = service.get_default_environment() else {
                     return Err(HtrsError::new(&format!("No default environment defined for service {}", self.service_name)));
                 };
                 environment
@@ -214,6 +219,7 @@ mod command_builder_tests {
 
             ServiceConfig {
                 name: name.clone(),
+                alias: None,
                 headers: HashMap::new(),
                 endpoints: self.endpoints.clone(),
                 environments: self.environments.clone(),

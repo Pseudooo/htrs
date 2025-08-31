@@ -4,6 +4,9 @@ mod commands;
 mod outcomes;
 mod command_builder;
 
+#[cfg(test)]
+mod test_helpers;
+
 use crate::command_args::RootCommands;
 use crate::command_builder::get_root_command;
 use crate::commands::execute_command;

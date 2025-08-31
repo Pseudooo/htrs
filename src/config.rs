@@ -60,6 +60,7 @@ pub struct HtrsConfig {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ServiceConfig {
     pub name: String,
+    pub alias: Option<String>,
     pub environments: Vec<ServiceEnvironmentConfig>,
     pub headers: HashMap<String, String>,
     pub endpoints: Vec<Endpoint>,
@@ -68,6 +69,7 @@ pub struct ServiceConfig {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ServiceEnvironmentConfig {
     pub name: String,
+    pub alias: Option<String>,
     pub host: String,
     pub default: bool,
 }
@@ -84,27 +86,24 @@ impl HtrsConfig {
         HtrsConfig { services: Vec::new(), headers: HashMap::new() }
     }
 
-    pub fn service_defined(&self, name: &str) -> bool {
-        for service in &self.services {
-            if service.name == name {
-                return true;
-            }
-        }
-        return false;
+    pub fn remove_service(&mut self, name: &str) -> bool {
+        let init_length = self.services.len();
+        self.services.retain(|service| service.name != name && service.alias != Some(name.to_string()));
+        return init_length != self.services.len();
     }
 
-    pub fn find_service_config(&self, name: &str) -> Option<&ServiceConfig> {
+    pub fn get_service(&self, name: &str) -> Option<&ServiceConfig> {
         for service in &self.services {
-            if service.name == name {
+            if service.name == name || service.alias == Some(name.to_string()) {
                 return Some(service);
             }
         }
         None
     }
 
-    pub fn find_service_config_mut(&mut self, name: &str) -> Option<&mut ServiceConfig> {
+    pub fn get_service_mut(&mut self, name: &str) -> Option<&mut ServiceConfig> {
         for service in &mut self.services {
-            if service.name == name {
+            if service.name == name || service.alias == Some(name.to_string()) {
                 return Some(service);
             }
         }
@@ -113,49 +112,47 @@ impl HtrsConfig {
 }
 
 impl ServiceConfig {
-    pub fn new(name: String) -> ServiceConfig {
+    pub fn new(name: String, alias: Option<String>) -> ServiceConfig {
         ServiceConfig {
             name,
+            alias,
             environments: vec![],
             headers: HashMap::new(),
             endpoints: vec![]
         }
     }
 
-    pub fn environment_exists(&self, name: &str) -> bool {
+    pub fn get_environment(&self, name: &str) -> Option<&ServiceEnvironmentConfig> {
         for environment in &self.environments {
-            if environment.name == name {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    pub fn find_environment(&self, name: &str) -> Option<&ServiceEnvironmentConfig> {
-        for environment in &self.environments {
-            if environment.name == name {
+            if environment.name == name || environment.alias == Some(name.to_string()) {
                 return Some(environment);
             }
         }
         None
     }
 
-    pub fn find_default_environment(&self) -> Option<&ServiceEnvironmentConfig> {
+    pub fn get_default_environment(&self) -> Option<&ServiceEnvironmentConfig> {
         for environment in &self.environments {
             if environment.default {
-                return Some(environment);
+                return Some(environment)
             }
         }
         None
     }
-    
-    pub fn find_default_environment_mut(&mut self) -> Option<&mut ServiceEnvironmentConfig> {
+
+    pub fn get_default_environment_mut(&mut self) -> Option<&mut ServiceEnvironmentConfig> {
         for environment in &mut self.environments {
             if environment.default {
-                return Some(environment);
+                return Some(environment)
             }
         }
         None
+    }
+
+    pub fn remove_environment(&mut self, name: &str) -> bool {
+        let init_len = self.environments.len();
+        self.environments.retain(|x| x.name != name && x.alias != Some(name.to_string()));
+        return init_len != self.environments.len();
     }
 
     pub fn endpoint_exists(&self, name: &str) -> bool {
@@ -175,12 +172,6 @@ impl ServiceConfig {
         }
         None
     }
-    
-    pub fn remove_environment(&mut self, name: &str) -> bool {
-        let init_len = self.environments.len();
-        self.environments.retain(|x| x.name != name);
-        return init_len != self.environments.len();
-    }
 
     pub fn remove_endpoint(&mut self, name: &str) -> bool {
         let init_len = self.endpoints.len();
@@ -190,7 +181,7 @@ impl ServiceConfig {
 }
 
 impl ServiceEnvironmentConfig {
-    pub fn new(name: String, host: String, default: bool) -> ServiceEnvironmentConfig {
-        ServiceEnvironmentConfig { name, host, default }
+    pub fn new(name: String, alias: Option<String>, host: String, default: bool) -> ServiceEnvironmentConfig {
+        ServiceEnvironmentConfig { name, alias, host, default }
     }
 }

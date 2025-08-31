@@ -1,44 +1,10 @@
 use crate::commands::call_command::CallServiceEndpointCommand;
+use crate::commands::service_commands::ServiceCommand;
 
 pub enum RootCommands {
-    Service(ServiceCommands),
+    Service(ServiceCommand),
     Call(CallServiceEndpointCommand),
     Config(ConfigurationCommands),
-}
-
-pub enum ServiceCommands {
-    Add {
-        name: String,
-    },
-    Remove {
-        name: String
-    },
-    List,
-    Config {
-        service_name: String,
-        config_command: ConfigurationCommands,
-    },
-    Environment(EnvironmentCommands),
-    Endpoint {
-        service_name: String,
-        command: EndpointCommands
-    }
-}
-
-pub enum EnvironmentCommands {
-    Add {
-        service_name: String,
-        name: String,
-        host: String,
-        default: bool,
-    },
-    List {
-        service_name: String
-    },
-    Remove {
-        service_name: String,
-        environment_name: String,
-    }
 }
 
 pub enum EndpointCommands {

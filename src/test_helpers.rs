@@ -1,0 +1,79 @@
+use crate::config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
+use std::collections::HashMap;
+
+pub struct HtrsConfigBuilder {
+    pub services: Vec<ServiceConfig>
+}
+
+pub struct HtrsServiceBuilder {
+    pub name: Option<String>,
+    pub alias: Option<String>,
+    pub environments: Vec<ServiceEnvironmentConfig>,
+}
+
+impl HtrsConfigBuilder {
+    pub fn new() -> Self {
+        Self {
+            services: vec![],
+        }
+    }
+
+    pub fn with_service(mut self, service_builder: HtrsServiceBuilder) -> Self {
+        self.services.push(service_builder.build());
+        self
+    }
+
+    pub fn build(self) -> HtrsConfig {
+        HtrsConfig {
+            services: self.services,
+            headers: HashMap::new(),
+        }
+    }
+}
+
+impl HtrsServiceBuilder {
+    pub fn new() -> Self {
+        Self {
+            name: None,
+            alias: None,
+            environments: vec![],
+        }
+    }
+
+    pub fn with_name(mut self, name: &str) -> HtrsServiceBuilder {
+        self.name = Some(name.to_string());
+        self
+    }
+
+    pub fn with_alias(mut self, alias: &str) -> HtrsServiceBuilder {
+        self.alias = Some(alias.to_string());
+        self
+    }
+
+    pub fn with_environment(mut self, name: &str, alias: Option<&str>, host: &str, default: bool) -> HtrsServiceBuilder {
+        self.environments.push(ServiceEnvironmentConfig {
+            name: name.to_string(),
+            alias: match alias {
+                Some(alias) => Some(alias.to_string()),
+                _ => None,
+            },
+            host: host.to_string(),
+            default,
+        });
+        self
+    }
+
+    pub fn build(self) -> ServiceConfig {
+        let Some(name) = self.name else {
+            panic!("Name not specified for built service");
+        };
+
+        ServiceConfig {
+            name,
+            alias: self.alias,
+            environments: self.environments,
+            endpoints: vec![],
+            headers: HashMap::new(),
+        }
+    }
+}
