@@ -381,10 +381,30 @@ mod endpoint_command_execution_tests {
         let result = command.execute_command(&mut config);
 
         assert!(result.is_ok(), "{}", result.err().unwrap());
-        let HtrsAction::PrintDialogue(dialogue) = result.unwrap() else {
+        let PrintDialogue(dialogue) = result.unwrap() else {
             panic!("Returned action was not HtrsAction::PrintDialogue");
         };
         assert!(dialogue.contains(" - foo_endpoint"), "Dialogue did not contain endpoint");
+    }
+
+    #[test]
+    fn given_known_service_with_no_endpoints_when_list_endpoints_should_list_none() {
+        let mut config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("foo_service")
+            )
+            .build();
+        let command = EndpointCommand::List {
+            service: "foo_service".to_string(),
+        };
+
+        let result = command.execute_command(&mut config);
+        assert!(result.is_ok(), "Result was error");
+        let PrintDialogue(dialogue) = result.unwrap() else {
+            panic!("Returned action was not HtrsAction::PrintDialogue");
+        };
+        assert_eq!(dialogue, "No endpoints defined");
     }
 
     #[test]
