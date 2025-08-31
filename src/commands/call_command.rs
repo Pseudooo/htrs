@@ -155,11 +155,11 @@ mod command_builder_tests {
     use crate::command_args::RootCommands;
     use crate::command_args::RootCommands::Call;
     use crate::command_builder::get_root_command;
-    use crate::config::{ServiceConfig, ServiceEnvironmentConfig};
+    use crate::config::{Environment, Service};
     use clap::Error;
 
     struct HtrsConfigBuilder {
-        pub services: Vec<ServiceConfig>,
+        pub services: Vec<Service>,
     }
 
     impl HtrsConfigBuilder {
@@ -184,7 +184,7 @@ mod command_builder_tests {
 
     struct HtrsServiceBuilder {
         pub name: Option<String>,
-        pub environments: Vec<ServiceEnvironmentConfig>,
+        pub environments: Vec<Environment>,
         pub endpoints: Vec<Endpoint>
     }
 
@@ -212,12 +212,12 @@ mod command_builder_tests {
             self
         }
 
-        fn build(self) -> ServiceConfig {
+        fn build(self) -> Service {
             let Some(name) = &self.name else {
                 panic!("No name specified for service");
             };
 
-            ServiceConfig {
+            Service {
                 name: name.clone(),
                 alias: None,
                 headers: HashMap::new(),

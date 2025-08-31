@@ -1,7 +1,7 @@
 use crate::command_args::EndpointCommands;
 use crate::command_builder::{get_endpoint_command, get_header_configuration_command, MatchBinding};
 use crate::commands::environment_commands::EnvironmentCommand;
-use crate::config::{Endpoint, HtrsConfig, ServiceConfig};
+use crate::config::{Endpoint, HtrsConfig, Service};
 use crate::outcomes::HtrsAction::{PrintDialogue, UpdateConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgMatches, Command};
@@ -130,7 +130,7 @@ fn add_new_service(config: &mut HtrsConfig, name: &str, alias: &Option<String>) 
         }
     }
 
-    config.services.push(ServiceConfig::new(name.to_string(), alias.clone()));
+    config.services.push(Service::new(name.to_string(), alias.clone()));
     Ok(UpdateConfig)
 }
 
