@@ -149,6 +149,13 @@ fn add_new_environment(config: &mut HtrsConfig, service_name: &str, name: &str, 
         }
     }
 
+    // If the new environment is the default need to replace existing default
+    if *default {
+        if let Some(existing_default) = service.get_default_environment() {
+            existing_default.default = false;
+        }
+    }
+
     service.environments.push(
         ServiceEnvironmentConfig::new(
             name.to_string(),
@@ -330,6 +337,41 @@ mod environment_command_execution_tests {
         assert_eq!(new_environment.unwrap().name, "foo_environment");
         assert_eq!(new_environment.unwrap().alias, alias);
         assert_eq!(new_environment.unwrap().host, "host.com");
+        assert_eq!(new_environment.unwrap().default, true);
+    }
+
+    #[test]
+    fn given_known_service_and_existing_default_environment_when_add_new_default_then_should_replace_old_default() {
+        let mut config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_environment("existing_environment", None, "host.com", true)
+            )
+            .build();
+        let command = EnvironmentCommand::Add {
+            service: "foo_service".to_string(),
+            name: "new_environment".to_string(),
+            alias: None,
+            host: "foo.com".to_string(),
+            default: true,
+        };
+
+        let result = command.execute_command(&mut config);
+        assert!(result.is_ok(), "{}", result.err().unwrap().to_string());
+        assert!(matches!(result.unwrap(), UpdateConfig));
+
+        let service = config.get_service("foo_service")
+            .unwrap();
+        let existing_environment = service.get_environment("existing_environment")
+            .unwrap();
+        assert_eq!(existing_environment.default, false);
+
+        let new_environment = service.get_environment("new_environment");
+        assert!(new_environment.is_some(), "{}", "Environment not found in config");
+        assert_eq!(new_environment.unwrap().name, "new_environment");
+        assert_eq!(new_environment.unwrap().alias, None);
+        assert_eq!(new_environment.unwrap().host, "foo.com");
         assert_eq!(new_environment.unwrap().default, true);
     }
 
