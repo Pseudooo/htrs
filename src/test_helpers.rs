@@ -1,4 +1,4 @@
-use crate::config::{HtrsConfig, ServiceConfig};
+use crate::config::{HtrsConfig, ServiceConfig, ServiceEnvironmentConfig};
 use std::collections::HashMap;
 
 pub struct HtrsConfigBuilder {
@@ -8,6 +8,7 @@ pub struct HtrsConfigBuilder {
 pub struct HtrsServiceBuilder {
     pub name: Option<String>,
     pub alias: Option<String>,
+    pub environments: Vec<ServiceEnvironmentConfig>,
 }
 
 impl HtrsConfigBuilder {
@@ -35,6 +36,7 @@ impl HtrsServiceBuilder {
         Self {
             name: None,
             alias: None,
+            environments: vec![],
         }
     }
 
@@ -48,6 +50,19 @@ impl HtrsServiceBuilder {
         self
     }
 
+    pub fn with_environment(mut self, name: &str, alias: Option<&str>, host: &str, default: bool) -> HtrsServiceBuilder {
+        self.environments.push(ServiceEnvironmentConfig {
+            name: name.to_string(),
+            alias: match alias {
+                Some(alias) => Some(alias.to_string()),
+                _ => None,
+            },
+            host: host.to_string(),
+            default,
+        });
+        self
+    }
+
     pub fn build(self) -> ServiceConfig {
         let Some(name) = self.name else {
             panic!("Name not specified for built service");
@@ -56,7 +71,7 @@ impl HtrsServiceBuilder {
         ServiceConfig {
             name,
             alias: self.alias,
-            environments: vec![],
+            environments: self.environments,
             endpoints: vec![],
             headers: HashMap::new(),
         }
