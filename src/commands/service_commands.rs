@@ -1,7 +1,7 @@
-use crate::command_args::EndpointCommands;
-use crate::command_builder::{get_endpoint_command, get_header_configuration_command, MatchBinding};
+use crate::command_builder::{get_header_configuration_command, MatchBinding};
+use crate::commands::endpoint_commands::EndpointCommand;
 use crate::commands::environment_commands::EnvironmentCommand;
-use crate::config::{Endpoint, HtrsConfig, Service};
+use crate::config::{HtrsConfig, Service};
 use crate::outcomes::HtrsAction::{PrintDialogue, UpdateConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgMatches, Command};
@@ -17,8 +17,7 @@ pub enum ServiceCommand {
     List,
     Environment(EnvironmentCommand),
     Endpoint {
-        service: String,
-        command: EndpointCommands,
+        command: EndpointCommand,
     }
 }
 
@@ -71,7 +70,7 @@ impl ServiceCommand {
                     )
                     .subcommand(get_header_configuration_command())
             )
-            .subcommand(get_endpoint_command())
+            .subcommand(EndpointCommand::get_command())
     }
 
     pub fn bind_from_matches(args: &ArgMatches) -> ServiceCommand {
@@ -99,10 +98,8 @@ impl ServiceCommand {
                 )
             },
             Some(("endpoint", endpoint_matches)) => {
-                let service = endpoint_matches.bind_field("service_name");
                 ServiceCommand::Endpoint {
-                    service,
-                    command: EndpointCommands::bind_from_matches(endpoint_matches),
+                    command: EndpointCommand::bind_from_matches(endpoint_matches),
                 }
             }
             _ => panic!("Bad subcommand given for ServiceCommand"),
@@ -115,7 +112,7 @@ impl ServiceCommand {
             ServiceCommand::Remove { name } => remove_service(config, name),
             ServiceCommand::List => list_services(config),
             ServiceCommand::Environment(environment_command) => environment_command.execute_command(config),
-            ServiceCommand::Endpoint { service, command } => execute_endpoint_command(config, service, command),
+            ServiceCommand::Endpoint { command } => command.execute_command(config),
         }
     }
 }
@@ -155,45 +152,6 @@ fn list_services(config: &HtrsConfig) -> Result<HtrsAction, HtrsError> {
         .collect::<Vec<String>>()
         .join("\n");
     Ok(PrintDialogue(dialogue))
-}
-
-fn execute_endpoint_command(config: &mut HtrsConfig, service_name: &String, cmd: &EndpointCommands) -> Result<HtrsAction, HtrsError> {
-    let Some(service) = config.get_service_mut(&service_name) else {
-        return Err(HtrsError::new(&format!("Service `{}` not found", service_name)));
-    };
-    match cmd {
-        EndpointCommands::Add { name, path_template, query_parameters } => {
-            if service.endpoint_exists(&name) {
-                return Err(HtrsError::new(&format!("Endpoint `{}` already exists", name)));
-            }
-
-            service.endpoints.push(Endpoint {
-                name: name.to_string(),
-                path_template: path_template.to_string(),
-                query_parameters: query_parameters.clone(),
-            });
-            Ok(UpdateConfig)
-        },
-        EndpointCommands::List => {
-            if service.endpoints.len() == 0 {
-                return Ok(PrintDialogue(format!("No endpoints defined for `{}`", service_name)));
-            }
-
-            let dialogue = service.endpoints
-                .iter()
-                .map(|service| format!(" - {}", service.name))
-                .collect::<Vec<String>>()
-                .join("\n");
-            Ok(PrintDialogue(dialogue))
-        },
-        EndpointCommands::Remove { name } => {
-            let success = service.remove_endpoint(&name);
-            match success {
-                true => Ok(UpdateConfig),
-                false => Err(HtrsError::new(&format!("Endpoint `{}` not found", name))),
-            }
-        }
-    }
 }
 
 #[cfg(test)]

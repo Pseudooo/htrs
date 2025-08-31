@@ -75,7 +75,7 @@ impl CallServiceEndpointCommand {
         let Some((endpoint_name, endpoint_matches)) = service_matches.subcommand() else {
             panic!("Bad endpoint subcommand for CallServiceEndpointCommand");
         };
-        let Some(endpoint) = service.find_endpoint(endpoint_name) else {
+        let Some(endpoint) = service.get_endpoint(endpoint_name) else {
             panic!("Bad endpoint name");
         };
 
