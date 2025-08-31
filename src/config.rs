@@ -155,6 +155,21 @@ impl Service {
         return init_len != self.environments.len();
     }
 
+    pub fn get_endpoint(&self, name: &str) -> Option<&Endpoint> {
+        for endpoint in &self.endpoints {
+            if endpoint.name == name {
+                return Some(endpoint);
+            }
+        }
+        None
+    }
+
+    pub fn remove_endpoint(&mut self, name: &str) -> bool {
+        let init_len = self.endpoints.len();
+        self.endpoints.retain(|x| x.name != name);
+        return init_len != self.endpoints.len();
+    }
+
     pub fn endpoint_exists(&self, name: &str) -> bool {
         for endpoint in &self.endpoints {
             if endpoint.name == name {
@@ -171,12 +186,6 @@ impl Service {
             }
         }
         None
-    }
-
-    pub fn remove_endpoint(&mut self, name: &str) -> bool {
-        let init_len = self.endpoints.len();
-        self.endpoints.retain(|x| x.name != name);
-        return init_len != self.endpoints.len();
     }
 }
 

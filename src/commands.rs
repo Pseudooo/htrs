@@ -1,6 +1,7 @@
 pub(crate) mod call_command;
 pub(crate) mod service_commands;
 mod environment_commands;
+mod endpoint_commands;
 
 use crate::command_args::ConfigurationCommands::Header;
 use crate::command_args::HeaderCommands::{Clear, Set};
