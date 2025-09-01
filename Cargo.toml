@@ -2,7 +2,7 @@
 name = "htrs"
 description = "HTTP CLI for services across multiple environments"
 license = "MIT"
-version = "1.0.0-alpha"
+version = "1.0.0"
 edition = "2021"
 
 [dependencies]
