@@ -4,6 +4,7 @@ description = "HTTP CLI for services across multiple environments"
 license = "MIT"
 version = "1.0.0"
 edition = "2021"
+repository = "https://github.com/Pseudooo/htrs"
 
 [dependencies]
 clap = { version = "4.5.40", features = ["string"] }
