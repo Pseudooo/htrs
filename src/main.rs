@@ -47,10 +47,10 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
             Ok(())
         },
         HtrsAction::MakeRequest {
-            url: base_url, query_parameters, method
+            url: base_url, query_parameters, method, headers
         } => {
             let url = apply_query_params_to_url(base_url, query_parameters)?;
-            execute_request(method, url)
+            execute_request(method, url, headers)
         },
     }
 }
@@ -71,12 +71,18 @@ fn apply_query_params_to_url(base_url: Url, query_params: HashMap<String, String
     }
 }
 
-fn execute_request(method: Method, url: Url) -> Result<(), HtrsError> {
+fn execute_request(method: Method, url: Url, headers: HashMap<String, String>) -> Result<(), HtrsError> {
     let client = Client::new();
-    let  request = match client.request(method.clone(), url.clone()).build() {
+    let mut request_builder = client.request(method.clone(), url.clone());
+    for (k, v) in headers {
+        request_builder = request_builder.header(k, v);
+    }
+
+    let request = match request_builder.build() {
         Ok(request) => request,
         Err(e) => return Err(HtrsError::new(&e.to_string())),
     };
+
 
     match client.execute(request) {
         Ok(response) => {
