@@ -4,7 +4,7 @@ use crate::outcomes::HtrsAction::UpdateConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgMatches, Command};
 
-pub enum HeaderCommand{
+pub enum GlobalHeaderCommand {
     Set {
         header_name: String,
         header_value: String,
@@ -14,7 +14,7 @@ pub enum HeaderCommand{
     },
 }
 
-impl HeaderCommand {
+impl GlobalHeaderCommand {
     pub fn get_command() -> Command {
         Command::new("header")
             .about("Manage global headers")
@@ -47,16 +47,16 @@ impl HeaderCommand {
             )
     }
 
-    pub fn bind_from_matches(args: &ArgMatches) -> HeaderCommand {
+    pub fn bind_from_matches(args: &ArgMatches) -> GlobalHeaderCommand {
         match args.subcommand() {
             Some(("set", set_matches)) => {
-                HeaderCommand::Set {
+                GlobalHeaderCommand::Set {
                     header_name: set_matches.bind_field("header_name"),
                     header_value: set_matches.bind_field("header_value"),
                 }
             },
             Some(("clear", clear_matches)) => {
-                HeaderCommand::Clear {
+                GlobalHeaderCommand::Clear {
                     header_name: clear_matches.bind_field("header_name"),
                 }
             },
@@ -66,10 +66,10 @@ impl HeaderCommand {
 
     pub fn execute_command(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
         match self {
-            HeaderCommand::Set { header_name, header_value } => {
+            GlobalHeaderCommand::Set { header_name, header_value } => {
                 config.set_header(header_name.clone(), header_value.clone());
             }
-            HeaderCommand::Clear { header_name } => {
+            GlobalHeaderCommand::Clear { header_name } => {
                 config.clear_header(header_name.clone());
             }
         }
@@ -82,10 +82,10 @@ mod header_command_binding_tests {
     use super::*;
     use clap::Error;
 
-    fn get_parsed_command(args: Vec<&str>) -> Result<HeaderCommand, Error> {
-        let command = HeaderCommand::get_command();
+    fn get_parsed_command(args: Vec<&str>) -> Result<GlobalHeaderCommand, Error> {
+        let command = GlobalHeaderCommand::get_command();
         let matches = command.try_get_matches_from(args)?;
-        Ok(HeaderCommand::bind_from_matches(&matches))
+        Ok(GlobalHeaderCommand::bind_from_matches(&matches))
     }
 
     #[test]
@@ -95,7 +95,7 @@ mod header_command_binding_tests {
         let result = get_parsed_command(args);
 
         assert!(result.is_ok(), "Result was not ok: {}", result.err().unwrap());
-        let HeaderCommand::Set {
+        let GlobalHeaderCommand::Set {
             header_name,
             header_value} = result.unwrap() else {
             panic!("Command was not HeaderCommand::Set");
@@ -111,7 +111,7 @@ mod header_command_binding_tests {
         let result = get_parsed_command(args);
 
         assert!(result.is_ok(), "Result was not ok: {}", result.err().unwrap());
-        let HeaderCommand::Clear {
+        let GlobalHeaderCommand::Clear {
             header_name,
         } = result.unwrap() else {
             panic!("Command was not HeaderCommand::Clear");
@@ -129,7 +129,7 @@ mod header_command_execution_tests {
     fn given_set_header_command_when_valid_then_should_set_header() {
         let mut config = HtrsConfigBuilder::new()
             .build();
-        let command = HeaderCommand::Set {
+        let command = GlobalHeaderCommand::Set {
             header_name: "header_name".to_string(),
             header_value: "header_value".to_string(),
         };
@@ -149,7 +149,7 @@ mod header_command_execution_tests {
         let mut config = HtrsConfigBuilder::new()
             .with_header("foo_header", "old_value")
             .build();
-        let command = HeaderCommand::Set {
+        let command = GlobalHeaderCommand::Set {
             header_name: "foo_header".to_string(),
             header_value: "new_value".to_string(),
         };
@@ -169,7 +169,7 @@ mod header_command_execution_tests {
         let mut config = HtrsConfigBuilder::new()
             .with_header("header_name", "header_value")
             .build();
-        let command = HeaderCommand::Clear {
+        let command = GlobalHeaderCommand::Clear {
             header_name: "header_name".to_string(),
         };
 

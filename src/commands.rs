@@ -1,6 +1,6 @@
 pub(crate) mod call_command;
 pub(crate) mod service_commands;
-pub(crate) mod header_commands;
+pub(crate) mod global_header_commands;
 mod environment_commands;
 mod endpoint_commands;
 

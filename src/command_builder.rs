@@ -1,6 +1,6 @@
 use crate::command_args::RootCommands;
 use crate::commands::call_command::CallServiceEndpointCommand;
-use crate::commands::header_commands::HeaderCommand;
+use crate::commands::global_header_commands::GlobalHeaderCommand;
 use crate::commands::service_commands::ServiceCommand;
 use crate::config::HtrsConfig;
 use clap::{ArgMatches, Command};
@@ -58,7 +58,7 @@ impl RootCommands {
             },
             Some(("header", header_matches)) => {
                 RootCommands::Header(
-                    HeaderCommand::bind_from_matches(header_matches)
+                    GlobalHeaderCommand::bind_from_matches(header_matches)
                 )
             },
             _ => panic!("Bad subcommand for RootCommands"),
@@ -72,7 +72,7 @@ pub fn get_root_command(config: &HtrsConfig) -> Command {
         .about("A flexible http cli client")
         .subcommand(ServiceCommand::get_command())
         .subcommand(CallServiceEndpointCommand::get_command(config))
-        .subcommand(HeaderCommand::get_command());
+        .subcommand(GlobalHeaderCommand::get_command());
 
     command
 }
