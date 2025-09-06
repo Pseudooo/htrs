@@ -1,4 +1,4 @@
-use crate::command_builder::{get_header_configuration_command, MatchBinding};
+use crate::command_builder::MatchBinding;
 use crate::commands::endpoint_commands::EndpointCommand;
 use crate::commands::environment_commands::EnvironmentCommand;
 use crate::config::{HtrsConfig, Service};
@@ -18,7 +18,7 @@ pub enum ServiceCommand {
     Environment(EnvironmentCommand),
     Endpoint {
         command: EndpointCommand,
-    }
+    },
 }
 
 impl ServiceCommand {
@@ -68,7 +68,6 @@ impl ServiceCommand {
                             .help("Service name to configure")
                             .required(true)
                     )
-                    .subcommand(get_header_configuration_command())
             )
             .subcommand(EndpointCommand::get_command())
     }
