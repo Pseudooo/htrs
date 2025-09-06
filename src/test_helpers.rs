@@ -2,7 +2,8 @@ use crate::config::{Endpoint, Environment, HtrsConfig, Service};
 use std::collections::HashMap;
 
 pub struct HtrsConfigBuilder {
-    pub services: Vec<Service>
+    pub services: Vec<Service>,
+    pub headers: HashMap<String,String>,
 }
 
 pub struct HtrsServiceBuilder {
@@ -16,11 +17,17 @@ impl HtrsConfigBuilder {
     pub fn new() -> Self {
         Self {
             services: vec![],
+            headers: HashMap::new(),
         }
     }
 
     pub fn with_service(mut self, service_builder: HtrsServiceBuilder) -> Self {
         self.services.push(service_builder.build());
+        self
+    }
+
+    pub fn with_header(mut self, header_name: &str, header_value: &str) -> Self {
+        self.headers.insert(header_name.to_string(), header_value.to_string());
         self
     }
 

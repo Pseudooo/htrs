@@ -13,6 +13,7 @@ pub struct CallServiceEndpointCommand {
     pub environment_name: Option<String>,
     pub path: String,
     pub query_parameters: HashMap<String, String>,
+    pub headers: HashMap<String, String>,
 }
 
 impl CallServiceEndpointCommand {
@@ -33,7 +34,6 @@ impl CallServiceEndpointCommand {
             if let Some(alias) = &service.alias {
                 service_command = service_command.visible_alias(alias);
             }
-
 
             for endpoint in &service.endpoints {
                 let mut endpoint_command = Command::new(endpoint.name.clone());
@@ -79,6 +79,9 @@ impl CallServiceEndpointCommand {
             panic!("Bad endpoint name");
         };
 
+        let mut headers = config.headers.clone();
+        merge(&mut headers, &service.headers);
+
         let path = build_path_from_template(&endpoint.path_template, endpoint_matches);
         let query_parameters = get_query_parameters_from_args(endpoint, endpoint_matches);
 
@@ -87,6 +90,7 @@ impl CallServiceEndpointCommand {
             environment_name,
             path,
             query_parameters,
+            headers,
         }
     }
 
@@ -115,6 +119,7 @@ impl CallServiceEndpointCommand {
             url,
             query_parameters: self.query_parameters.clone(),
             method: Method::GET,
+            headers: self.headers.clone(),
         })
     }
 }
@@ -147,6 +152,12 @@ fn get_query_parameters_from_args(endpoint: &Endpoint, args: &ArgMatches) -> Has
         query_parameters.insert(parameter_name.to_string(), parameter_value);
     }
     return query_parameters;
+}
+
+fn merge(into: &mut HashMap<String, String>, from: &HashMap<String, String>) {
+    for (k, v) in from.iter() {
+        into.insert(k.to_string(), v.to_string());
+    }
 }
 
 #[cfg(test)]

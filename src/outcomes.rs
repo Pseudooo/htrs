@@ -33,5 +33,6 @@ pub enum HtrsAction {
         url: Url,
         query_parameters: HashMap<String, String>,
         method: Method,
+        headers: HashMap<String, String>,
     },
 }
