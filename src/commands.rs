@@ -3,6 +3,7 @@ pub(crate) mod service_commands;
 pub(crate) mod global_header_commands;
 mod environment_commands;
 mod endpoint_commands;
+mod service_header_commands;
 
 use crate::command_args::RootCommands;
 use crate::command_args::RootCommands::{Call, Header, Service};

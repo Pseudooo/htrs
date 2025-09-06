@@ -60,7 +60,7 @@ impl GlobalHeaderCommand {
                     header_name: clear_matches.bind_field("header_name"),
                 }
             },
-            _ => panic!("Bad subcommand for HeaderCommand"),
+            _ => panic!("Bad subcommand for GlobalHeaderCommand"),
         }
     }
 
@@ -78,7 +78,7 @@ impl GlobalHeaderCommand {
 }
 
 #[cfg(test)]
-mod header_command_binding_tests {
+mod global_header_command_binding_tests {
     use super::*;
     use clap::Error;
 
@@ -121,7 +121,7 @@ mod header_command_binding_tests {
 }
 
 #[cfg(test)]
-mod header_command_execution_tests {
+mod global_header_command_execution_tests {
     use super::*;
     use crate::test_helpers::HtrsConfigBuilder;
 

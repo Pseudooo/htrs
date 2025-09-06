@@ -181,6 +181,14 @@ impl Service {
         self.endpoints.retain(|x| x.name != name);
         return init_len != self.endpoints.len();
     }
+
+    pub fn set_header(&mut self, header_name: String, header_value: String) {
+        self.headers.insert(header_name, header_value);
+    }
+
+    pub fn clear_header(&mut self, header_name: String) {
+        self.headers.remove(&header_name);
+    }
 }
 
 impl Environment {
