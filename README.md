@@ -259,8 +259,14 @@ Usage: htrs.exe call example endpoint --path <path> --query <query>
 Options:
       --path <path>    
       --query <query>  
+  -q, --query-param <query param>  Set a query parameter for the request in the format `name=value`
   -h, --help           Print help
 ```
+
+The `-q` or `--query-param` argument can be used to provide additional query parameters that aren't included in the template.
+If a query parameter that's provided with this argument has the same name as any defined in the endpoint it will override
+the value provided directly from the endpoint's corresponding argument.
+
 
 ## Headers
 
