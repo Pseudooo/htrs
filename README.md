@@ -260,7 +260,7 @@ Options:
       --path <path>    
       --query <query>  
   -q, --query-param <query param>  Set a query parameter for the request in the format `name=value`
-  -h, --help           Print help
+  -h, --help                       Print help
 ```
 
 The `-q` or `--query-param` argument can be used to provide additional query parameters that aren't included in the template.
