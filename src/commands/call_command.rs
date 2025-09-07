@@ -39,9 +39,12 @@ impl CallServiceEndpointCommand {
                 let mut endpoint_command = Command::new(endpoint.name.clone())
                     .arg(
                         Arg::new("query_parameters")
+                            .value_name("query param")
                             .help("Set a query parameter for the request in the format `name=value`")
                             .required(false)
                             .action(ArgAction::Append)
+                            .long("query-param")
+                            .short('q')
                     );
 
                 let templated_params = get_path_template_params(&endpoint.path_template);
@@ -91,7 +94,7 @@ impl CallServiceEndpointCommand {
         let path = build_path_from_template(&endpoint.path_template, endpoint_matches);
         let mut query_parameters = get_query_parameters_from_args(endpoint, endpoint_matches);
 
-        let query_param_args: Vec<String> = args.bind_field("query_parameters");
+        let query_param_args: Vec<String> = endpoint_matches.bind_field("query_parameters");
         for query_param_arg in query_param_args {
             match query_param_arg.split("=").collect::<Vec<&str>>().as_slice() {
                 [key, value] => {
@@ -177,7 +180,7 @@ fn merge(into: &mut HashMap<String, String>, from: &HashMap<String, String>) {
 }
 
 #[cfg(test)]
-mod call_command_binding_tests {
+mod call_command_execution_tests {
     use super::*;
     use crate::command_args::RootCommands;
     use crate::command_args::RootCommands::Call;
@@ -188,7 +191,7 @@ mod call_command_binding_tests {
     fn parse_and_bind(config: HtrsConfig, args: Vec<&str>) -> Result<RootCommands, Error> {
         let command = get_root_command(&config);
         let matches = command.try_get_matches_from(args)?;
-       Ok(RootCommands::bind_from_matches(&config, &matches))
+        Ok(RootCommands::bind_from_matches(&config, &matches))
     }
 
     #[test]
@@ -287,5 +290,30 @@ mod call_command_binding_tests {
 
         let result = parse_and_bind(config, args);
         assert!(result.is_err(), "Result was not an error");
+    }
+
+    #[test]
+    fn given_service_with_known_endpoint_when_query_params_provided_then_parse_and_map() {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_endpoint("foo_endpoint", "/my/path", vec![])
+            )
+            .build();
+        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--query-param", "param1=value1", "-q", "param2=value2"];
+
+        let result = parse_and_bind(config, args);
+
+        assert!(result.is_ok(), "Result was an error: {}", result.err().unwrap());
+        let Call(command) = result.unwrap() else {
+            panic!("Parsed command was not RootCommands::Call");
+        };
+        assert_eq!(command.service_name, "foo_service");
+        assert_eq!(command.environment_name, None);
+        assert_eq!(command.path.as_str(), "/my/path");
+        assert_eq!(command.query_parameters.len(), 2);
+        assert_eq!(command.query_parameters["param1"], "value1");
+        assert_eq!(command.query_parameters["param2"], "value2");
     }
 }
