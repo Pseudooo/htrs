@@ -6,6 +6,7 @@ mod command_builder;
 
 #[cfg(test)]
 mod test_helpers;
+mod htrs_binding_error;
 
 use crate::command_args::RootCommands;
 use crate::command_builder::get_root_command;
@@ -20,7 +21,13 @@ fn main() {
     let mut config = VersionedHtrsConfig::load();
 
     let command_matches = get_root_command(&config).get_matches();
-    let command = RootCommands::bind_from_matches(&config, &command_matches);
+    let command = match RootCommands::bind_from_matches(&config, &command_matches) {
+        Ok(cmd ) => cmd,
+        Err(e) => {
+            println!("Command Binding Failed: {e}");
+            return;
+        }
+    };
 
     let cmd_result = execute_command(&mut config, command);
     let exec_result = match cmd_result {

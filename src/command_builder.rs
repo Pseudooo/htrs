@@ -3,6 +3,7 @@ use crate::commands::call_command::CallServiceEndpointCommand;
 use crate::commands::global_header_commands::GlobalHeaderCommand;
 use crate::commands::service_commands::ServiceCommand;
 use crate::config::HtrsConfig;
+use crate::htrs_binding_error::HtrsBindingError;
 use clap::{ArgMatches, Command};
 
 pub trait MatchBinding<T> {
@@ -44,22 +45,23 @@ impl MatchBinding<Vec<String>> for ArgMatches {
 }
 
 impl RootCommands {
-    pub fn bind_from_matches(config: &HtrsConfig, args: &ArgMatches) -> RootCommands {
+    pub fn bind_from_matches(config: &HtrsConfig, args: &ArgMatches) -> Result<RootCommands, HtrsBindingError> {
         match args.subcommand() {
             Some(("service", service_matches)) => {
-                RootCommands::Service(
+                Ok(RootCommands::Service(
                     ServiceCommand::bind_from_matches(service_matches)
-                )
+                ))
             },
             Some(("call", call_matches)) => {
-                RootCommands::Call(
-                    CallServiceEndpointCommand::bind_from_matches(config, call_matches)
-                )
+                let call_service_endpoint_cmd = CallServiceEndpointCommand::bind_from_matches(config, call_matches)?;
+                Ok(RootCommands::Call(
+                    call_service_endpoint_cmd
+                ))
             },
             Some(("header", header_matches)) => {
-                RootCommands::Header(
+                Ok(RootCommands::Header(
                     GlobalHeaderCommand::bind_from_matches(header_matches)
-                )
+                ))
             },
             _ => panic!("Bad subcommand for RootCommands"),
         }

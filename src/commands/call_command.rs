@@ -1,5 +1,6 @@
 use crate::command_builder::MatchBinding;
 use crate::config::{Endpoint, HtrsConfig};
+use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgAction, ArgMatches, Command};
@@ -79,7 +80,7 @@ impl CallServiceEndpointCommand {
         return command;
     }
 
-    pub fn bind_from_matches(config: &HtrsConfig, args: &ArgMatches) -> CallServiceEndpointCommand {
+    pub fn bind_from_matches(config: &HtrsConfig, args: &ArgMatches) -> Result<CallServiceEndpointCommand, HtrsBindingError> {
         let environment_name: Option<String> = args.bind_field("environment_name");
 
         let Some((service_name, service_matches)) = args.subcommand() else {
@@ -104,22 +105,18 @@ impl CallServiceEndpointCommand {
 
         let query_param_args: Vec<String> = endpoint_matches.bind_field("query_parameters");
         for query_param_arg in query_param_args {
-            match query_param_arg.split("=").collect::<Vec<&str>>().as_slice() {
-                [key, value] => {
-                    query_parameters.insert(key.to_string(), value.to_string());
-                }
-                _ => panic!("Query parameter was not in format `key=value`: {}", query_param_arg),
-            }
+            let (key, value) = parse_query_params_from_arg(query_param_arg.as_str())?;
+            query_parameters.insert(key, value);
         }
 
-        CallServiceEndpointCommand {
+        Ok(CallServiceEndpointCommand {
             service_name: service_name.to_string(),
             environment_name,
             path,
             query_parameters,
             headers,
             show_body: endpoint_matches.bind_field("show_body"),
-        }
+        })
     }
 
     pub fn execute_command(&self, config: &HtrsConfig) -> Result<HtrsAction, HtrsError> {
@@ -151,6 +148,18 @@ impl CallServiceEndpointCommand {
             show_body: self.show_body
         })
     }
+}
+
+fn parse_query_params_from_arg(arg: &str) -> Result<(String, String), HtrsBindingError> {
+    if let [name, value] = arg.split("=").collect::<Vec<&str>>().as_slice() {
+        if name.len() > 0 && value.len() > 0 {
+            return Ok((name.to_string(), value.to_string()));
+        }
+    }
+
+    Err(HtrsBindingError {
+        description: format!("Invalid query parameter: {}", arg),
+    })
 }
 
 fn get_path_template_params(path_template: &str) -> Vec<String> {
@@ -199,11 +208,11 @@ mod call_command_execution_tests {
     use clap::Error;
     use rstest::rstest;
 
-    fn parse_and_bind(config: HtrsConfig, args: Vec<&str>) -> Result<RootCommands, Error> {
+    pub fn get_matches(config: &HtrsConfig, args: Vec<&str>) -> Result<ArgMatches, Error> {
         let command = get_root_command(&config);
-        let matches = command.try_get_matches_from(args)?;
-        Ok(RootCommands::bind_from_matches(&config, &matches))
+        command.try_get_matches_from(args)
     }
+
 
     #[rstest]
     #[case(true)]
@@ -223,9 +232,12 @@ mod call_command_execution_tests {
             args.push("--body")
         }
 
-        let result = parse_and_bind(config, args).unwrap();
+        let matches_result = get_matches(&config, args);
+        assert!(matches_result.is_ok(), "Failed to get matches from arguments: {}", matches_result.unwrap_err());
+        let result = RootCommands::bind_from_matches(&config, &matches_result.unwrap());
+        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
 
-        let Call(command) = result else {
+        let Call(command) = result.unwrap() else {
             panic!("Parsed command was not RootCommands::Call");
         };
         assert_eq!(command.service_name, "foo_service");
@@ -246,9 +258,13 @@ mod call_command_execution_tests {
             .build();
         let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--template_param", "foo_value"];
 
-        let result = parse_and_bind(config, args).unwrap();
 
-        let Call(command) = result else {
+        let matches = get_matches(&config, args);
+        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
+        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
+
+        let Call(command) = result.unwrap() else {
             panic!("Parsed command was not RootCommands::Call");
         };
         assert_eq!(command.service_name, "foo_service");
@@ -268,7 +284,7 @@ mod call_command_execution_tests {
             .build();
         let args = vec!["htrs", "call", "foo_service", "foo_endpoint"];
 
-        let result = parse_and_bind(config, args);
+        let result = get_matches(&config, args);
         assert!(result.is_err(), "Result was not an error");
     }
 
@@ -283,9 +299,12 @@ mod call_command_execution_tests {
             .build();
         let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--foo_query_param", "foo_value"];
 
-        let result = parse_and_bind(config, args).unwrap();
+        let matches = get_matches(&config, args);
+        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
+        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
 
-        let Call(command) = result else {
+        let Call(command) = result.unwrap() else {
             panic!("Parsed command was not RootCommands::Call");
         };
         assert_eq!(command.service_name, "foo_service");
@@ -307,7 +326,7 @@ mod call_command_execution_tests {
             .build();
         let args = vec!["htrs", "call", "foo_service", "foo_endpoint"];
 
-        let result = parse_and_bind(config, args);
+        let result = get_matches(&config, args);
         assert!(result.is_err(), "Result was not an error");
     }
 
@@ -322,9 +341,11 @@ mod call_command_execution_tests {
             .build();
         let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--query-param", "param1=value1", "-q", "param2=value2"];
 
-        let result = parse_and_bind(config, args);
+        let matches = get_matches(&config, args);
+        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
+        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
 
-        assert!(result.is_ok(), "Result was an error: {}", result.err().unwrap());
         let Call(command) = result.unwrap() else {
             panic!("Parsed command was not RootCommands::Call");
         };
@@ -334,5 +355,28 @@ mod call_command_execution_tests {
         assert_eq!(command.query_parameters.len(), 2);
         assert_eq!(command.query_parameters["param1"], "value1");
         assert_eq!(command.query_parameters["param2"], "value2");
+    }
+
+    #[rstest]
+    #[case("foo")]
+    #[case("=")]
+    #[case("foo=")]
+    #[case("=foo")]
+    fn given_service_with_known_endpoint_when_invalid_query_params_provided_then_error(
+        #[case] query_param: &str,
+    ) {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_endpoint("foo_endpoint", "/my/path", vec![])
+            )
+            .build();
+        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--query-param", query_param];
+
+        let matches = get_matches(&config, args);
+        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
+        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        assert!(result.is_err(), "Matches binding result was not an error");
     }
 }
