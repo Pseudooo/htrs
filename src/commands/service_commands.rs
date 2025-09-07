@@ -1,6 +1,7 @@
-use crate::command_builder::{get_header_configuration_command, MatchBinding};
+use crate::command_builder::MatchBinding;
 use crate::commands::endpoint_commands::EndpointCommand;
 use crate::commands::environment_commands::EnvironmentCommand;
+use crate::commands::service_header_commands::ServiceHeaderCommand;
 use crate::config::{HtrsConfig, Service};
 use crate::outcomes::HtrsAction::{PrintDialogue, UpdateConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
@@ -18,7 +19,8 @@ pub enum ServiceCommand {
     Environment(EnvironmentCommand),
     Endpoint {
         command: EndpointCommand,
-    }
+    },
+    Header(ServiceHeaderCommand),
 }
 
 impl ServiceCommand {
@@ -68,9 +70,9 @@ impl ServiceCommand {
                             .help("Service name to configure")
                             .required(true)
                     )
-                    .subcommand(get_header_configuration_command())
             )
             .subcommand(EndpointCommand::get_command())
+            .subcommand(ServiceHeaderCommand::get_command())
     }
 
     pub fn bind_from_matches(args: &ArgMatches) -> ServiceCommand {
@@ -102,6 +104,11 @@ impl ServiceCommand {
                     command: EndpointCommand::bind_from_matches(endpoint_matches),
                 }
             }
+            Some(("header", header_matches)) => {
+                ServiceCommand::Header(
+                    ServiceHeaderCommand::bind_from_matches(header_matches)
+                )
+            }
             _ => panic!("Bad subcommand given for ServiceCommand"),
         }
     }
@@ -113,6 +120,7 @@ impl ServiceCommand {
             ServiceCommand::List => list_services(config),
             ServiceCommand::Environment(environment_command) => environment_command.execute_command(config),
             ServiceCommand::Endpoint { command } => command.execute_command(config),
+            ServiceCommand::Header(command) => command.execute_command(config),
         }
     }
 }
