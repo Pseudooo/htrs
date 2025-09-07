@@ -47,10 +47,10 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
             Ok(())
         },
         HtrsAction::MakeRequest {
-            url: base_url, query_parameters, method, headers
+            url: base_url, query_parameters, method, headers, show_body
         } => {
             let url = apply_query_params_to_url(base_url, query_parameters)?;
-            execute_request(method, url, headers)
+            execute_request(method, url, headers, show_body)
         },
     }
 }
@@ -71,7 +71,7 @@ fn apply_query_params_to_url(base_url: Url, query_params: HashMap<String, String
     }
 }
 
-fn execute_request(method: Method, url: Url, headers: HashMap<String, String>) -> Result<(), HtrsError> {
+fn execute_request(method: Method, url: Url, headers: HashMap<String, String>, show_body: bool) -> Result<(), HtrsError> {
     let mut req_headers = get_default_headers();
     merge_hashmaps(&mut req_headers, &headers);
 
@@ -88,7 +88,10 @@ fn execute_request(method: Method, url: Url, headers: HashMap<String, String>) -
 
     match client.execute(request) {
         Ok(response) => {
-            println!("{} | {} | {}", response.status(), &method, url);
+            if !show_body {
+                println!("{} | {} | {}", response.status(), &method, url);
+            }
+
             let response_text = response.text()
                 .unwrap_or_else(|e| format!("<Failed to read response body: {}>", e));
             println!("{}", response_text);

@@ -260,6 +260,7 @@ Options:
       --path <path>    
       --query <query>  
   -q, --query-param <query param>  Set a query parameter for the request in the format `name=value`
+      --body                       Print the response body
   -h, --help                       Print help
 ```
 

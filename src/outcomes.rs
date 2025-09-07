@@ -34,5 +34,6 @@ pub enum HtrsAction {
         query_parameters: HashMap<String, String>,
         method: Method,
         headers: HashMap<String, String>,
+        show_body: bool,
     },
 }
