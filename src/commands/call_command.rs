@@ -118,7 +118,7 @@ impl CallServiceEndpointCommand {
             path,
             query_parameters,
             headers,
-            show_body: args.bind_field("show_body"),
+            show_body: endpoint_matches.bind_field("show_body"),
         }
     }
 
