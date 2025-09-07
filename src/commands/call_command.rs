@@ -14,6 +14,7 @@ pub struct CallServiceEndpointCommand {
     pub path: String,
     pub query_parameters: HashMap<String, String>,
     pub headers: HashMap<String, String>,
+    pub show_body: bool,
 }
 
 impl CallServiceEndpointCommand {
@@ -45,6 +46,13 @@ impl CallServiceEndpointCommand {
                             .action(ArgAction::Append)
                             .long("query-param")
                             .short('q')
+                    )
+                    .arg(
+                        Arg::new("show_body")
+                            .help("Print the response body")
+                            .required(false)
+                            .num_args(0)
+                            .long("body")
                     );
 
                 let templated_params = get_path_template_params(&endpoint.path_template);
@@ -110,6 +118,7 @@ impl CallServiceEndpointCommand {
             path,
             query_parameters,
             headers,
+            show_body: args.bind_field("show_body"),
         }
     }
 
@@ -139,6 +148,7 @@ impl CallServiceEndpointCommand {
             query_parameters: self.query_parameters.clone(),
             method: Method::GET,
             headers: self.headers.clone(),
+            show_body: self.show_body
         })
     }
 }
@@ -187,6 +197,7 @@ mod call_command_execution_tests {
     use crate::command_builder::get_root_command;
     use crate::test_helpers::{HtrsConfigBuilder, HtrsServiceBuilder};
     use clap::Error;
+    use rstest::rstest;
 
     fn parse_and_bind(config: HtrsConfig, args: Vec<&str>) -> Result<RootCommands, Error> {
         let command = get_root_command(&config);
@@ -194,8 +205,12 @@ mod call_command_execution_tests {
         Ok(RootCommands::bind_from_matches(&config, &matches))
     }
 
-    #[test]
-    fn given_service_with_known_endpoint_when_no_parameters_then_parse_and_map() {
+    #[rstest]
+    #[case(true)]
+    #[case(false)]
+    fn given_service_with_known_endpoint_when_no_parameters_then_parse_and_map(
+        #[case] print_body: bool
+    ) {
         let config = HtrsConfigBuilder::new()
             .with_service(
                 HtrsServiceBuilder::new()
@@ -203,7 +218,10 @@ mod call_command_execution_tests {
                     .with_endpoint("foo_endpoint", "/my/path", vec![])
             )
             .build();
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint"];
+        let mut args = vec!["htrs", "call", "foo_service", "foo_endpoint"];
+        if print_body {
+            args.push("--body")
+        }
 
         let result = parse_and_bind(config, args).unwrap();
 
@@ -214,6 +232,7 @@ mod call_command_execution_tests {
         assert_eq!(command.environment_name, None);
         assert_eq!(command.path.as_str(), "/my/path");
         assert_eq!(command.query_parameters.len(), 0);
+        assert_eq!(command.show_body, print_body);
     }
 
     #[test]
