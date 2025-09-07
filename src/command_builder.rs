@@ -70,6 +70,7 @@ pub fn get_root_command(config: &HtrsConfig) -> Command {
     let command = Command::new("htrs")
         .version(env!("CARGO_PKG_VERSION"))
         .about("A flexible http cli client")
+        .arg_required_else_help(true)
         .subcommand(ServiceCommand::get_command())
         .subcommand(CallServiceEndpointCommand::get_command(config))
         .subcommand(GlobalHeaderCommand::get_command());
