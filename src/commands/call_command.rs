@@ -2,7 +2,7 @@ use crate::command_builder::MatchBinding;
 use crate::config::{Endpoint, HtrsConfig};
 use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsAction, HtrsError};
-use clap::{Arg, ArgMatches, Command};
+use clap::{Arg, ArgAction, ArgMatches, Command};
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::{Method, Url};
@@ -89,7 +89,17 @@ impl CallServiceEndpointCommand {
         merge(&mut headers, &service.headers);
 
         let path = build_path_from_template(&endpoint.path_template, endpoint_matches);
-        let query_parameters = get_query_parameters_from_args(endpoint, endpoint_matches);
+        let mut query_parameters = get_query_parameters_from_args(endpoint, endpoint_matches);
+
+        let query_param_args: Vec<String> = args.bind_field("query_parameters");
+        for query_param_arg in query_param_args {
+            match query_param_arg.split("=").collect::<Vec<&str>>().as_slice() {
+                [key, value] => {
+                    query_parameters.insert(key.to_string(), value.to_string());
+                }
+                _ => panic!("Query parameter was not in format `key=value`: {}", query_param_arg),
+            }
+        }
 
         CallServiceEndpointCommand {
             service_name: service_name.to_string(),
@@ -167,83 +177,13 @@ fn merge(into: &mut HashMap<String, String>, from: &HashMap<String, String>) {
 }
 
 #[cfg(test)]
-mod command_builder_tests {
+mod call_command_binding_tests {
     use super::*;
     use crate::command_args::RootCommands;
     use crate::command_args::RootCommands::Call;
     use crate::command_builder::get_root_command;
-    use crate::config::{Environment, Service};
+    use crate::test_helpers::{HtrsConfigBuilder, HtrsServiceBuilder};
     use clap::Error;
-
-    struct HtrsConfigBuilder {
-        pub services: Vec<Service>,
-    }
-
-    impl HtrsConfigBuilder {
-        fn new() -> HtrsConfigBuilder {
-            HtrsConfigBuilder {
-                services: Vec::new(),
-            }
-        }
-
-        fn with_service(mut self, service_builder: HtrsServiceBuilder) -> HtrsConfigBuilder {
-            let service = service_builder.build();
-            self.services.push(service);
-            self
-        }
-
-        fn build(self) -> HtrsConfig {
-            let mut config = HtrsConfig::new();
-            config.services = self.services.clone();
-            return config;
-        }
-    }
-
-    struct HtrsServiceBuilder {
-        pub name: Option<String>,
-        pub environments: Vec<Environment>,
-        pub endpoints: Vec<Endpoint>
-    }
-
-    impl HtrsServiceBuilder {
-        fn new() -> Self {
-            Self {
-                name: None,
-                environments: Vec::new(),
-                endpoints: Vec::new(),
-            }
-        }
-
-        fn with_name(mut self, name: &str) -> HtrsServiceBuilder {
-            self.name = Some(name.to_string());
-            self
-        }
-
-        fn with_endpoint(mut self, name: &str, path_template: &str, query_parameters: Vec<&str>) -> HtrsServiceBuilder {
-            let endpoint = Endpoint {
-                name: name.to_string(),
-                path_template: path_template.to_string(),
-                query_parameters: query_parameters.iter().map(|s| s.to_string()).collect(),
-            };
-            self.endpoints.push(endpoint);
-            self
-        }
-
-        fn build(self) -> Service {
-            let Some(name) = &self.name else {
-                panic!("No name specified for service");
-            };
-
-            Service {
-                name: name.clone(),
-                alias: None,
-                headers: HashMap::new(),
-                endpoints: self.endpoints.clone(),
-                environments: self.environments.clone(),
-            }
-        }
-    }
-
 
     fn parse_and_bind(config: HtrsConfig, args: Vec<&str>) -> Result<RootCommands, Error> {
         let command = get_root_command(&config);
