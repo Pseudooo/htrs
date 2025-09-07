@@ -260,3 +260,65 @@ Options:
       --query <query>  
   -h, --help           Print help
 ```
+
+## Headers
+
+Headers can be applied to all requests globally or for a given service
+
+### Global Headers
+
+By default, htrs will only set the `User-Agent` header to `htrs/{version}` 
+
+Set a header to be applied globally for any requests made
+
+Headers can be set for a new header, or overwrite an existing header:
+```
+Usage: htrs.exe header set <header name> <header value>
+
+Arguments:
+  <header name>   The header name
+  <header value>  The header value
+
+Options:
+  -h, --help  Print help
+```
+
+Or cleared:
+```
+Usage: htrs.exe header clear <header name>
+
+Arguments:
+  <header name>  The header name
+
+Options:
+  -h, --help  Print help
+```
+
+### Service Headers
+
+Set a header for a specific service for any requests made to that service
+
+If the same header is set globally, the service-level header will overwrite it
+
+Headers can be set:
+```
+Usage: htrs.exe service header <service> set <header name> <header value>
+
+Arguments:
+  <header name>   The header name
+  <header value>  The header value
+
+Options:
+  -h, --help  Print help
+```
+
+Or cleared:
+```
+Usage: htrs.exe service header <service> clear <header name>
+
+Arguments:
+  <header name>  The header name
+
+Options:
+  -h, --help  Print help
+```
