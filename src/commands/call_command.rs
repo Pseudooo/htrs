@@ -36,7 +36,13 @@ impl CallServiceEndpointCommand {
             }
 
             for endpoint in &service.endpoints {
-                let mut endpoint_command = Command::new(endpoint.name.clone());
+                let mut endpoint_command = Command::new(endpoint.name.clone())
+                    .arg(
+                        Arg::new("query_parameters")
+                            .help("Set a query parameter for the request in the format `name=value`")
+                            .required(false)
+                            .action(ArgAction::Append)
+                    );
 
                 let templated_params = get_path_template_params(&endpoint.path_template);
                 for templated_param in templated_params {
