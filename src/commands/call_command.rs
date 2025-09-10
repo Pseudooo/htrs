@@ -23,22 +23,41 @@ impl CallServiceEndpointCommand {
         let mut command = Command::new("call")
             .about("Call a service endpoint")
             .arg(
-                Arg::new("environment_name")
+                Arg::new("environment")
                     .value_name("environment name")
                     .required(false)
                     .help("Environment to target, will use default environment if none specified")
+                    .long("environment")
+                    .short('e')
             )
             .arg_required_else_help(true);
 
         for service in &config.services {
             let mut service_command = Command::new(service.name.clone())
-                .arg_required_else_help(true);
+                .arg_required_else_help(true)
+
+                .arg(
+                    Arg::new("environment")
+                        .value_name("environment name")
+                        .required(false)
+                        .help("Environment to target, will use default environment if none specified")
+                        .long("environment")
+                        .short('e')
+                );
             if let Some(alias) = &service.alias {
                 service_command = service_command.visible_alias(alias);
             }
 
             for endpoint in &service.endpoints {
                 let mut endpoint_command = Command::new(endpoint.name.clone())
+                    .arg(
+                        Arg::new("environment")
+                            .value_name("environment name")
+                            .required(false)
+                            .help("Environment to target, will use default environment if none specified")
+                            .long("environment")
+                            .short('e')
+                    )
                     .arg(
                         Arg::new("query_parameters")
                             .value_name("query param")
@@ -81,8 +100,6 @@ impl CallServiceEndpointCommand {
     }
 
     pub fn bind_from_matches(config: &HtrsConfig, args: &ArgMatches) -> Result<CallServiceEndpointCommand, HtrsBindingError> {
-        let environment_name: Option<String> = args.bind_field("environment_name");
-
         let Some((service_name, service_matches)) = args.subcommand() else {
             panic!("Bad service subcommand for CallServiceEndpointCommand");
         };
@@ -96,6 +113,7 @@ impl CallServiceEndpointCommand {
         let Some(endpoint) = service.get_endpoint(endpoint_name) else {
             panic!("Bad endpoint name");
         };
+        let environment_name: Option<String> = endpoint_matches.bind_field("environment");
 
         let mut headers = config.headers.clone();
         merge(&mut headers, &service.headers);
@@ -213,7 +231,6 @@ mod call_command_execution_tests {
         command.try_get_matches_from(args)
     }
 
-
     #[rstest]
     #[case(true)]
     #[case(false)]
@@ -258,7 +275,6 @@ mod call_command_execution_tests {
             .build();
         let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--template_param", "foo_value"];
 
-
         let matches = get_matches(&config, args);
         assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
         let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
@@ -270,6 +286,32 @@ mod call_command_execution_tests {
         assert_eq!(command.service_name, "foo_service");
         assert_eq!(command.environment_name, None);
         assert_eq!(command.path.as_str(), "/my/templated/path/foo_value");
+        assert_eq!(command.query_parameters.len(), 0);
+    }
+
+    #[test]
+    fn given_service_with_known_environment_when_call_environment_then_should_parse_and_map() {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_environment("foo_environment", None, "host.com", false)
+                    .with_endpoint("foo_endpoint", "/my/path", vec![])
+            )
+            .build();
+        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--environment", "foo_environment"];
+
+        let matches = get_matches(&config, args);
+        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
+        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
+
+        let Call(command) = result.unwrap() else {
+            panic!("Parsed command was not RootCommands::Call");
+        };
+        assert_eq!(command.service_name, "foo_service");
+        assert_eq!(command.environment_name, Some("foo_environment".to_string()));
+        assert_eq!(command.path.as_str(), "/my/path");
         assert_eq!(command.query_parameters.len(), 0);
     }
 
