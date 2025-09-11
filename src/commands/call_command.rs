@@ -473,6 +473,6 @@ mod call_command_execution_tests {
         assert_eq!(command.path.as_str(), "/my/path");
         assert_eq!(command.query_parameters.len(), 1);
         assert!(command.query_parameters.contains_key("param"), "Query parameters did not contain expected key");
-        assert_eq!(command.query_parameters["param"], "-1");
+        assert_eq!(command.query_parameters["param"], "-foo");
     }
 }
