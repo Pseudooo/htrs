@@ -8,8 +8,8 @@ HTTP CLI for calling services across multiple environments
 - [Services](#services)
 - [Environments](#environments)
 - [Endpoints](#endpoints)
-- [Headers](#headers)
 - [Calling a Service](#calling-a-service)
+- [Headers](#headers)
 
 ## Quickstart
 
