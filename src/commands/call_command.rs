@@ -79,6 +79,7 @@ impl CallServiceEndpointCommand {
                 for templated_param in templated_params {
                     endpoint_command = endpoint_command.arg(
                         Arg::new(&templated_param)
+                            .allow_hyphen_values(true)
                             .long(&templated_param)
                             .required(true)
                     );
@@ -87,6 +88,7 @@ impl CallServiceEndpointCommand {
                 for param in &endpoint.query_parameters {
                     endpoint_command = endpoint_command.arg(
                         Arg::new(param)
+                            .allow_hyphen_values(true)
                             .long(param)
                             .required(true)
                     )
