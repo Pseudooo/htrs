@@ -421,4 +421,56 @@ mod call_command_execution_tests {
         let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
         assert!(result.is_err(), "Matches binding result was not an error");
     }
+
+    #[test]
+    fn given_known_service_and_endpoint_when_pass_hypen_prefixed_path_parameter_then_should_parse_and_map() {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_endpoint("foo_endpoint", "/my/{path}", vec![])
+            )
+            .build();
+        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--path", "-foo"];
+
+        let matches = get_matches(&config, args);
+        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
+        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
+
+        let Call(command) = result.unwrap() else {
+            panic!("Parsed command was not RootCommands::Call");
+        };
+        assert_eq!(command.service_name, "foo_service");
+        assert_eq!(command.environment_name, None);
+        assert_eq!(command.path.as_str(), "/my/-foo");
+        assert_eq!(command.query_parameters.len(), 0);
+    }
+
+    #[test]
+    fn given_known_service_and_endpoint_when_pass_hyphen_prefixed_query_parameter_then_should_parse_and_map() {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                HtrsServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_endpoint("foo_endpoint", "/my/path", vec!["param"])
+            )
+            .build();
+        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--param", "-foo"];
+
+        let matches = get_matches(&config, args);
+        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
+        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
+
+        let Call(command) = result.unwrap() else {
+            panic!("Parsed command was not RootCommands::Call");
+        };
+        assert_eq!(command.service_name, "foo_service");
+        assert_eq!(command.environment_name, None);
+        assert_eq!(command.path.as_str(), "/my/path");
+        assert_eq!(command.query_parameters.len(), 1);
+        assert!(command.query_parameters.contains_key("param"), "Query parameters did not contain expected key");
+        assert_eq!(command.query_parameters["param"], "-1");
+    }
 }
