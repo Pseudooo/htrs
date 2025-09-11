@@ -9,6 +9,7 @@ HTTP CLI for calling services across multiple environments
 - [Environments](#environments)
 - [Endpoints](#endpoints)
 - [Headers](#headers)
+- [Calling a Service](#calling-a-service)
 
 ## Quickstart
 
@@ -239,29 +240,28 @@ The above configuration will determine what commands are available to be called,
 with an endpoint `"endpoint"` with path=`/my/{path}/path` and a single query parameter `"query"` then the help menu will
 show the following for `htrs call --help`
 ```
-Usage: htrs.exe call [environment name] [COMMAND]
+Usage: htrs.exe call [OPTIONS] [COMMAND]
 
 Commands:
   example  
   help     Print this message or the help of the given subcommand(s)
 
-Arguments:
-  [environment name]  Environment to target, will use default environment if none specified
-
 Options:
-  -h, --help  Print help
+  -e, --environment <environment name>  Environment to target, will use default environment if none specified
+  -h, --help                            Print help
 ```
 
 And for the endpoint will show:
 ```
-Usage: htrs.exe call example endpoint --path <path> --query <query>
+Usage: htrs.exe call example endpoint [OPTIONS] --path <path> --query <query>
 
 Options:
-      --path <path>    
-      --query <query>  
-  -q, --query-param <query param>  Set a query parameter for the request in the format `name=value`
-      --body                       Print the response body
-  -h, --help                       Print help
+  -e, --environment <environment name>  Environment to target, will use default environment if none specified
+  -q, --query-param <query param>       Set a query parameter for the request in the format `name=value`
+      --body                            Print the response body
+      --path <path>                     
+      --query <query>                   
+  -h, --help                            Print help
 ```
 
 The `-q` or `--query-param` argument can be used to provide additional query parameters that aren't included in the template.
