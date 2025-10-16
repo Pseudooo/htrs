@@ -1,0 +1,51 @@
+name: 📈 Generate Code Coverage Report
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  generate-report:
+    name: Create Report
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 🛒 Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.code-ref }}
+
+      - name: ⚙️ Install Tarpaulin
+        run: cargo install cargo-tarpaulin@0.33.0
+
+      - name: 📈 Generate Report
+        run: |
+          cargo tarpaulin --out html --output-dir reports
+          mv ./reports/tarpaulin-report.html ./reports/index.html
+
+      - name: ⚙️ Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: 📤 Upload Report
+        id: upload-report
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: reports
+
+  publish-pages:
+    name: Publish Pages
+    runs-on: ubuntu-22.04
+    needs: generate-report
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 🚀 Deploy to Github Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
