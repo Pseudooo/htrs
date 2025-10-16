@@ -196,3 +196,20 @@ impl Environment {
         Environment { name, alias, host, default }
     }
 }
+
+impl Endpoint {
+    pub fn pretty_print(&self) -> String {
+        let mut printed = String::new();
+        printed.push_str(format!("{} | {}\n", self.name, self.path_template).as_str());
+        if self.query_parameters.len() > 0 {
+            printed.push_str("Query Parameters:\n");
+            let parameters = self.query_parameters.iter()
+                .map(|param| format!("  - {param}"))
+                .collect::<Vec<String>>()
+                .join("\n");
+            printed.push_str(format!("{parameters}\n").as_str());
+        }
+        printed.push_str("\n");
+        printed
+    }
+}
