@@ -17,6 +17,7 @@ pub enum EndpointCommand {
     },
     List {
         service: String,
+        verbose: bool,
     },
 }
 
@@ -58,6 +59,12 @@ impl EndpointCommand {
                 Command::new("list")
                     .visible_alias("ls")
                     .about("List all endpoints for a service")
+                    .arg(
+                        Arg::new("verbose")
+                            .long("verbose")
+                            .num_args(0)
+                            .required(false)
+                    )
             )
             .subcommand(
                 Command::new("remove")
@@ -81,9 +88,10 @@ impl EndpointCommand {
                     query_parameters: add_matches.bind_field("query_parameters"),
                 }
             },
-            Some(("list" | "ls", _)) => {
+            Some(("list" | "ls", list_matches)) => {
                 EndpointCommand::List {
                     service: args.bind_field("service"),
+                    verbose: list_matches.bind_field("verbose"),
                 }
             },
             Some(("remove" | "rm", remove_matches)) => {
@@ -106,7 +114,7 @@ impl EndpointCommand {
             } => {
                 add_new_endpoint(config, service, name, path_template, query_parameters)
             },
-            EndpointCommand::List { service } => list_endpoints(config, service),
+            EndpointCommand::List { service, verbose } => list_endpoints(config, service, *verbose),
             EndpointCommand::Remove { service, name } => remove_endpoint(config, service, name),
         }
     }
@@ -128,7 +136,7 @@ fn add_new_endpoint(config: &mut HtrsConfig, service: &str, name: &str, path_tem
     Ok(UpdateConfig)
 }
 
-fn list_endpoints(config: &HtrsConfig, service: &str) -> Result<HtrsAction, HtrsError> {
+fn list_endpoints(config: &HtrsConfig, service: &str, verbose: bool) -> Result<HtrsAction, HtrsError> {
     let Some(service) = config.get_service(service) else {
         return Err(HtrsError::new(format!("Service '{service}' not found").as_str()))
     };
@@ -137,10 +145,18 @@ fn list_endpoints(config: &HtrsConfig, service: &str) -> Result<HtrsAction, Htrs
         return Ok(PrintDialogue("No endpoints defined".to_string()))
     }
 
-    let dialogue = service.endpoints.iter()
-        .map(|e| format!(" - {}", e.name))
-        .collect::<Vec<String>>()
-        .join("\n");
+    let dialogue = match verbose {
+        true => {
+            service.endpoints.iter()
+                .map(|e| e.pretty_print())
+                .collect::<Vec<String>>()
+                .join("\n")
+        }
+        false => service.endpoints.iter()
+            .map(|e| format!(" - {}", e.name))
+            .collect::<Vec<String>>()
+            .join("\n")
+    };
     Ok(PrintDialogue(dialogue))
 }
 
@@ -213,10 +229,25 @@ mod endpoint_command_binding_tests {
         let result = get_parsed_command(args);
 
         assert!(result.is_ok(), "{}", result.err().unwrap());
-        let EndpointCommand::List { service } = result.unwrap() else {
+        let EndpointCommand::List { service, verbose } = result.unwrap() else {
             panic!("Command was not EndpointCommand::List");
         };
         assert_eq!(service, "foo_service");
+        assert_eq!(verbose, false);
+    }
+
+    #[test]
+    fn given_valid_list_endpoints_command_when_verbose_then_should_parse_and_map() {
+        let args = vec!["htrs", "foo_service", "list", "--verbose"];
+
+        let result = get_parsed_command(args);
+
+        assert!(result.is_ok(), "Result was an error: {}", result.err().unwrap());
+        let EndpointCommand::List { service, verbose } = result.unwrap() else {
+            panic!("Command was not EndpointCommand::List");
+        };
+        assert_eq!(service, "foo_service");
+        assert_eq!(verbose, true);
     }
 
     #[rstest]
@@ -376,6 +407,7 @@ mod endpoint_command_execution_tests {
             .build();
         let command = EndpointCommand::List {
             service: "foo_service".to_string(),
+            verbose: false,
         };
 
         let result = command.execute_command(&mut config);
@@ -397,6 +429,7 @@ mod endpoint_command_execution_tests {
             .build();
         let command = EndpointCommand::List {
             service: "foo_service".to_string(),
+            verbose: false,
         };
 
         let result = command.execute_command(&mut config);
@@ -413,6 +446,7 @@ mod endpoint_command_execution_tests {
             .build();
         let command = EndpointCommand::List {
             service: "foo_service".to_string(),
+            verbose: false,
         };
 
         let result = command.execute_command(&mut config);
