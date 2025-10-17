@@ -1,6 +1,7 @@
 use crate::command_args::RootCommands;
 use crate::commands::call_command::CallServiceEndpointCommand;
 use crate::commands::global_header_commands::GlobalHeaderCommand;
+use crate::commands::new_command::NewCommand;
 use crate::commands::service_commands::ServiceCommand;
 use crate::config::HtrsConfig;
 use crate::htrs_binding_error::HtrsBindingError;
@@ -63,19 +64,23 @@ impl RootCommands {
                     GlobalHeaderCommand::bind_from_matches(header_matches)
                 ))
             },
+            Some(("new", new_matches)) => {
+                Ok(RootCommands::New(
+                    NewCommand::bind_from_matches(new_matches)
+                ))
+            }
             _ => panic!("Bad subcommand for RootCommands"),
         }
     }
 }
 
 pub fn get_root_command(config: &HtrsConfig) -> Command {
-    let command = Command::new("htrs")
+    Command::new("htrs")
         .version(env!("CARGO_PKG_VERSION"))
         .about("A flexible http cli client")
         .arg_required_else_help(true)
         .subcommand(ServiceCommand::get_command())
         .subcommand(CallServiceEndpointCommand::get_command(config))
-        .subcommand(GlobalHeaderCommand::get_command());
-
-    command
+        .subcommand(GlobalHeaderCommand::get_command())
+        .subcommand(NewCommand::get_command())
 }
