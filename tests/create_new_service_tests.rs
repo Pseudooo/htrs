@@ -83,7 +83,7 @@ mod create_new_service_tests {
             .arg("--alias")
             .arg(service_alias)
             .assert()
-            .success();
+            .failure();
 
         let config = get_config();
         assert_eq!(config.services.len(), 1);

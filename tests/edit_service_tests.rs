@@ -26,7 +26,7 @@ mod edit_service_tests {
             .arg("service")
             .arg("unknown-service")
             .assert()
-            .success();
+            .failure();
 
         Ok(())
     }

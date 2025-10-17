@@ -17,7 +17,7 @@ use reqwest::blocking::Client;
 use reqwest::{Method, Url};
 use std::collections::HashMap;
 
-fn main() {
+fn main() -> Result<(), ()> {
     let mut config = VersionedHtrsConfig::load();
 
     let command_matches = get_root_command(&config).get_matches();
@@ -25,7 +25,7 @@ fn main() {
         Ok(cmd ) => cmd,
         Err(e) => {
             println!("Command Binding Failed: {e}");
-            return;
+            return Err(());
         }
     };
 
@@ -33,14 +33,17 @@ fn main() {
     let exec_result = match cmd_result {
         Err(e) => {
             println!("{}", e.details);
-            return;
+            return Err(());
         }
         Ok(action) => handle_action(action, config)
     };
 
     if let Err(e) = exec_result {
         println!("{}", e.details);
+        return Err(())
     }
+
+    Ok(())
 }
 
 fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError>{
