@@ -19,7 +19,7 @@ jobs:
 
       - name: 📈 Generate Report
         run: |
-          cargo tarpaulin --out html --output-dir reports
+          cargo tarpaulin --out html --output-dir reports -- --test-threads=1
           mv ./reports/tarpaulin-report.html ./reports/index.html
 
       - name: ⚙️ Setup Pages
