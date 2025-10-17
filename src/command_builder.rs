@@ -1,5 +1,6 @@
 use crate::command_args::RootCommands;
 use crate::commands::call_command::CallServiceEndpointCommand;
+use crate::commands::edit_command::EditCommand;
 use crate::commands::global_header_commands::GlobalHeaderCommand;
 use crate::commands::new_command::NewCommand;
 use crate::commands::service_commands::ServiceCommand;
@@ -68,7 +69,12 @@ impl RootCommands {
                 Ok(RootCommands::New(
                     NewCommand::bind_from_matches(new_matches)
                 ))
-            }
+            },
+            Some(("edit", edit_matches)) => {
+                Ok(RootCommands::Edit(
+                    EditCommand::bind_from_matches(edit_matches)
+                ))
+            },
             _ => panic!("Bad subcommand for RootCommands"),
         }
     }
@@ -83,4 +89,5 @@ pub fn get_root_command(config: &HtrsConfig) -> Command {
         .subcommand(CallServiceEndpointCommand::get_command(config))
         .subcommand(GlobalHeaderCommand::get_command())
         .subcommand(NewCommand::get_command())
+        .subcommand(EditCommand::get_command())
 }
