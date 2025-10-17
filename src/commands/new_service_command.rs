@@ -4,12 +4,12 @@ use crate::outcomes::HtrsAction::UpdateConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgMatches, Command};
 
-pub struct CreateNewServiceCommand {
+pub struct NewServiceCommand {
     pub name: String,
     pub alias: Option<String>,
 }
 
-impl CreateNewServiceCommand {
+impl NewServiceCommand {
     pub fn get_command() -> Command {
         Command::new("service")
             .about("Create a new service")
@@ -28,8 +28,8 @@ impl CreateNewServiceCommand {
             )
     }
 
-    pub fn bind_from_matches(args: &ArgMatches) -> CreateNewServiceCommand {
-        CreateNewServiceCommand {
+    pub fn bind_from_matches(args: &ArgMatches) -> NewServiceCommand {
+        NewServiceCommand {
             name: args.bind_field("name"),
             alias: args.bind_field("alias"),
         }
