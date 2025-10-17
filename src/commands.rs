@@ -4,9 +4,11 @@ pub mod global_header_commands;
 mod environment_commands;
 mod endpoint_commands;
 mod service_header_commands;
+pub(crate) mod new_command;
+mod new_service_command;
 
 use crate::command_args::RootCommands;
-use crate::command_args::RootCommands::{Call, Header, Service};
+use crate::command_args::RootCommands::{Call, Header, New, Service};
 use crate::config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 
@@ -21,5 +23,6 @@ pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<Htr
         Header(header_command) => {
             header_command.execute_command(config)
         },
+        New(new_command) => new_command.execute(config),
     }
 }
