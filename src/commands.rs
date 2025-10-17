@@ -6,11 +6,14 @@ mod endpoint_commands;
 mod service_header_commands;
 pub(crate) mod new_command;
 pub(crate) mod edit_command;
+pub(crate) mod delete_command;
 mod new_service_command;
 mod edit_service_command;
+mod delete_service_command;
+
 
 use crate::command_args::RootCommands;
-use crate::command_args::RootCommands::{Call, Edit, Header, New, Service};
+use crate::command_args::RootCommands::{Call, Delete, Edit, Header, New, Service};
 use crate::config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 
@@ -27,5 +30,6 @@ pub fn execute_command(config: &mut HtrsConfig, cmd: RootCommands) -> Result<Htr
         },
         New(new_command) => new_command.execute(config),
         Edit(edit_command) => edit_command.execute(config),
+        Delete(delete_command) => delete_command.execute(config),
     }
 }

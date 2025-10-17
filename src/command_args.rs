@@ -1,4 +1,5 @@
 use crate::commands::call_command::CallServiceEndpointCommand;
+use crate::commands::delete_command::DeleteCommand;
 use crate::commands::edit_command::EditCommand;
 use crate::commands::global_header_commands::GlobalHeaderCommand;
 use crate::commands::new_command::NewCommand;
@@ -11,4 +12,5 @@ pub enum RootCommands {
 
     New(NewCommand),
     Edit(EditCommand),
+    Delete(DeleteCommand),
 }
