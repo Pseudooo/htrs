@@ -1,8 +1,10 @@
 use crate::commands::delete_command::DeleteCommand::Service;
-use crate::commands::delete_service_command::DeleteServiceCommand;
 use crate::config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};
+use delete_service_command::DeleteServiceCommand;
+
+mod delete_service_command;
 
 pub enum DeleteCommand {
     Service(DeleteServiceCommand),
