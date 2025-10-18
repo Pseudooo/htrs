@@ -8,7 +8,6 @@ pub(crate) mod new_command;
 pub(crate) mod edit_command;
 pub(crate) mod delete_command;
 pub(crate) mod list_command;
-mod edit_service_command;
 mod delete_service_command;
 mod list_service_command;
 
