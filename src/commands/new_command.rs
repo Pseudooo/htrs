@@ -1,8 +1,11 @@
+mod new_environment_command;
+mod new_service_command;
+
 use crate::commands::new_command::NewCommand::Service;
-use crate::commands::new_service_command::NewServiceCommand;
 use crate::config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};
+use new_service_command::NewServiceCommand;
 
 pub enum NewCommand {
     Service(NewServiceCommand),
