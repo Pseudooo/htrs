@@ -1,5 +1,6 @@
 mod common;
 
+#[cfg(test)]
 mod edit_service_tests {
     use crate::common::{get_config, setup, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
