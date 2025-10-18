@@ -1,6 +1,5 @@
 use crate::command_builder::MatchBinding;
 use crate::commands::endpoint_commands::EndpointCommand;
-use crate::commands::environment_commands::EnvironmentCommand;
 use crate::commands::service_header_commands::ServiceHeaderCommand;
 use crate::config::{HtrsConfig, Service};
 use crate::outcomes::HtrsAction::{PrintDialogue, UpdateConfig};
@@ -16,7 +15,6 @@ pub enum ServiceCommand {
         name: String,
     },
     List,
-    Environment(EnvironmentCommand),
     Endpoint {
         command: EndpointCommand,
     },
@@ -59,7 +57,6 @@ impl ServiceCommand {
                     .visible_alias("ls")
                     .about("List all services")
             )
-            .subcommand(EnvironmentCommand::get_command())
             .subcommand(
                 Command::new("configuration")
                     .visible_alias("config")
@@ -94,11 +91,6 @@ impl ServiceCommand {
             Some(("list" | "ls", _)) => {
                 ServiceCommand::List
             },
-            Some(("environment" | "env", environment_matches)) => {
-                ServiceCommand::Environment(
-                    EnvironmentCommand::bind_from_matches(environment_matches),
-                )
-            },
             Some(("endpoint", endpoint_matches)) => {
                 ServiceCommand::Endpoint {
                     command: EndpointCommand::bind_from_matches(endpoint_matches),
@@ -118,7 +110,6 @@ impl ServiceCommand {
             ServiceCommand::Add { name, alias } => add_new_service(config, name, alias),
             ServiceCommand::Remove { name } => remove_service(config, name),
             ServiceCommand::List => list_services(config),
-            ServiceCommand::Environment(environment_command) => environment_command.execute_command(config),
             ServiceCommand::Endpoint { command } => command.execute_command(config),
             ServiceCommand::Header(command) => command.execute_command(config),
         }
