@@ -8,7 +8,6 @@ pub(crate) mod new_command;
 pub(crate) mod edit_command;
 pub(crate) mod delete_command;
 pub(crate) mod list_command;
-mod list_service_command;
 
 use crate::command_args::RootCommands;
 use crate::command_args::RootCommands::{Call, Delete, Edit, Header, List, New, Service};

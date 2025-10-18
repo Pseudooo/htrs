@@ -1,8 +1,10 @@
 use crate::commands::list_command::ListCommand::Service;
-use crate::commands::list_service_command::ListServicesCommand;
 use crate::config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};
+use list_service_command::ListServicesCommand;
+
+mod list_service_command;
 
 pub enum ListCommand {
     Service(ListServicesCommand),
