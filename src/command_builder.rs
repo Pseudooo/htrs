@@ -3,6 +3,7 @@ use crate::commands::call_command::CallServiceEndpointCommand;
 use crate::commands::delete_command::DeleteCommand;
 use crate::commands::edit_command::EditCommand;
 use crate::commands::global_header_commands::GlobalHeaderCommand;
+use crate::commands::list_command::ListCommand;
 use crate::commands::new_command::NewCommand;
 use crate::commands::service_commands::ServiceCommand;
 use crate::config::HtrsConfig;
@@ -81,6 +82,11 @@ impl RootCommands {
                     DeleteCommand::bind_from_matches(delete_matches)
                 ))
             }
+            Some(("list" | "ls", list_matches)) => {
+                Ok(RootCommands::List(
+                    ListCommand::bind_from_matches(list_matches)
+                ))
+            }
             _ => panic!("Bad subcommand for RootCommands"),
         }
     }
@@ -97,4 +103,5 @@ pub fn get_root_command(config: &HtrsConfig) -> Command {
         .subcommand(NewCommand::get_command())
         .subcommand(EditCommand::get_command())
         .subcommand(DeleteCommand::get_command())
+        .subcommand(ListCommand::get_command())
 }
