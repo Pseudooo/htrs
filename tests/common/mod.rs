@@ -1,4 +1,4 @@
-use crate::common::config::{Environment, HtrsConfig, Service, VersionedHtrsConfig};
+use crate::common::config::{Environment, HtrsConfig, Service};
 use std::collections::HashMap;
 use std::fs::{remove_file, OpenOptions};
 use std::path::PathBuf;
@@ -29,15 +29,12 @@ pub fn setup(init_config: Option<HtrsConfig>) {
             .open(path)
             .unwrap();
 
-        let versioned_config = VersionedHtrsConfig::V0_0_1(init_config);
-        serde_json::to_writer_pretty(handle, &versioned_config).unwrap();
+        serde_json::to_writer_pretty(handle, &init_config).unwrap();
     }
 }
 
 pub fn get_config() -> HtrsConfig {
-    let versioned_config: VersionedHtrsConfig = serde_json::from_reader(std::fs::File::open(get_config_path()).unwrap()).unwrap();
-    let VersionedHtrsConfig::V0_0_1(config) = versioned_config;
-    config
+   serde_json::from_reader(std::fs::File::open(get_config_path()).unwrap()).unwrap()
 }
 
 pub struct HtrsConfigBuilder {

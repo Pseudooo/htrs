@@ -11,14 +11,14 @@ mod htrs_binding_error;
 use crate::command_args::RootCommands;
 use crate::command_builder::get_root_command;
 use crate::commands::execute_command;
-use crate::config::{HtrsConfig, VersionedHtrsConfig};
+use crate::config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use reqwest::blocking::Client;
 use reqwest::{Method, Url};
 use std::collections::HashMap;
 
 fn main() -> Result<(), ()> {
-    let mut config = VersionedHtrsConfig::load();
+    let mut config = HtrsConfig::load();
 
     let command_matches = get_root_command(&config).get_matches();
     let command = match RootCommands::bind_from_matches(&config, &command_matches) {
@@ -53,7 +53,7 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
             Ok(())
         },
         HtrsAction::UpdateConfig => {
-            VersionedHtrsConfig::save(config);
+            config.save();
             Ok(())
         },
         HtrsAction::MakeRequest {
