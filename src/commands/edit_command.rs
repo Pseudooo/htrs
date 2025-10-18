@@ -33,7 +33,7 @@ impl EditCommand {
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
         match self {
             Service(edit_service_command) => edit_service_command.execute(config),
-            Environment(edit_service_command) => edit_service_command.execute(config),
+            Environment(edit_environment_command) => edit_environment_command.execute(config),
         }
     }
 }

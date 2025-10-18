@@ -48,7 +48,6 @@ impl EditEnvironmentCommand {
                 Arg::new("new-host")
                     .help("The new host for the environment")
                     .long("new-host")
-                    .short('h')
                     .required(false)
             )
             .arg(
