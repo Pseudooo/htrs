@@ -1,4 +1,4 @@
-use crate::common::config::{HtrsConfig, Service, VersionedHtrsConfig};
+use crate::common::config::{Environment, HtrsConfig, Service, VersionedHtrsConfig};
 use std::collections::HashMap;
 use std::fs::{remove_file, OpenOptions};
 use std::path::PathBuf;
@@ -47,6 +47,14 @@ pub struct HtrsConfigBuilder {
 pub struct ServiceBuilder {
     pub name: Option<String>,
     pub alias: Option<String>,
+    pub environments: Vec<Environment>,
+}
+
+pub struct EnvironmentBuilder {
+    pub name: Option<String>,
+    pub alias: Option<String>,
+    pub host: Option<String>,
+    pub default: bool,
 }
 
 impl HtrsConfigBuilder {
@@ -74,6 +82,7 @@ impl ServiceBuilder {
         Self {
             name: None,
             alias: None,
+            environments: vec![]
         }
     }
 
@@ -87,13 +96,58 @@ impl ServiceBuilder {
         self
     }
 
+    pub fn with_environment(mut self, builder: EnvironmentBuilder) -> Self {
+        self.environments.push(builder.build());
+        self
+    }
+
     pub fn build(self) -> Service {
         Service {
             name: self.name.unwrap(),
             alias: self.alias,
             headers: HashMap::new(),
             endpoints: vec![],
-            environments: vec![],
+            environments: self.environments,
+        }
+    }
+}
+
+impl EnvironmentBuilder {
+    pub fn new() -> Self {
+        Self {
+            name: None,
+            alias: None,
+            host: None,
+            default: false,
+        }
+    }
+
+    pub fn with_name(mut self, name: &str) -> Self {
+        self.name = Some(name.to_string());
+        self
+    }
+
+    pub fn with_alias(mut self, alias: &str) -> Self {
+        self.alias = Some(alias.to_string());
+        self
+    }
+
+    pub fn with_host(mut self, host: &str) -> Self {
+        self.host = Some(host.to_string());
+        self
+    }
+
+    pub fn with_default(mut self) -> Self {
+        self.default = true;
+        self
+    }
+
+    pub fn build(self) -> Environment {
+        Environment {
+            name: self.name.unwrap(),
+            alias: self.alias,
+            host: self.host.unwrap(),
+            default: self.default,
         }
     }
 }
