@@ -189,6 +189,13 @@ impl Service {
     pub fn clear_header(&mut self, header_name: String) {
         self.headers.remove(&header_name);
     }
+
+    pub fn display_name(&self) -> String {
+        match &self.alias {
+            None => self.name.to_string(),
+            Some(alias) => format!("{} ({})", self.name, alias),
+        }
+    }
 }
 
 impl Environment {
