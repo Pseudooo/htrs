@@ -6,6 +6,7 @@ use crate::commands::global_header_commands::GlobalHeaderCommand;
 use crate::commands::list_command::ListCommand;
 use crate::commands::new_command::NewCommand;
 use crate::commands::service_commands::ServiceCommand;
+use crate::commands::set_command::SetCommand;
 use crate::config::HtrsConfig;
 use crate::htrs_binding_error::HtrsBindingError;
 use clap::{ArgMatches, Command};
@@ -97,6 +98,11 @@ impl RootCommands {
                     ListCommand::bind_from_matches(list_matches)
                 ))
             }
+            Some(("set", set_matches)) => {
+                Ok(RootCommands::Set(
+                    SetCommand::bind_from_matches(set_matches)
+                ))
+            }
             _ => panic!("Bad subcommand for RootCommands"),
         }
     }
@@ -114,4 +120,5 @@ pub fn get_root_command(config: &HtrsConfig) -> Command {
         .subcommand(EditCommand::get_command())
         .subcommand(DeleteCommand::get_command())
         .subcommand(ListCommand::get_command())
+        .subcommand(SetCommand::get_command())
 }
