@@ -211,6 +211,13 @@ impl Environment {
     pub fn new(name: String, alias: Option<String>, host: String, default: bool) -> Environment {
         Environment { name, alias, host, default }
     }
+
+    pub fn display_name(&self) -> String {
+        match &self.alias {
+            None => self.name.to_string(),
+            Some(alias) => format!("{} ({})", self.name, alias),
+        }
+    }
 }
 
 impl Endpoint {
