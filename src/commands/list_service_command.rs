@@ -15,6 +15,8 @@ impl ListServicesCommand {
             .arg(
                 Arg::new("filter")
                     .help("Filter for service name or alias")
+                    .long("filter")
+                    .short('f')
                     .required(false)
             )
     }
