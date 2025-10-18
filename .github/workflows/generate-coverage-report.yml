@@ -4,6 +4,9 @@ on:
     branches:
       - master
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   generate-report:
     name: Create Report
@@ -14,13 +17,11 @@ jobs:
         with:
           ref: ${{ inputs.code-ref }}
 
-      - name: ⚙️ Install Tarpaulin
-        run: cargo install cargo-tarpaulin@0.33.0
+      - name: ⚙️ Install llvm-cov
+        run: cargo install cargo-llvm-cov@0.6.21
 
       - name: 📈 Generate Report
-        run: |
-          cargo tarpaulin --out html --output-dir reports -- --test-threads=1
-          mv ./reports/tarpaulin-report.html ./reports/index.html
+        run: cargo llvm-cov --html -- --test-threads=1
 
       - name: ⚙️ Setup Pages
         uses: actions/configure-pages@v5
@@ -29,7 +30,7 @@ jobs:
         id: upload-report
         uses: actions/upload-pages-artifact@v4
         with:
-          path: reports
+          path: ./target/llvm-cov/html
 
   publish-pages:
     name: Publish Pages
