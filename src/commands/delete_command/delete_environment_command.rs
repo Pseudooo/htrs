@@ -22,6 +22,8 @@ impl DeleteEnvironmentCommand {
                 Arg::new("service")
                     .help("The service name or alias that environment is defined in")
                     .required(true)
+                    .long("service")
+                    .short('s')
             )
     }
 
