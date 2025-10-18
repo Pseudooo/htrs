@@ -72,6 +72,7 @@ pub struct Environment {
     pub alias: Option<String>,
     pub host: String,
     pub default: bool,
+    pub headers: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -209,7 +210,13 @@ impl Service {
 
 impl Environment {
     pub fn new(name: String, alias: Option<String>, host: String, default: bool) -> Environment {
-        Environment { name, alias, host, default }
+        Environment {
+            name,
+            alias,
+            host,
+            default,
+            headers: HashMap::new(),
+        }
     }
 
     pub fn display_name(&self) -> String {
@@ -234,5 +241,27 @@ impl Endpoint {
         }
         printed.push_str("\n");
         printed
+    }
+}
+
+pub trait HeaderItem {
+    fn set_header(&mut self, header_name: String, header_value: String);
+}
+
+impl HeaderItem for HtrsConfig {
+    fn set_header(&mut self, header_name: String, header_value: String) {
+        self.headers.insert(header_name, header_value);
+    }
+}
+
+impl HeaderItem for Service {
+    fn set_header(&mut self, header_name: String, header_value: String) {
+        self.headers.insert(header_name, header_value);
+    }
+}
+
+impl HeaderItem for Environment {
+    fn set_header(&mut self, header_name: String, header_value: String) {
+        self.headers.insert(header_name, header_value);
     }
 }

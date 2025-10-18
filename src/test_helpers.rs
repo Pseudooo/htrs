@@ -68,6 +68,7 @@ impl HtrsServiceBuilder {
             },
             host: host.to_string(),
             default,
+            headers: HashMap::new(),
         });
         self
     }

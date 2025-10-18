@@ -148,6 +148,7 @@ impl EnvironmentBuilder {
             alias: self.alias,
             host: self.host.unwrap(),
             default: self.default,
+            headers: HashMap::new(),
         }
     }
 }
