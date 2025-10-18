@@ -1,5 +1,5 @@
 use crate::command_builder::MatchBinding;
-use crate::config::{HtrsConfig, Service};
+use crate::config::{HeaderItem, HtrsConfig, Service};
 use crate::outcomes::HtrsAction::UpdateConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgMatches, Command};
