@@ -1,8 +1,10 @@
 use crate::commands::edit_command::EditCommand::Service;
-use crate::commands::edit_service_command::EditServiceCommand;
 use crate::config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};
+use edit_service_command::EditServiceCommand;
+
+mod edit_service_command;
 
 pub enum EditCommand {
     Service(EditServiceCommand),
