@@ -143,6 +143,15 @@ impl Service {
         None
     }
 
+    pub fn get_environment_mut(&mut self, name: &str) -> Option<&mut Environment> {
+        for environment in &mut self.environments {
+            if environment.name == name || environment.alias == Some(name.to_string()) {
+                return Some(environment);
+            }
+        }
+        None
+    }
+
     pub fn get_default_environment(&self) -> Option<&Environment> {
         for environment in &self.environments {
             if environment.default {

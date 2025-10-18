@@ -38,6 +38,16 @@ impl MatchBinding<bool> for ArgMatches {
     }
 }
 
+impl MatchBinding<Option<bool>> for ArgMatches {
+    fn bind_field(&self, field_id: &str) -> Option<bool> {
+        let Some(value) = self.get_one::<bool>(field_id) else {
+            return None;
+        };
+
+        Some(*value)
+    }
+}
+
 impl MatchBinding<Vec<String>> for ArgMatches {
     fn bind_field(&self, field_id: &str) -> Vec<String> {
         let binding = self.get_many::<String>(field_id);
