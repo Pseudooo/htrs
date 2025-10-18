@@ -42,12 +42,14 @@ pub fn get_config() -> HtrsConfig {
 
 pub struct HtrsConfigBuilder {
     pub services: Vec<Service>,
+    pub headers: HashMap<String, String>,
 }
 
 pub struct ServiceBuilder {
     pub name: Option<String>,
     pub alias: Option<String>,
     pub environments: Vec<Environment>,
+    pub headers: HashMap<String, String>,
 }
 
 pub struct EnvironmentBuilder {
@@ -55,17 +57,24 @@ pub struct EnvironmentBuilder {
     pub alias: Option<String>,
     pub host: Option<String>,
     pub default: bool,
+    pub headers: HashMap<String, String>
 }
 
 impl HtrsConfigBuilder {
     pub fn new() -> Self {
         Self {
             services: vec![],
+            headers: HashMap::new(),
         }
     }
 
     pub fn with_service(mut self, builder: ServiceBuilder) -> Self {
         self.services.push(builder.build());
+        self
+    }
+
+    pub fn with_header(mut self, name: &str, value: &str) -> Self {
+        self.headers.insert(name.to_string(), value.to_string());
         self
     }
 
@@ -82,7 +91,8 @@ impl ServiceBuilder {
         Self {
             name: None,
             alias: None,
-            environments: vec![]
+            environments: vec![],
+            headers: HashMap::new(),
         }
     }
 
@@ -98,6 +108,11 @@ impl ServiceBuilder {
 
     pub fn with_environment(mut self, builder: EnvironmentBuilder) -> Self {
         self.environments.push(builder.build());
+        self
+    }
+
+    pub fn with_header(mut self, name: &str, value: &str) -> Self {
+        self.headers.insert(name.to_string(), value.to_string());
         self
     }
 
@@ -119,6 +134,7 @@ impl EnvironmentBuilder {
             alias: None,
             host: None,
             default: false,
+            headers: HashMap::new(),
         }
     }
 
@@ -142,12 +158,18 @@ impl EnvironmentBuilder {
         self
     }
 
+    pub fn with_header(mut self, name: &str, value: &str) -> Self {
+        self.headers.insert(name.to_string(), value.to_string());
+        self
+    }
+
     pub fn build(self) -> Environment {
         Environment {
             name: self.name.unwrap(),
             alias: self.alias,
             host: self.host.unwrap(),
             default: self.default,
+            headers: self.headers,
         }
     }
 }
