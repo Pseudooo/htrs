@@ -1,5 +1,6 @@
 use crate::commands::delete_command::delete_environment_command::DeleteEnvironmentCommand;
-use crate::commands::delete_command::DeleteCommand::{Environment, Service};
+use crate::commands::delete_command::delete_header_command::DeleteHeaderCommand;
+use crate::commands::delete_command::DeleteCommand::{Environment, Header, Service};
 use crate::config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};
@@ -7,10 +8,12 @@ use delete_service_command::DeleteServiceCommand;
 
 mod delete_service_command;
 mod delete_environment_command;
+mod delete_header_command;
 
 pub enum DeleteCommand {
     Service(DeleteServiceCommand),
     Environment(DeleteEnvironmentCommand),
+    Header(DeleteHeaderCommand),
 }
 
 impl DeleteCommand {
@@ -21,12 +24,14 @@ impl DeleteCommand {
             .arg_required_else_help(true)
             .subcommand(DeleteServiceCommand::get_command())
             .subcommand(DeleteEnvironmentCommand::get_command())
+            .subcommand(DeleteHeaderCommand::get_command())
     }
 
     pub fn bind_from_matches(args: &ArgMatches) -> DeleteCommand {
         match args.subcommand() {
             Some(("service", delete_service_matches)) => Service(DeleteServiceCommand::bind_from_matches(delete_service_matches)),
             Some(("environment" | "env", delete_environment_matches)) => Environment(DeleteEnvironmentCommand::bind_from_matches(delete_environment_matches)),
+            Some(("header", delete_header_matches)) => Header(DeleteHeaderCommand::bind_from_matches(delete_header_matches)),
             _ => unreachable!(),
         }
     }
@@ -35,6 +40,7 @@ impl DeleteCommand {
         match self {
             Service(delete_service_command) => delete_service_command.execute(config),
             Environment(delete_environment_command) => delete_environment_command.execute(config),
+            Header(delete_header_command) => delete_header_command.execute(config),
         }
     }
 }

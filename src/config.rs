@@ -238,11 +238,16 @@ impl Endpoint {
 
 pub trait HeaderItem {
     fn set_header(&mut self, header_name: String, header_value: String);
+    fn clear_header(&mut self, header_name: String);
 }
 
 impl HeaderItem for HtrsConfig {
     fn set_header(&mut self, header_name: String, header_value: String) {
         self.headers.insert(header_name, header_value);
+    }
+
+    fn clear_header(&mut self, header_name: String) {
+        self.headers.remove(&header_name);
     }
 }
 
@@ -250,10 +255,18 @@ impl HeaderItem for Service {
     fn set_header(&mut self, header_name: String, header_value: String) {
         self.headers.insert(header_name, header_value);
     }
+
+    fn clear_header(&mut self, header_name: String) {
+        self.headers.remove(&header_name);
+    }
 }
 
 impl HeaderItem for Environment {
     fn set_header(&mut self, header_name: String, header_value: String) {
         self.headers.insert(header_name, header_value);
+    }
+
+    fn clear_header(&mut self, header_name: String) {
+        self.headers.remove(&header_name);
     }
 }
