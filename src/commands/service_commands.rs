@@ -1,6 +1,5 @@
 use crate::command_builder::MatchBinding;
 use crate::commands::endpoint_commands::EndpointCommand;
-use crate::commands::service_header_commands::ServiceHeaderCommand;
 use crate::config::{HtrsConfig, Service};
 use crate::outcomes::HtrsAction::{PrintDialogue, UpdateConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
@@ -18,7 +17,6 @@ pub enum ServiceCommand {
     Endpoint {
         command: EndpointCommand,
     },
-    Header(ServiceHeaderCommand),
 }
 
 impl ServiceCommand {
@@ -69,7 +67,6 @@ impl ServiceCommand {
                     )
             )
             .subcommand(EndpointCommand::get_command())
-            .subcommand(ServiceHeaderCommand::get_command())
     }
 
     pub fn bind_from_matches(args: &ArgMatches) -> ServiceCommand {
@@ -95,12 +92,7 @@ impl ServiceCommand {
                 ServiceCommand::Endpoint {
                     command: EndpointCommand::bind_from_matches(endpoint_matches),
                 }
-            }
-            Some(("header", header_matches)) => {
-                ServiceCommand::Header(
-                    ServiceHeaderCommand::bind_from_matches(header_matches)
-                )
-            }
+            },
             _ => panic!("Bad subcommand given for ServiceCommand"),
         }
     }
@@ -111,7 +103,6 @@ impl ServiceCommand {
             ServiceCommand::Remove { name } => remove_service(config, name),
             ServiceCommand::List => list_services(config),
             ServiceCommand::Endpoint { command } => command.execute_command(config),
-            ServiceCommand::Header(command) => command.execute_command(config),
         }
     }
 }
