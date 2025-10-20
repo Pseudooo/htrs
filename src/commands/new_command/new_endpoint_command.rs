@@ -23,8 +23,6 @@ impl NewEndpointCommand {
                 Arg::new("path")
                     .help("The path of the endpoint")
                     .required(true)
-                    .long("path")
-                    .short('p')
             )
             .arg(
                 Arg::new("query")
@@ -34,6 +32,13 @@ impl NewEndpointCommand {
                     .required(false)
                     .long("query")
                     .short('q')
+            )
+            .arg(
+                Arg::new("service")
+                    .help("The service endpoint will be created for")
+                    .required(true)
+                    .long("service")
+                    .short('s')
             )
     }
 

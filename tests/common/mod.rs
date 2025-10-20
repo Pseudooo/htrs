@@ -3,7 +3,7 @@ mod config;
 
 #[cfg(test)]
 pub mod test_helpers {
-    use crate::common::config::{Environment, HtrsConfig, Service, VersionedHtrsConfig};
+    use crate::common::config::{Endpoint, Environment, HtrsConfig, Service, VersionedHtrsConfig};
     use std::collections::HashMap;
     use std::fs::{remove_file, OpenOptions};
     use std::path::PathBuf;
@@ -50,8 +50,14 @@ pub mod test_helpers {
     pub struct ServiceBuilder {
         pub name: Option<String>,
         pub alias: Option<String>,
+        pub endpoints: Vec<Endpoint>,
         pub environments: Vec<Environment>,
         pub headers: HashMap<String, String>,
+    }
+
+    pub struct EndpointBuilder {
+        pub name: Option<String>,
+        pub path: Option<String>,
     }
 
     pub struct EnvironmentBuilder {
@@ -93,6 +99,7 @@ pub mod test_helpers {
             Self {
                 name: None,
                 alias: None,
+                endpoints: vec![],
                 environments: vec![],
                 headers: HashMap::new(),
             }
@@ -105,6 +112,11 @@ pub mod test_helpers {
 
         pub fn with_alias(mut self, alias: &str) -> Self {
             self.alias = Some(alias.to_string());
+            self
+        }
+
+        pub fn with_endpoint(mut self, builder: EndpointBuilder) -> Self {
+            self.endpoints.push(builder.build());
             self
         }
 
@@ -123,8 +135,35 @@ pub mod test_helpers {
                 name: self.name.unwrap(),
                 alias: self.alias,
                 headers: HashMap::new(),
-                endpoints: vec![],
+                endpoints: self.endpoints,
                 environments: self.environments,
+            }
+        }
+    }
+
+    impl EndpointBuilder {
+        pub fn new() -> Self {
+            EndpointBuilder {
+                name: None,
+                path: None,
+            }
+        }
+
+        pub fn with_name(mut self, name: &str) -> Self {
+            self.name = Some(name.to_string());
+            self
+        }
+
+        pub fn with_path(mut self, path: &str) -> Self {
+            self.path = Some(path.to_string());
+            self
+        }
+
+        pub fn build(self) -> Endpoint {
+            Endpoint {
+                name: self.name.unwrap(),
+                path_template: self.path.unwrap(),
+                query_parameters: vec![],
             }
         }
     }
