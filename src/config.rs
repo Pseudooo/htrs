@@ -90,25 +90,15 @@ impl HtrsConfig {
     pub fn remove_service(&mut self, name: &str) -> bool {
         let init_length = self.services.len();
         self.services.retain(|service| service.name != name && service.alias != Some(name.to_string()));
-        return init_length != self.services.len();
+        init_length != self.services.len()
     }
 
     pub fn get_service(&self, name: &str) -> Option<&Service> {
-        for service in &self.services {
-            if service.name == name || service.alias == Some(name.to_string()) {
-                return Some(service);
-            }
-        }
-        None
+        self.services.iter().find(|&service| service.name == name || service.alias == Some(name.to_string())).map(|v| v as _)
     }
 
     pub fn get_service_mut(&mut self, name: &str) -> Option<&mut Service> {
-        for service in &mut self.services {
-            if service.name == name || service.alias == Some(name.to_string()) {
-                return Some(service);
-            }
-        }
-        None
+        self.services.iter_mut().find(|s| s.name == name)
     }
 }
 
@@ -124,21 +114,11 @@ impl Service {
     }
 
     pub fn get_environment(&self, name: &str) -> Option<&Environment> {
-        for environment in &self.environments {
-            if environment.name == name || environment.alias == Some(name.to_string()) {
-                return Some(environment);
-            }
-        }
-        None
+        self.environments.iter().find(|&environment| environment.name == name || environment.alias == Some(name.to_string()))
     }
 
     pub fn get_environment_mut(&mut self, name: &str) -> Option<&mut Environment> {
-        for environment in &mut self.environments {
-            if environment.name == name || environment.alias == Some(name.to_string()) {
-                return Some(environment);
-            }
-        }
-        None
+        self.environments.iter_mut().find(|e| e.name == name || e.alias == Some(name.to_string()))
     }
 
     pub fn get_default_environment(&self) -> Option<&Environment> {
@@ -162,31 +142,21 @@ impl Service {
     pub fn remove_environment(&mut self, name: &str) -> bool {
         let init_len = self.environments.len();
         self.environments.retain(|x| x.name != name && x.alias != Some(name.to_string()));
-        return init_len != self.environments.len();
+        init_len != self.environments.len()
     }
 
     pub fn get_endpoint(&self, name: &str) -> Option<&Endpoint> {
-        for endpoint in &self.endpoints {
-            if endpoint.name == name {
-                return Some(endpoint);
-            }
-        }
-        None
+        self.endpoints.iter().find(|&endpoint| endpoint.name == name)
     }
     
     pub fn get_endpoint_mut(&mut self, name: &str) -> Option<&mut Endpoint> {
-        for endpoint in &mut self.endpoints {
-            if endpoint.name == name {
-                return Some(endpoint);
-            }
-        }
-        None
+        self.endpoints.iter_mut().find(|e| e.name == name)
     }
 
     pub fn remove_endpoint(&mut self, name: &str) -> bool {
         let init_len = self.endpoints.len();
         self.endpoints.retain(|x| x.name != name);
-        return init_len != self.endpoints.len();
+        init_len != self.endpoints.len()
     }
 
     pub fn display_name(&self) -> String {

@@ -28,14 +28,10 @@ impl ListServicesCommand {
     }
 
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
-        let mut services: Vec<Service> = config.services
-            .iter()
-            .cloned()
-            .collect();
+        let mut services: Vec<Service> = config.services.to_vec();
 
         if let Some(filter) = &self.filter {
-            services = services.into_iter().filter(|s| service_matches_filter(s, filter))
-                .collect();
+            services.retain(|s| service_matches_filter(s, filter));
 
             if services.is_empty() {
                 return Ok(PrintDialogue(format!("No services found with name or alias containing `{}`", filter)));

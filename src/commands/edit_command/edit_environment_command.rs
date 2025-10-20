@@ -79,10 +79,10 @@ impl EditEnvironmentCommand {
             return Err(HtrsError::new(format!("No environment could be found with name or alias `{}`", self.name).as_ref()))
         };
 
-        if self.new_name.is_some() && service.get_environment_mut(&self.new_name.as_ref().unwrap()).is_some() {
+        if self.new_name.is_some() && service.get_environment_mut(self.new_name.as_ref().unwrap()).is_some() {
             return Err(HtrsError::new(format!("Service `{}` already has an environment with name or alias `{}`", service.name, self.new_name.as_ref().unwrap()).as_ref()))
         }
-        if self.new_alias.is_some() && service.get_environment_mut(&self.new_alias.as_ref().unwrap()).is_some() {
+        if self.new_alias.is_some() && service.get_environment_mut(self.new_alias.as_ref().unwrap()).is_some() {
             return Err(HtrsError::new(format!("Service `{}` already has an environment with name or alias `{}`", service.name, self.new_alias.as_ref().unwrap()).as_ref()))
         }
 

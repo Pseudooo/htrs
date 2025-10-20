@@ -98,7 +98,7 @@ impl CallServiceEndpointCommand {
             command = command.subcommand(service_command);
         }
 
-        return command;
+        command
     }
 
     pub fn bind_from_matches(config: &HtrsConfig, args: &ArgMatches) -> Result<CallServiceEndpointCommand, HtrsBindingError> {
@@ -142,7 +142,7 @@ impl CallServiceEndpointCommand {
     pub fn execute_command(&self, config: &HtrsConfig) -> Result<HtrsAction, HtrsError> {
         let service = config.get_service(&self.service_name).unwrap();
         let environment = match &self.environment_name {
-            Some(environment_name) => service.get_environment(&environment_name).unwrap(),
+            Some(environment_name) => service.get_environment(environment_name).unwrap(),
             None => {
                 let Some(environment) = service.get_default_environment() else {
                     return Err(HtrsError::new(&format!("No default environment defined for service {}", self.service_name)));
@@ -172,7 +172,7 @@ impl CallServiceEndpointCommand {
 
 fn parse_query_params_from_arg(arg: &str) -> Result<(String, String), HtrsBindingError> {
     if let [name, value] = arg.split("=").collect::<Vec<&str>>().as_slice() {
-        if name.len() > 0 && value.len() > 0 {
+        if !name.is_empty() && !value.is_empty() {
             return Ok((name.to_string(), value.to_string()));
         }
     }
@@ -196,7 +196,7 @@ fn build_path_from_template(path_template: &str, args: &ArgMatches) -> String {
     let mut path: String = path_template.to_string();
     let template_value_names = get_path_template_params(path_template);
     for template_value_name in &template_value_names {
-        let template_value: String = args.bind_field(&template_value_name);
+        let template_value: String = args.bind_field(template_value_name);
         path = path.replace(&format!("{{{}}}", template_value_name.as_str()), &template_value)
     }
 
@@ -206,10 +206,10 @@ fn build_path_from_template(path_template: &str, args: &ArgMatches) -> String {
 fn get_query_parameters_from_args(endpoint: &Endpoint, args: &ArgMatches) -> HashMap<String, String> {
     let mut query_parameters = HashMap::new();
     for parameter_name in &endpoint.query_parameters {
-        let parameter_value: String = args.bind_field(&parameter_name);
+        let parameter_value: String = args.bind_field(parameter_name);
         query_parameters.insert(parameter_name.to_string(), parameter_value);
     }
-    return query_parameters;
+    query_parameters
 }
 
 fn merge(into: &mut HashMap<String, String>, from: &HashMap<String, String>) {

@@ -17,5 +17,8 @@ jobs:
       - name: 🔨 Build
         run: cargo build --verbose
 
+      - name: 🧹 Lint
+        run: cargo clippy -- -Dwarnings
+
       - name: 🧪 Test
         run: cargo test -- --test-threads=1

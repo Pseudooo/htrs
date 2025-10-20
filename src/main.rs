@@ -64,7 +64,7 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
 }
 
 fn apply_query_params_to_url(base_url: Url, query_params: HashMap<String, String>) -> Result<Url, HtrsError> {
-    if query_params.len() == 0 {
+    if query_params.is_empty() {
         return Ok(base_url);
     }
 
