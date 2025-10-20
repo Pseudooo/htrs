@@ -58,6 +58,7 @@ pub mod test_helpers {
     pub struct EndpointBuilder {
         pub name: Option<String>,
         pub path: Option<String>,
+        pub query_params: Vec<String>,
     }
 
     pub struct EnvironmentBuilder {
@@ -146,6 +147,7 @@ pub mod test_helpers {
             EndpointBuilder {
                 name: None,
                 path: None,
+                query_params: vec![],
             }
         }
 
@@ -159,11 +161,16 @@ pub mod test_helpers {
             self
         }
 
+        pub fn with_query_param(mut self, name: &str) -> Self {
+            self.query_params.push(name.to_string());
+            self
+        }
+
         pub fn build(self) -> Endpoint {
             Endpoint {
                 name: self.name.unwrap(),
                 path_template: self.path.unwrap(),
-                query_parameters: vec![],
+                query_parameters: self.query_params,
             }
         }
     }

@@ -181,6 +181,15 @@ impl Service {
         }
         None
     }
+    
+    pub fn get_endpoint_mut(&mut self, name: &str) -> Option<&mut Endpoint> {
+        for endpoint in &mut self.endpoints {
+            if endpoint.name == name {
+                return Some(endpoint);
+            }
+        }
+        None
+    }
 
     pub fn remove_endpoint(&mut self, name: &str) -> bool {
         let init_len = self.endpoints.len();
