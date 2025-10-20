@@ -114,7 +114,7 @@ impl Service {
     }
 
     pub fn get_environment(&self, name: &str) -> Option<&Environment> {
-        self.environments.iter().find(|&environment| environment.name == name || environment.alias == Some(name.to_string())).map(|v| v as _)
+        self.environments.iter().find(|&environment| environment.name == name || environment.alias == Some(name.to_string()))
     }
 
     pub fn get_environment_mut(&mut self, name: &str) -> Option<&mut Environment> {
@@ -146,7 +146,7 @@ impl Service {
     }
 
     pub fn get_endpoint(&self, name: &str) -> Option<&Endpoint> {
-        self.endpoints.iter().find(|&endpoint| endpoint.name == name).map(|v| v as _)
+        self.endpoints.iter().find(|&endpoint| endpoint.name == name)
     }
     
     pub fn get_endpoint_mut(&mut self, name: &str) -> Option<&mut Endpoint> {
