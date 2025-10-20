@@ -21,16 +21,16 @@ A service represents an api you want to call across multiple environments
 
 Command:
 ```
-> htrs service add aviation
+> htrs new service aviation
 ```
 
 ### Define an environment
 
-An environment is an instance of the service with a host
+An environment is an instance of the service with an associated host
 
 Command:
 ```
-> htrs service environment add aviation prod api.aviationstack.com --default
+> htrs new environment prod api.aviationstack.com --service aviation --default
 ```
 
 ### Define an endpoint
@@ -39,7 +39,7 @@ An endpoint is consistent across all environments in a service with only the hos
 
 Command:
 ```
-> htrs service endpoint aviation add get-flights /v1/flights
+> htrs new endpoint get-flights /v1/flights --service aviation
 ```
 
 ### Call the endpoint
@@ -60,28 +60,38 @@ Command:
 
 For more details on parameterising the endpoints see [Creating Endpoint](#creating-endpoints) & [Calling a Service](#calling-a-service)
 
+## Commands
+
+Most of the commands follow the same structure of:
+```
+htrs <new|edit|delete|set|clear> ...
+```
+
+Which can be applied to the respective items that can be configured by the cli
+
 ## Services
 
-A service represents an api that might exist across multiple environments
+A service represents an api that is hosted across multiple environments, such as most companies typically have hosts for:
+- production
+- staging
+- development
 
-To see full detail about service commands run:
+A service will encapsulate all of the above.
+
+### Creating A Service
+
+New services can be created with a unique name & _(optional)_ alias
+
 ```
-htrs service --help
-```
+Create a new service
 
-### Creating Services
-
-Create a new service with a unique name, and optionally a unique alias. The name or alias can be used to reference the service in the future
-
-Command:
-```
-Usage: htrs.exe service add [OPTIONS] <name>
+Usage: htrs.exe new service [OPTIONS] <name>
 
 Arguments:
-  <name>  Unique name of the service to create
+  <name>  The unique name of the service to create
 
 Options:
-  -a, --alias <alias>  Unique alias for the service
+  -a, --alias <alias>  The unique alias for the new service
   -h, --help           Print help
 ```
 
@@ -93,56 +103,52 @@ Remove an existing service
 
 Command:
 ```
-Usage: htrs.exe service remove <name>
+Delete an existing service from config
+
+Usage: htrs.exe delete service <name>
 
 Arguments:
-  <name>  Service name or alias to remove
+  <name>  The name or alias of the service to delete
 
 Options:
   -h, --help  Print help
 ```
-
-Note: `<service>` in the above command can be the name or alias of the service to be removed
 
 ### Listing Services
 
 List all currently defined services
 
-Command:
 ```
-Usage: htrs.exe service list
+List all services
+
+Usage: htrs.exe list service [OPTIONS]
 
 Options:
-  -h, --help  Print help
+  -f, --filter <filter>  Filter for service name or alias
+  -h, --help             Print help
 ```
 
 ## Environments
 
-An environment is an instance of a service, companies typically have the same service hosted in QA/Staging/Production environments
-these environments can be created each with their own host but sharing the same endpoints.
-
-To see full detail about service environment commands run:
-```
-htrs service environment --help
-```
+An environment is a hosted instance of a service, a service in each environment will share the same endpoint(s) but have different
+hosts
 
 ### Creating Environments
 
-Create a new environment under an existing service, with a unique name and optionally a unique alias. The name or alias can
-be used to reference the environment in the future.
+An environment is defined under a service, so there must be an existing service in order to create an environment
 
 ```
-Usage: htrs.exe service environment add [OPTIONS] <service name> <environment name> <host>
+Usage: htrs.exe new environment [OPTIONS] --service <service> <name> <host>
 
 Arguments:
-  <service name>      The name or alias of the service
-  <environment name>  Unique name of the environment to create
-  <host>              Hostname for the service in the environment
+  <name>  The unique name for the new environment
+  <host>  The host for the environment
 
 Options:
-  -a, --alias <alias>  Alias for the environment
-      --default        Set as the default environment for the service
-  -h, --help           Print help
+      --default            Flag to determine if the new environment should be the default
+  -a, --alias <alias>      The unique alias for the new environment
+  -s, --service <service>  The service that the environment will be created for
+  -h, --help               Print help
 ```
 
 ### Removing Environments
@@ -150,30 +156,31 @@ Options:
 Remove an existing environment from a service
 
 ```
-Usage: htrs.exe service environment remove <service name> <environment name>
+Delete an existing environment from config
+
+Usage: htrs.exe delete environment --service <service> <name>
 
 Arguments:
-  <service name>      The name or alias of the service
-  <environment name>  The environment name or alias to remove
+  <name>  The name or alias of the environment to delete
 
 Options:
-  -h, --help  Print help
+  -s, --service <service>  The service name or alias that environment is defined in
+  -h, --help               Print help
 ```
-
-Note: The `<service>` and `<environment>` arguments can use the name or alias of the respective service/environment
 
 ### List Environments
 
 List all defined environments for a service
 
 ```
-Usage: htrs.exe service environment list <service name>
+List environments for a service
 
-Arguments:
-  <service name>  The name or alias of the service
+Usage: htrs.exe list environment [OPTIONS] --service <service>
 
 Options:
-  -h, --help  Print help
+  -s, --service <service>  Service to list environments for
+  -f, --filter <filter>    Filter for environment name or alias
+  -h, --help               Print help
 ```
 
 ## Endpoints
@@ -183,37 +190,38 @@ Options:
 Create an endpoint for a service
 
 ```
-Usage: htrs.exe service endpoint <service name> add [OPTIONS] <endpoint name> <path template>
+Usage: htrs.exe new endpoint [OPTIONS] --service <service> <name> <path>
 
 Arguments:
-  <endpoint name>  The unique endpoint name
-  <path template>  The templated path of endpoint
+  <name>  Name of the endpoint to create
+  <path>  The path of the endpoint
 
 Options:
-  -q, --query-param <query_parameters>  Query parameter for endpoint
-  -h, --help                            Print help
+  -q, --query <query>      Query parameter for endpoint
+  -s, --service <service>  The service endpoint will be created for
+  -h, --help               Print help
 ```
 
-Within the path template for the url variables can be declared using `{}`
+Within the path variables can be declared using `{}`
 
 If the path template `/my/{variable}/path` is used then a parameter `variable` will be used which will be a required
 argument when calling the endpoint
-
-Similarly, query parameters can be provided using the `--query-param` argument, these will also be required when calling
-the created endpoint
 
 ### Removing Endpoints
 
 Remove an endpoint from a service
 
 ```
-Usage: htrs.exe service endpoint <service name> remove <endpoint name>
+Delete an existing endpoint from config
+
+Usage: htrs.exe delete endpoint --service <service> <name>
 
 Arguments:
-  <endpoint name>  The endpoint name to remove
+  <name>  The name of the endpoint
 
 Options:
-  -h, --help  Print help
+  -s, --service <service>  The service name or alias that the endpoint is defined for
+  -h, --help               Print help
 ```
 
 ### List Endpoints
@@ -221,10 +229,14 @@ Options:
 List all endpoints for a service
 
 ```
-Usage: htrs.exe service endpoint <service name> list
+List endpoints for a service
+
+Usage: htrs.exe list endpoint [OPTIONS] --service <service>
 
 Options:
-  -h, --help  Print help
+  -s, --service <service>  Service to list environments for
+  -f, --filter <filter>    Filter for endpoint name
+  -h, --help               Print help
 ```
 
 ## Calling a Service
@@ -271,62 +283,27 @@ the value provided directly from the endpoint's corresponding argument.
 
 ## Headers
 
-Headers can be applied to all requests globally or for a given service
+Headers can be defined to be added to requests at the following scopes:
+- global
+- service
+- environment
 
-### Global Headers
+If a header is present in two scopes then their precedence will follow environment > service > global
 
-By default, htrs will only set the `User-Agent` header to `htrs/{version}` 
+Meaning if the same header is defined for an environment & the global scope, then when calling the given environment it will
+override the value from the global scope.
 
-Set a header to be applied globally for any requests made
-
-Headers can be set for a new header, or overwrite an existing header:
 ```
-Usage: htrs.exe header set <header name> <header value>
+Set a header for a service or environment
+
+Usage: htrs.exe set header [OPTIONS] <name> <value>
 
 Arguments:
-  <header name>   The header name
-  <header value>  The header value
+  <name>   The header name to set
+  <value>  The header value to set
 
 Options:
-  -h, --help  Print help
-```
-
-Or cleared:
-```
-Usage: htrs.exe header clear <header name>
-
-Arguments:
-  <header name>  The header name
-
-Options:
-  -h, --help  Print help
-```
-
-### Service Headers
-
-Set a header for a specific service for any requests made to that service
-
-If the same header is set globally, the service-level header will overwrite it
-
-Headers can be set:
-```
-Usage: htrs.exe service header <service> set <header name> <header value>
-
-Arguments:
-  <header name>   The header name
-  <header value>  The header value
-
-Options:
-  -h, --help  Print help
-```
-
-Or cleared:
-```
-Usage: htrs.exe service header <service> clear <header name>
-
-Arguments:
-  <header name>  The header name
-
-Options:
-  -h, --help  Print help
+  -s, --service <service>          Service to target
+  -e, --environment <environment>  Environment to target
+  -h, --help                       Print help
 ```
