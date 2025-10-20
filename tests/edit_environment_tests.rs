@@ -2,7 +2,7 @@ mod common;
 
 #[cfg(test)]
 mod edit_environment_tests {
-    use crate::common::{get_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{get_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 

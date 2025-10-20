@@ -3,7 +3,7 @@ mod common;
 
 #[cfg(test)]
 mod list_environments_tests {
-    use crate::common::{setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 

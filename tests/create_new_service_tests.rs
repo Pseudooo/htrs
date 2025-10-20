@@ -2,7 +2,7 @@ mod common;
 
 #[cfg(test)]
 mod create_new_service_tests {
-    use crate::common::{get_config, setup, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{get_config, setup, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::prelude::{CommandCargoExt, OutputAssertExt};
     use rstest::rstest;
     use std::error::Error;
