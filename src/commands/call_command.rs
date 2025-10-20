@@ -221,15 +221,14 @@ fn merge(into: &mut HashMap<String, String>, from: &HashMap<String, String>) {
 #[cfg(test)]
 mod call_command_execution_tests {
     use super::*;
-    use crate::command_args::RootCommands;
-    use crate::command_args::RootCommands::Call;
-    use crate::command_builder::get_root_command;
+    use crate::commands::RootCommand;
+    use crate::commands::RootCommand::Call;
     use crate::test_helpers::{HtrsConfigBuilder, HtrsServiceBuilder};
     use clap::Error;
     use rstest::rstest;
 
     pub fn get_matches(config: &HtrsConfig, args: Vec<&str>) -> Result<ArgMatches, Error> {
-        let command = get_root_command(&config);
+        let command = RootCommand::get_command(&config);
         command.try_get_matches_from(args)
     }
 
@@ -253,11 +252,11 @@ mod call_command_execution_tests {
 
         let matches_result = get_matches(&config, args);
         assert!(matches_result.is_ok(), "Failed to get matches from arguments: {}", matches_result.unwrap_err());
-        let result = RootCommands::bind_from_matches(&config, &matches_result.unwrap());
+        let result = RootCommand::bind_from_matches(&matches_result.unwrap(), &config);
         assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
 
         let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommands::Call");
+            panic!("Parsed command was not RootCommand::Call");
         };
         assert_eq!(command.service_name, "foo_service");
         assert_eq!(command.environment_name, None);
@@ -279,11 +278,11 @@ mod call_command_execution_tests {
 
         let matches = get_matches(&config, args);
         assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
         assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
 
         let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommands::Call");
+            panic!("Parsed command was not RootCommand::Call");
         };
         assert_eq!(command.service_name, "foo_service");
         assert_eq!(command.environment_name, None);
@@ -305,11 +304,11 @@ mod call_command_execution_tests {
 
         let matches = get_matches(&config, args);
         assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
         assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
 
         let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommands::Call");
+            panic!("Parsed command was not RootCommand::Call");
         };
         assert_eq!(command.service_name, "foo_service");
         assert_eq!(command.environment_name, Some("foo_environment".to_string()));
@@ -345,11 +344,11 @@ mod call_command_execution_tests {
 
         let matches = get_matches(&config, args);
         assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
         assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
 
         let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommands::Call");
+            panic!("Parsed command was not RootCommand::Call");
         };
         assert_eq!(command.service_name, "foo_service");
         assert_eq!(command.environment_name, None);
@@ -387,11 +386,11 @@ mod call_command_execution_tests {
 
         let matches = get_matches(&config, args);
         assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
         assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
 
         let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommands::Call");
+            panic!("Parsed command was not RootCommand::Call");
         };
         assert_eq!(command.service_name, "foo_service");
         assert_eq!(command.environment_name, None);
@@ -420,7 +419,7 @@ mod call_command_execution_tests {
 
         let matches = get_matches(&config, args);
         assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
         assert!(result.is_err(), "Matches binding result was not an error");
     }
 
@@ -437,11 +436,11 @@ mod call_command_execution_tests {
 
         let matches = get_matches(&config, args);
         assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
         assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
 
         let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommands::Call");
+            panic!("Parsed command was not RootCommand::Call");
         };
         assert_eq!(command.service_name, "foo_service");
         assert_eq!(command.environment_name, None);
@@ -462,11 +461,11 @@ mod call_command_execution_tests {
 
         let matches = get_matches(&config, args);
         assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommands::bind_from_matches(&config, &matches.unwrap());
+        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
         assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
 
         let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommands::Call");
+            panic!("Parsed command was not RootCommand::Call");
         };
         assert_eq!(command.service_name, "foo_service");
         assert_eq!(command.environment_name, None);
