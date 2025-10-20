@@ -1,6 +1,7 @@
+use crate::commands::delete_command::delete_endpoint_command::DeleteEndpointCommand;
 use crate::commands::delete_command::delete_environment_command::DeleteEnvironmentCommand;
 use crate::commands::delete_command::delete_header_command::DeleteHeaderCommand;
-use crate::commands::delete_command::DeleteCommand::{Environment, Header, Service};
+use crate::commands::delete_command::DeleteCommand::{Endpoint, Environment, Header, Service};
 use crate::config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};
@@ -9,11 +10,13 @@ use delete_service_command::DeleteServiceCommand;
 mod delete_service_command;
 mod delete_environment_command;
 mod delete_header_command;
+mod delete_endpoint_command;
 
 pub enum DeleteCommand {
     Service(DeleteServiceCommand),
     Environment(DeleteEnvironmentCommand),
     Header(DeleteHeaderCommand),
+    Endpoint(DeleteEndpointCommand),
 }
 
 impl DeleteCommand {
@@ -25,6 +28,7 @@ impl DeleteCommand {
             .subcommand(DeleteServiceCommand::get_command())
             .subcommand(DeleteEnvironmentCommand::get_command())
             .subcommand(DeleteHeaderCommand::get_command())
+            .subcommand(DeleteEndpointCommand::get_command())
     }
 
     pub fn bind_from_matches(args: &ArgMatches) -> DeleteCommand {
@@ -32,6 +36,7 @@ impl DeleteCommand {
             Some(("service", delete_service_matches)) => Service(DeleteServiceCommand::bind_from_matches(delete_service_matches)),
             Some(("environment" | "env", delete_environment_matches)) => Environment(DeleteEnvironmentCommand::bind_from_matches(delete_environment_matches)),
             Some(("header", delete_header_matches)) => Header(DeleteHeaderCommand::bind_from_matches(delete_header_matches)),
+            Some(("endpoint", delete_endpoint_matches)) => Endpoint(DeleteEndpointCommand::bind_from_matches(delete_endpoint_matches)),
             _ => unreachable!(),
         }
     }
@@ -41,6 +46,7 @@ impl DeleteCommand {
             Service(delete_service_command) => delete_service_command.execute(config),
             Environment(delete_environment_command) => delete_environment_command.execute(config),
             Header(delete_header_command) => delete_header_command.execute(config),
+            Endpoint(delete_endpoint_command) => delete_endpoint_command.execute(config),
         }
     }
 }
