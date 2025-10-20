@@ -15,10 +15,7 @@ impl MatchBinding<String> for ArgMatches {
 
 impl MatchBinding<Option<String>> for ArgMatches {
     fn bind_field(&self, field_id: &str) -> Option<String> {
-        let Some(value) = self.get_one::<String>(field_id) else {
-            return None
-        };
-        Some(value.clone())
+        Some(self.get_one::<String>(field_id)?.clone())
     }
 }
 
@@ -30,11 +27,7 @@ impl MatchBinding<bool> for ArgMatches {
 
 impl MatchBinding<Option<bool>> for ArgMatches {
     fn bind_field(&self, field_id: &str) -> Option<bool> {
-        let Some(value) = self.get_one::<bool>(field_id) else {
-            return None;
-        };
-
-        Some(*value)
+        Some(*self.get_one::<bool>(field_id)?)
     }
 }
 

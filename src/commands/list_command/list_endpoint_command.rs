@@ -41,14 +41,10 @@ impl ListEndpointsCommand {
             return Err(HtrsError::new(format!("No service could be found with name or alias `{}`", self.service).as_str()))
         };
 
-        let mut endpoints: Vec<Endpoint> = service.endpoints.iter()
-            .cloned()
-            .collect();
+        let mut endpoints: Vec<Endpoint> = service.endpoints.to_vec();
 
         if let Some(filter) = &self.filter {
-            endpoints = endpoints.into_iter()
-                .filter(|e| e.name.to_lowercase().contains(filter))
-                .collect();
+            endpoints.retain(|e| e.name.to_lowercase().contains(filter));
 
             if endpoints.is_empty() {
                 return Ok(PrintDialogue(format!("No endpoints found for service `{}` with name containing `{}`", service.name, filter)));

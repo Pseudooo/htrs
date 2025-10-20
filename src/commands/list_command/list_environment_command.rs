@@ -41,15 +41,10 @@ impl ListEnvironmentsCommand {
             return Err(HtrsError::new(format!("No service could be found with name or alias `{}`", self.service).as_str()));
         };
 
-        let mut environments: Vec<Environment> = service.environments
-            .iter()
-            .cloned()
-            .collect();
+        let mut environments: Vec<Environment> = service.environments.to_vec();
 
         if let Some(filter) = &self.filter {
-            environments = environments.into_iter()
-                .filter(|e| environment_matches_filter(e, filter))
-                .collect();
+            environments.retain(|e| environment_matches_filter(e, filter));
 
             if environments.is_empty() {
                 return Ok(PrintDialogue(format!("No environments found for service `{}` with name or alias containing `{}`", service.name, filter)))
