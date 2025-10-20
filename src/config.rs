@@ -110,14 +110,6 @@ impl HtrsConfig {
         }
         None
     }
-
-    pub fn get_header_value(&self, header_name: String) -> Option<String> {
-        self.headers.get(&header_name).cloned()
-    }
-
-    pub fn clear_header(&mut self, header_name: String) {
-        self.headers.remove(&header_name);
-    }
 }
 
 impl Service {
@@ -197,10 +189,6 @@ impl Service {
         return init_len != self.endpoints.len();
     }
 
-    pub fn clear_header(&mut self, header_name: String) {
-        self.headers.remove(&header_name);
-    }
-
     pub fn display_name(&self) -> String {
         match &self.alias {
             None => self.name.to_string(),
@@ -225,23 +213,6 @@ impl Environment {
             None => self.name.to_string(),
             Some(alias) => format!("{} ({})", self.name, alias),
         }
-    }
-}
-
-impl Endpoint {
-    pub fn pretty_print(&self) -> String {
-        let mut printed = String::new();
-        printed.push_str(format!("{} | {}\n", self.name, self.path_template).as_str());
-        if self.query_parameters.len() > 0 {
-            printed.push_str("Query Parameters:\n");
-            let parameters = self.query_parameters.iter()
-                .map(|param| format!("  - {param}"))
-                .collect::<Vec<String>>()
-                .join("\n");
-            printed.push_str(format!("{parameters}\n").as_str());
-        }
-        printed.push_str("\n");
-        printed
     }
 }
 
