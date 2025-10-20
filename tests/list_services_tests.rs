@@ -3,7 +3,7 @@ mod common;
 
 #[cfg(test)]
 mod list_services_tests {
-    use crate::common::{setup, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{setup, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 

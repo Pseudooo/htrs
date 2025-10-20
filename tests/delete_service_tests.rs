@@ -2,7 +2,7 @@ mod common;
 
 #[cfg(test)]
 mod delete_service_tests {
-    use crate::common::{get_config, setup, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{get_config, setup, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 
