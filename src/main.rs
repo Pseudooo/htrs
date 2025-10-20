@@ -1,4 +1,3 @@
-mod command_args;
 mod config;
 mod commands;
 mod outcomes;
@@ -8,9 +7,7 @@ mod command_builder;
 mod test_helpers;
 mod htrs_binding_error;
 
-use crate::command_args::RootCommands;
-use crate::command_builder::get_root_command;
-use crate::commands::execute_command;
+use crate::commands::RootCommand;
 use crate::config::{HtrsConfig, VersionedHtrsConfig};
 use crate::outcomes::{HtrsAction, HtrsError};
 use reqwest::blocking::Client;
@@ -20,8 +17,9 @@ use std::collections::HashMap;
 fn main() -> Result<(), ()> {
     let mut config = VersionedHtrsConfig::load();
 
-    let command_matches = get_root_command(&config).get_matches();
-    let command = match RootCommands::bind_from_matches(&config, &command_matches) {
+    let matches = RootCommand::get_command(&config)
+        .get_matches();
+    let command = match RootCommand::bind_from_matches(&matches, &config) {
         Ok(cmd ) => cmd,
         Err(e) => {
             println!("Command Binding Failed: {e}");
@@ -29,7 +27,7 @@ fn main() -> Result<(), ()> {
         }
     };
 
-    let cmd_result = execute_command(&mut config, command);
+    let cmd_result = command.execute(&mut config);
     let exec_result = match cmd_result {
         Err(e) => {
             println!("{}", e.details);
