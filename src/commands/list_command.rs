@@ -20,6 +20,7 @@ impl ListCommand {
     pub fn get_command() -> Command {
         Command::new("list")
             .about("List items defined in config")
+            .visible_alias("ls")
             .arg_required_else_help(true)
             .subcommand(ListServicesCommand::get_command())
             .subcommand(ListEnvironmentsCommand::get_command())
