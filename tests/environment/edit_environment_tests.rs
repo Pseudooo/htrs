@@ -1,5 +1,3 @@
-mod common;
-
 #[cfg(test)]
 mod edit_environment_tests {
     use crate::common::test_helpers::{get_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
