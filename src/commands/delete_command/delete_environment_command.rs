@@ -13,6 +13,7 @@ impl DeleteEnvironmentCommand {
     pub fn get_command() -> Command {
         Command::new("environment")
             .about("Delete an existing environment from config")
+            .visible_alias("env")
             .arg(
                 Arg::new("name")
                     .help("The name or alias of the environment to delete")
