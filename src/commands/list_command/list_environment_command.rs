@@ -13,6 +13,7 @@ impl ListEnvironmentsCommand {
     pub fn get_command() -> Command {
         Command::new("environment")
             .about("List environments for a service")
+            .visible_alias("env")
             .arg(
                 Arg::new("service")
                     .help("Service to list environments for")

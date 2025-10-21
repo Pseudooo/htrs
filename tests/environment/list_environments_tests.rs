@@ -1,6 +1,3 @@
-
-mod common;
-
 #[cfg(test)]
 mod list_environments_tests {
     use crate::common::test_helpers::{setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
@@ -57,10 +54,11 @@ mod list_environments_tests {
     }
 
     #[rstest]
-    #[case("list")]
-    #[case("ls")]
+    #[case("list", "environment")]
+    #[case("ls", "env")]
     fn given_list_environments_command_with_known_environments_then_should_succeed(
         #[case] list_cmd: &str,
+        #[case] env_cmd: &str,
     ) -> Result<(), Box<dyn Error>> {
         let config = HtrsConfigBuilder::new()
             .with_service(
@@ -83,7 +81,7 @@ mod list_environments_tests {
 
         Command::cargo_bin("htrs")?
             .arg(list_cmd)
-            .arg("environment")
+            .arg(env_cmd)
             .arg("--service")
             .arg("foo_service")
             .assert()
