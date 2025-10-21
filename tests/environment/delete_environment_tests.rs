@@ -2,6 +2,7 @@
 mod delete_environment_tests {
     use crate::common::test_helpers::{get_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
+    use rstest::rstest;
     use std::error::Error;
 
     #[test]
@@ -54,8 +55,12 @@ mod delete_environment_tests {
         Ok(())
     }
 
-    #[test]
-    fn given_delete_environment_command_with_known_environment_then_should_succeed() -> Result<(), Box<dyn Error>> {
+    #[rstest]
+    #[case("environment")]
+    #[case("env")]
+    fn given_delete_environment_command_with_known_environment_then_should_succeed(
+        #[case] env_cmd: &str
+    ) -> Result<(), Box<dyn Error>> {
         let config = HtrsConfigBuilder::new()
             .with_service(
                 ServiceBuilder::new()
@@ -71,7 +76,7 @@ mod delete_environment_tests {
 
         Command::cargo_bin("htrs")?
             .arg("delete")
-            .arg("environment")
+            .arg(env_cmd)
             .arg("foo_environment")
             .arg("--service")
             .arg("foo_service")
