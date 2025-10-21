@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::path::PathBuf;
 
 impl HtrsConfig {
@@ -16,22 +16,23 @@ impl HtrsConfig {
 
     pub fn load() -> HtrsConfig {
         let config_path = Self::config_path();
-        if config_path.exists() {
-            let file = File::open(config_path).expect("Unable to read config.json");
-            return serde_json::from_reader(file).expect("Unable to read config.json");
+        if !config_path.exists() {
+            return HtrsConfig::new();
         }
 
-        let mut file = File::create(config_path)
-            .expect("Unable to create config.json");
+        let handle = OpenOptions::new()
+            .read(true)
+            .open(config_path)
+            .expect("Unable to open config file");
 
-        let blank_config = HtrsConfig::new();
-        serde_json::to_writer_pretty(&mut file, &blank_config)
-            .expect("Unable to write config to config.json");
-        blank_config
+        let config = serde_json::from_reader(handle)
+            .expect("Unable to parse config file");
+        return config;
     }
 
     pub fn save(self) {
         let mut file = OpenOptions::new()
+            .create(true)
             .write(true)
             .truncate(true)
             .open(HtrsConfig::config_path())
