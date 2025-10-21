@@ -6,18 +6,24 @@ use std::path::PathBuf;
 impl HtrsConfig {
     /// Generate the path to the configration file, using the directory
     /// of the executable as the base path.
-    fn config_path() -> PathBuf {
-        std::env::current_exe()
-            .expect("Unable to get executable location")
-            .parent()
-            .expect("Unable to get parent directory")
-            .join("config.json")
+    fn config_path() -> Result<PathBuf, String> {
+        let exe_path = match std::env::current_exe() {
+            Ok(path) => path,
+            Err(e) => return Err(e.to_string())
+        };
+
+        let directory = match exe_path.parent() {
+            Some(path) => path,
+            None => return Err(format!("No parent directory could be found for path `{}`", exe_path.display())),
+        };
+
+        Ok(directory.join("config.json"))
     }
 
-    pub fn load() -> HtrsConfig {
-        let config_path = Self::config_path();
+    pub fn load() -> Result<HtrsConfig, String> {
+        let config_path = Self::config_path()?;
         if !config_path.exists() {
-            return HtrsConfig::new();
+            return Ok(HtrsConfig::new());
         }
 
         let handle = OpenOptions::new()
@@ -25,20 +31,28 @@ impl HtrsConfig {
             .open(config_path)
             .expect("Unable to open config file");
 
-        let config = serde_json::from_reader(handle)
-            .expect("Unable to parse config file");
-        return config;
+        match serde_json::from_reader(handle) {
+            Ok(config) => Ok(config),
+            Err(e) => Err(format!("Unable to read config json: {}", e.to_string())),
+        }
     }
 
-    pub fn save(self) {
-        let mut file = OpenOptions::new()
+    pub fn save(self) -> Result<(), String> {
+        let config_path = Self::config_path()?;
+
+        let mut file = match OpenOptions::new()
             .create(true)
             .write(true)
             .truncate(true)
-            .open(HtrsConfig::config_path())
-            .expect("Unable to write updated config to config.json");
-        serde_json::to_writer_pretty(&mut file, &self)
-            .expect("Unable to write updated config to config.json");
+            .open(config_path) {
+            Ok(f) => f,
+            Err(e) => return Err(format!("Failed to open config file: {}", e.to_string()))
+        };
+
+        match serde_json::to_writer_pretty(&mut file, &self) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("Failed to write config json to file: {}", e.to_string()))
+        }
     }
 }
 

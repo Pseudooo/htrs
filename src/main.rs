@@ -13,9 +13,16 @@ use crate::outcomes::{HtrsAction, HtrsError};
 use reqwest::blocking::Client;
 use reqwest::{Method, Url};
 use std::collections::HashMap;
+use std::process;
 
-fn main() -> Result<(), ()> {
-    let mut config = HtrsConfig::load();
+fn main() {
+    let mut config = match HtrsConfig::load() {
+        Ok(config) => config,
+        Err(e) => {
+            println!("{}", e.to_string());
+            process::exit(1);
+        }
+    };
 
     let matches = RootCommand::get_command(&config)
         .get_matches();
@@ -23,7 +30,7 @@ fn main() -> Result<(), ()> {
         Ok(cmd ) => cmd,
         Err(e) => {
             println!("Command Binding Failed: {e}");
-            return Err(());
+            process::exit(1);
         }
     };
 
@@ -31,17 +38,15 @@ fn main() -> Result<(), ()> {
     let exec_result = match cmd_result {
         Err(e) => {
             println!("{}", e.details);
-            return Err(());
+            process::exit(1);
         }
         Ok(action) => handle_action(action, config)
     };
 
     if let Err(e) = exec_result {
         println!("{}", e.details);
-        return Err(())
+        process::exit(1);
     }
-
-    Ok(())
 }
 
 fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError>{
@@ -51,8 +56,10 @@ fn handle_action(action: HtrsAction, config: HtrsConfig) -> Result<(), HtrsError
             Ok(())
         },
         HtrsAction::UpdateConfig => {
-            config.save();
-            Ok(())
+            match config.save() {
+                Ok(_) => Ok(()),
+                Err(e) => Err(HtrsError::new(e.as_str()))
+            }
         },
         HtrsAction::MakeRequest {
             url: base_url, query_parameters, method, headers, show_body
