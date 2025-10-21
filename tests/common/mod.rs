@@ -87,7 +87,7 @@ pub mod test_helpers {
         pub fn build(self) -> HtrsConfig {
             HtrsConfig {
                 services: self.services,
-                headers: HashMap::new(),
+                headers: self.headers,
             }
         }
     }
@@ -132,7 +132,7 @@ pub mod test_helpers {
             Service {
                 name: self.name.unwrap(),
                 alias: self.alias,
-                headers: HashMap::new(),
+                headers: self.headers,
                 endpoints: self.endpoints,
                 environments: self.environments,
             }
