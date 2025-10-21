@@ -1,53 +1,58 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::path::PathBuf;
 
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "version")]
-pub enum VersionedHtrsConfig {
-    V0_0_1(HtrsConfig),
-}
-
-impl VersionedHtrsConfig {
+impl HtrsConfig {
     /// Generate the path to the configration file, using the directory
     /// of the executable as the base path.
-    fn config_path() -> PathBuf {
-        std::env::current_exe()
-            .expect("Unable to get executable location")
-            .parent()
-            .expect("Unable to get parent directory")
-            .join("config.json")
+    fn config_path() -> Result<PathBuf, String> {
+        let exe_path = match std::env::current_exe() {
+            Ok(path) => path,
+            Err(e) => return Err(e.to_string())
+        };
+
+        let directory = match exe_path.parent() {
+            Some(path) => path,
+            None => return Err(format!("No parent directory could be found for path `{}`", exe_path.display())),
+        };
+
+        Ok(directory.join("config.json"))
     }
 
-    pub fn load() -> HtrsConfig {
-        let config_path = Self::config_path();
-        if config_path.exists() {
-            let file = File::open(config_path).expect("Unable to read config.json");
-            let VersionedHtrsConfig::V0_0_1(config): VersionedHtrsConfig =
-                serde_json::from_reader(file).expect("Unable to read config.json");
-            return config;
+    pub fn load() -> Result<HtrsConfig, String> {
+        let config_path = Self::config_path()?;
+        if !config_path.exists() {
+            return Ok(HtrsConfig::new());
         }
 
-        let mut file = File::create(config_path)
-            .expect("Unable to create config.json");
+        let handle = OpenOptions::new()
+            .read(true)
+            .open(config_path)
+            .expect("Unable to open config file");
 
-        let blank_config = HtrsConfig::new();
-        let blank_versioned_config = VersionedHtrsConfig::V0_0_1(blank_config.clone());
-        serde_json::to_writer_pretty(&mut file, &blank_versioned_config)
-            .expect("Unable to write config to config.json");
-        blank_config
+        match serde_json::from_reader(handle) {
+            Ok(config) => Ok(config),
+            Err(e) => Err(format!("Unable to read config json: {e}")),
+        }
     }
 
-    pub fn save(config: HtrsConfig) {
-        let mut file = OpenOptions::new()
+    pub fn save(self) -> Result<(), String> {
+        let config_path = Self::config_path()?;
+
+        let mut file = match OpenOptions::new()
+            .create(true)
             .write(true)
             .truncate(true)
-            .open(VersionedHtrsConfig::config_path())
-            .expect("Unable to write updated config to config.json");
-        let versioned_config = VersionedHtrsConfig::V0_0_1(config);
-        serde_json::to_writer_pretty(&mut file, &versioned_config)
-            .expect("Unable to write updated config to config.json");
+            .open(config_path) {
+            Ok(f) => f,
+            Err(e) => return Err(format!("Failed to open config file: {e}"))
+        };
+
+        match serde_json::to_writer_pretty(&mut file, &self) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("Failed to write config json to file: {e}"))
+        }
     }
 }
 
