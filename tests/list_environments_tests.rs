@@ -5,6 +5,7 @@ mod common;
 mod list_environments_tests {
     use crate::common::test_helpers::{setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
+    use rstest::rstest;
     use std::error::Error;
 
     #[test]
@@ -55,8 +56,12 @@ mod list_environments_tests {
         Ok(())
     }
 
-    #[test]
-    fn given_list_environments_command_with_known_environments_then_should_succeed() -> Result<(), Box<dyn Error>> {
+    #[rstest]
+    #[case("list")]
+    #[case("ls")]
+    fn given_list_environments_command_with_known_environments_then_should_succeed(
+        #[case] list_cmd: &str,
+    ) -> Result<(), Box<dyn Error>> {
         let config = HtrsConfigBuilder::new()
             .with_service(
                 ServiceBuilder::new()
@@ -77,7 +82,7 @@ mod list_environments_tests {
         setup(Some(config));
 
         Command::cargo_bin("htrs")?
-            .arg("list")
+            .arg(list_cmd)
             .arg("environment")
             .arg("--service")
             .arg("foo_service")
