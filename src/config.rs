@@ -3,13 +3,7 @@ use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
 
-#[derive(Serialize, Deserialize)]
-#[serde(tag = "version")]
-pub enum VersionedHtrsConfig {
-    V0_0_1(HtrsConfig),
-}
-
-impl VersionedHtrsConfig {
+impl HtrsConfig {
     /// Generate the path to the configration file, using the directory
     /// of the executable as the base path.
     fn config_path() -> PathBuf {
@@ -24,29 +18,25 @@ impl VersionedHtrsConfig {
         let config_path = Self::config_path();
         if config_path.exists() {
             let file = File::open(config_path).expect("Unable to read config.json");
-            let VersionedHtrsConfig::V0_0_1(config): VersionedHtrsConfig =
-                serde_json::from_reader(file).expect("Unable to read config.json");
-            return config;
+            return serde_json::from_reader(file).expect("Unable to read config.json");
         }
 
         let mut file = File::create(config_path)
             .expect("Unable to create config.json");
 
         let blank_config = HtrsConfig::new();
-        let blank_versioned_config = VersionedHtrsConfig::V0_0_1(blank_config.clone());
-        serde_json::to_writer_pretty(&mut file, &blank_versioned_config)
+        serde_json::to_writer_pretty(&mut file, &blank_config)
             .expect("Unable to write config to config.json");
         blank_config
     }
 
-    pub fn save(config: HtrsConfig) {
+    pub fn save(self) {
         let mut file = OpenOptions::new()
             .write(true)
             .truncate(true)
-            .open(VersionedHtrsConfig::config_path())
+            .open(HtrsConfig::config_path())
             .expect("Unable to write updated config to config.json");
-        let versioned_config = VersionedHtrsConfig::V0_0_1(config);
-        serde_json::to_writer_pretty(&mut file, &versioned_config)
+        serde_json::to_writer_pretty(&mut file, &self)
             .expect("Unable to write updated config to config.json");
     }
 }
