@@ -33,7 +33,7 @@ impl HtrsConfig {
 
         match serde_json::from_reader(handle) {
             Ok(config) => Ok(config),
-            Err(e) => Err(format!("Unable to read config json: {}", e.to_string())),
+            Err(e) => Err(format!("Unable to read config json: {e}")),
         }
     }
 
@@ -46,12 +46,12 @@ impl HtrsConfig {
             .truncate(true)
             .open(config_path) {
             Ok(f) => f,
-            Err(e) => return Err(format!("Failed to open config file: {}", e.to_string()))
+            Err(e) => return Err(format!("Failed to open config file: {e}"))
         };
 
         match serde_json::to_writer_pretty(&mut file, &self) {
             Ok(_) => Ok(()),
-            Err(e) => Err(format!("Failed to write config json to file: {}", e.to_string()))
+            Err(e) => Err(format!("Failed to write config json to file: {e}"))
         }
     }
 }

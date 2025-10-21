@@ -19,7 +19,7 @@ fn main() {
     let mut config = match HtrsConfig::load() {
         Ok(config) => config,
         Err(e) => {
-            println!("{}", e.to_string());
+            println!("{e}");
             process::exit(1);
         }
     };
