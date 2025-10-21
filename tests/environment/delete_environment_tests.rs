@@ -58,7 +58,7 @@ mod delete_environment_tests {
     #[rstest]
     #[case("environment")]
     #[case("env")]
-    fn given_delete_environment_command_with_known_environment_then_should_succeed(
+    fn given_delete_environment_command_with_known_environment_name_then_should_succeed(
         #[case] env_cmd: &str
     ) -> Result<(), Box<dyn Error>> {
         let config = HtrsConfigBuilder::new()
@@ -68,6 +68,7 @@ mod delete_environment_tests {
                     .with_environment(
                         EnvironmentBuilder::new()
                             .with_name("foo_environment")
+                            .with_alias("foo_alias")
                             .with_host("google.com")
                     )
             )
@@ -78,6 +79,41 @@ mod delete_environment_tests {
             .arg("delete")
             .arg(env_cmd)
             .arg("foo_environment")
+            .arg("--service")
+            .arg("foo_service")
+            .assert()
+            .success();
+
+        let config = get_config();
+        let service = &config.services[0];
+        assert_eq!(service.environments.len(), 0);
+        Ok(())
+    }
+
+    #[rstest]
+    #[case("environment")]
+    #[case("env")]
+    fn given_delete_environment_command_with_known_environment_alias_then_should_succeed(
+        #[case] env_cmd: &str
+    ) -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_environment(
+                        EnvironmentBuilder::new()
+                            .with_name("foo_environment")
+                            .with_alias("foo_alias")
+                            .with_host("google.com")
+                    )
+            )
+            .build();
+        setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .arg("delete")
+            .arg(env_cmd)
+            .arg("foo_alias")
             .arg("--service")
             .arg("foo_service")
             .assert()
