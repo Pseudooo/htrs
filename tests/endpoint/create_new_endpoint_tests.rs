@@ -134,6 +134,41 @@ mod create_new_endpoint_tests {
         assert_eq!(endpoint.path_template, "/path");
         assert_eq!(endpoint.query_parameters.len(), 1);
         assert_eq!(endpoint.query_parameters[0].name, "queryA");
+        assert_eq!(endpoint.query_parameters[0].required, false);
+        Ok(())
+    }
+
+    #[test]
+    fn given_new_endpoint_command_with_known_service_when_create_required_query_param_then_should_succeed() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+            )
+            .build();
+        setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .arg("new")
+            .arg("endpoint")
+            .arg("foo_endpoint")
+            .arg("/path")
+            .arg("--service")
+            .arg("foo_service")
+            .arg("--query")
+            .arg("*queryA")
+            .assert()
+            .success();
+
+        let config = get_config();
+        let service = &config.services[0];
+        assert_eq!(service.endpoints.len(), 1);
+        let endpoint = &service.endpoints[0];
+        assert_eq!(endpoint.name, "foo_endpoint");
+        assert_eq!(endpoint.path_template, "/path");
+        assert_eq!(endpoint.query_parameters.len(), 1);
+        assert_eq!(endpoint.query_parameters[0].name, "queryA");
+        assert_eq!(endpoint.query_parameters[0].required, true);
         Ok(())
     }
 
@@ -169,7 +204,9 @@ mod create_new_endpoint_tests {
         assert_eq!(endpoint.path_template, "/path");
         assert_eq!(endpoint.query_parameters.len(), 2);
         assert_eq!(endpoint.query_parameters[0].name, "queryA");
+        assert_eq!(endpoint.query_parameters[0].required, false);
         assert_eq!(endpoint.query_parameters[1].name, "queryB");
+        assert_eq!(endpoint.query_parameters[1].required, false);
         Ok(())
     }
 }
