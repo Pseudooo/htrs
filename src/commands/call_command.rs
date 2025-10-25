@@ -90,7 +90,7 @@ impl CallServiceEndpointCommand {
                         Arg::new(&param.name)
                             .allow_hyphen_values(true)
                             .long(&param.name)
-                            .required(true)
+                            .required(param.required)
                     )
                 }
                 service_command = service_command.subcommand(endpoint_command);
@@ -364,7 +364,7 @@ mod call_command_execution_tests {
             .with_service(
                 HtrsServiceBuilder::new()
                     .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/path", vec!["foo_query_param"])
+                    .with_endpoint("foo_endpoint", "/my/path", vec!["*foo_query_param"])
             )
             .build();
         let args = vec!["htrs", "call", "foo_service", "foo_endpoint"];
