@@ -1,3 +1,4 @@
+use crate::common::map_query_param_shorthand;
 use crate::config::{Endpoint, Environment, HtrsConfig, Service};
 use std::collections::HashMap;
 
@@ -77,7 +78,7 @@ impl HtrsServiceBuilder {
         self.endpoints.push(Endpoint {
             name: name.to_string(),
             path_template: path.to_string(),
-            query_parameters: parameters.iter().map(|p| p.to_string()).collect(),
+            query_parameters: parameters.into_iter().map(|p| map_query_param_shorthand(p)).collect(),
         });
         self
     }

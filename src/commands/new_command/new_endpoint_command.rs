@@ -1,4 +1,5 @@
 use crate::command_builder::MatchBinding;
+use crate::common::map_query_param_shorthand;
 use crate::config::{Endpoint, HtrsConfig};
 use crate::outcomes::HtrsAction::UpdateConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
@@ -62,7 +63,7 @@ impl NewEndpointCommand {
         service.endpoints.push(Endpoint {
             name: self.name.clone(),
             path_template: self.path_template.clone(),
-            query_parameters: self.query_parameters.clone(),
+            query_parameters: self.query_parameters.iter().map(|q| map_query_param_shorthand(q)).collect(),
         });
         Ok(UpdateConfig)
     }

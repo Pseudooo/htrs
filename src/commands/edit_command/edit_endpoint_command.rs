@@ -1,4 +1,5 @@
 use crate::command_builder::MatchBinding;
+use crate::common::map_query_param_shorthand;
 use crate::config::HtrsConfig;
 use crate::outcomes::HtrsAction::UpdateConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
@@ -91,11 +92,11 @@ impl EditEndpointCommand {
             endpoint.path_template = new_path.clone();
         };
         if !self.new_query_parameters.is_empty() {
-            endpoint.query_parameters.extend(self.new_query_parameters.iter().cloned());
+            endpoint.query_parameters.extend(self.new_query_parameters.iter().map(|q| map_query_param_shorthand(q)));
         }
         if !self.delete_query_parameters.is_empty() {
             endpoint.query_parameters = endpoint.query_parameters.iter()
-                .filter(|q| !self.delete_query_parameters.contains(q))
+                .filter(|q| !self.delete_query_parameters.iter().any(|to_del| q.name == to_del.to_string()))
                 .cloned()
                 .collect();
         }

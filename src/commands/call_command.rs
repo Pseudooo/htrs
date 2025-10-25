@@ -87,9 +87,9 @@ impl CallServiceEndpointCommand {
 
                 for param in &endpoint.query_parameters {
                     endpoint_command = endpoint_command.arg(
-                        Arg::new(param)
+                        Arg::new(&param.name)
                             .allow_hyphen_values(true)
-                            .long(param)
+                            .long(&param.name)
                             .required(true)
                     )
                 }
@@ -206,8 +206,8 @@ fn build_path_from_template(path_template: &str, args: &ArgMatches) -> String {
 fn get_query_parameters_from_args(endpoint: &Endpoint, args: &ArgMatches) -> HashMap<String, String> {
     let mut query_parameters = HashMap::new();
     for parameter_name in &endpoint.query_parameters {
-        let parameter_value: String = args.bind_field(parameter_name);
-        query_parameters.insert(parameter_name.to_string(), parameter_value);
+        let parameter_value: String = args.bind_field(parameter_name.name.as_str());
+        query_parameters.insert(parameter_name.name.to_string(), parameter_value);
     }
     query_parameters
 }

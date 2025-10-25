@@ -133,7 +133,7 @@ mod create_new_endpoint_tests {
         assert_eq!(endpoint.name, "foo_endpoint");
         assert_eq!(endpoint.path_template, "/path");
         assert_eq!(endpoint.query_parameters.len(), 1);
-        assert_eq!(endpoint.query_parameters[0], "queryA");
+        assert_eq!(endpoint.query_parameters[0].name, "queryA");
         Ok(())
     }
 
@@ -168,8 +168,8 @@ mod create_new_endpoint_tests {
         assert_eq!(endpoint.name, "foo_endpoint");
         assert_eq!(endpoint.path_template, "/path");
         assert_eq!(endpoint.query_parameters.len(), 2);
-        assert_eq!(endpoint.query_parameters[0], "queryA");
-        assert_eq!(endpoint.query_parameters[1], "queryB");
+        assert_eq!(endpoint.query_parameters[0].name, "queryA");
+        assert_eq!(endpoint.query_parameters[1].name, "queryB");
         Ok(())
     }
 }
