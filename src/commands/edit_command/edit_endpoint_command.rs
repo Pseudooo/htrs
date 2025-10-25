@@ -96,7 +96,7 @@ impl EditEndpointCommand {
         }
         if !self.delete_query_parameters.is_empty() {
             endpoint.query_parameters = endpoint.query_parameters.iter()
-                .filter(|q| !self.delete_query_parameters.iter().any(|to_del| q.name == to_del.to_string()))
+                .filter(|q| !self.delete_query_parameters.contains(&q.name))
                 .cloned()
                 .collect();
         }
