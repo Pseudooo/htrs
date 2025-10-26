@@ -1,43 +1,204 @@
 mod create_new_endpoint_tests {
     use crate::common::test_helpers::{get_config, setup, EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
+    use rstest::rstest;
     use std::error::Error;
 
     #[test]
-    fn given_new_endpoint_command_with_no_args_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
-
-        Command::cargo_bin("htrs")?
-            .arg("new")
-            .arg("endpoint")
-            .assert()
-            .failure();
-        Ok(())
-    }
-
-    #[test]
-    fn given_new_endpoint_command_without_service_arg_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+    fn given_new_endpoint_command_with_known_service_when_execute_then_should_create_endpoint() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+            )
+            .build();
+        setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .arg("new")
             .arg("endpoint")
             .arg("foo_endpoint")
-            .arg("/path")
+            .arg("/my/path")
+            .arg("--service")
+            .arg("foo_service")
             .assert()
-            .failure();
+            .success();
+
+        let config = get_config();
+        let service = &config.services[0];
+        assert_eq!(service.endpoints.len(), 1);
+        let endpoint = &service.endpoints[0];
+        assert_eq!(endpoint.name, "foo_endpoint");
+        assert_eq!(endpoint.path_template, "/my/path");
+        assert_eq!(endpoint.query_parameters.len(), 0);
         Ok(())
     }
 
     #[test]
-    fn given_new_endpoint_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+    fn given_new_endpoint_command_with_single_optional_query_param_when_execute_then_should_create_endpoint_with_param() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+            )
+            .build();
+        setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .arg("new")
             .arg("endpoint")
             .arg("foo_endpoint")
-            .arg("/path")
+            .arg("/my/path")
+            .arg("--service")
+            .arg("foo_service")
+            .arg("--query")
+            .arg("param")
+            .assert()
+            .success();
+
+        let config = get_config();
+        let service = &config.services[0];
+        assert_eq!(service.endpoints.len(), 1);
+        let endpoint = &service.endpoints[0];
+        assert_eq!(endpoint.name, "foo_endpoint");
+        assert_eq!(endpoint.path_template, "/my/path");
+        assert_eq!(endpoint.query_parameters.len(), 1);
+        let query_param = &endpoint.query_parameters[0];
+        assert_eq!(query_param.name, "param");
+        assert_eq!(query_param.required, false);
+        Ok(())
+    }
+
+    #[test]
+    fn given_new_endpoint_command_with_multiple_optional_query_params_when_execute_then_should_create_endpoint_with_params() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+            )
+            .build();
+        setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .arg("new")
+            .arg("endpoint")
+            .arg("foo_endpoint")
+            .arg("/my/path")
+            .arg("--service")
+            .arg("foo_service")
+            .arg("--query")
+            .arg("param1")
+            .arg("--query")
+            .arg("param2")
+            .assert()
+            .success();
+
+        let config = get_config();
+        let service = &config.services[0];
+        assert_eq!(service.endpoints.len(), 1);
+        let endpoint = &service.endpoints[0];
+        assert_eq!(endpoint.name, "foo_endpoint");
+        assert_eq!(endpoint.path_template, "/my/path");
+        assert_eq!(endpoint.query_parameters.len(), 2);
+        let query_param1 = &endpoint.query_parameters[0];
+        assert_eq!(query_param1.name, "param1");
+        assert_eq!(query_param1.required, false);
+        let query_param2 = &endpoint.query_parameters[1];
+        assert_eq!(query_param2.name, "param2");
+        assert_eq!(query_param2.required, false);
+        Ok(())
+    }
+
+    #[test]
+    fn given_new_endpoint_command_with_single_required_query_param_when_execute_then_should_create_endpoint_with_param() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+            )
+            .build();
+        setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .arg("new")
+            .arg("endpoint")
+            .arg("foo_endpoint")
+            .arg("/my/path")
+            .arg("--service")
+            .arg("foo_service")
+            .arg("--query")
+            .arg("*param")
+            .assert()
+            .success();
+
+        let config = get_config();
+        let service = &config.services[0];
+        assert_eq!(service.endpoints.len(), 1);
+        let endpoint = &service.endpoints[0];
+        assert_eq!(endpoint.name, "foo_endpoint");
+        assert_eq!(endpoint.path_template, "/my/path");
+        assert_eq!(endpoint.query_parameters.len(), 1);
+        let query_param = &endpoint.query_parameters[0];
+        assert_eq!(query_param.name, "param");
+        assert_eq!(query_param.required, true);
+        Ok(())
+    }
+
+    #[test]
+    fn given_new_endpoint_command_with_multiple_required_query_params_when_execute_then_should_create_endpoint_with_params() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+            )
+            .build();
+        setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .arg("new")
+            .arg("endpoint")
+            .arg("foo_endpoint")
+            .arg("/my/path")
+            .arg("--service")
+            .arg("foo_service")
+            .arg("--query")
+            .arg("*param1")
+            .arg("--query")
+            .arg("*param2")
+            .assert()
+            .success();
+
+        let config = get_config();
+        let service = &config.services[0];
+        assert_eq!(service.endpoints.len(), 1);
+        let endpoint = &service.endpoints[0];
+        assert_eq!(endpoint.name, "foo_endpoint");
+        assert_eq!(endpoint.path_template, "/my/path");
+        assert_eq!(endpoint.query_parameters.len(), 2);
+        let query_param1 = &endpoint.query_parameters[0];
+        assert_eq!(query_param1.name, "param1");
+        assert_eq!(query_param1.required, true);
+        let query_param2 = &endpoint.query_parameters[1];
+        assert_eq!(query_param2.name, "param2");
+        assert_eq!(query_param2.required, true);
+        Ok(())
+    }
+
+    #[test]
+    fn given_new_endpoint_command_with_unknown_service_when_execute_then_should_error() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("unknown_service")
+            )
+            .build();
+        setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .arg("new")
+            .arg("endpoint")
+            .arg("foo_endpoint")
+            .arg("/my/path")
             .arg("--service")
             .arg("foo_service")
             .assert()
@@ -47,37 +208,7 @@ mod create_new_endpoint_tests {
     }
 
     #[test]
-    fn given_new_endpoint_command_with_known_service_then_should_succeed() -> Result<(), Box<dyn Error>> {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                ServiceBuilder::new()
-                    .with_name("foo_service")
-            )
-            .build();
-        setup(Some(config));
-
-        Command::cargo_bin("htrs")?
-            .arg("new")
-            .arg("endpoint")
-            .arg("foo_endpoint")
-            .arg("/path")
-            .arg("--service")
-            .arg("foo_service")
-            .assert()
-            .success();
-
-        let config = get_config();
-        let service = &config.services[0];
-        assert_eq!(service.endpoints.len(), 1);
-        let endpoint = &service.endpoints[0];
-        assert_eq!(endpoint.name, "foo_endpoint");
-        assert_eq!(endpoint.path_template, "/path");
-        assert_eq!(endpoint.query_parameters.len(), 0);
-        Ok(())
-    }
-
-    #[test]
-    fn given_new_endpoint_command_with_known_service_and_existing_endpoint_then_should_fail() -> Result<(), Box<dyn Error>> {
+    fn given_new_endpoint_command_with_existing_endpoint_name_when_execute_then_should_error() -> Result<(), Box<dyn Error>> {
         let config = HtrsConfigBuilder::new()
             .with_service(
                 ServiceBuilder::new()
@@ -85,7 +216,7 @@ mod create_new_endpoint_tests {
                     .with_endpoint(
                         EndpointBuilder::new()
                             .with_name("foo_endpoint")
-                            .with_path("/path")
+                            .with_path("/my/path")
                     )
             )
             .build();
@@ -95,7 +226,7 @@ mod create_new_endpoint_tests {
             .arg("new")
             .arg("endpoint")
             .arg("foo_endpoint")
-            .arg("/path")
+            .arg("/my/path")
             .arg("--service")
             .arg("foo_service")
             .assert()
@@ -105,7 +236,7 @@ mod create_new_endpoint_tests {
     }
 
     #[test]
-    fn given_new_endpoint_command_with_known_service_and_single_query_param_then_should_succeed() -> Result<(), Box<dyn Error>> {
+    fn given_new_endpoint_command_with_blank_name_when_execute_then_should_error() -> Result<(), Box<dyn Error>> {
         let config = HtrsConfigBuilder::new()
             .with_service(
                 ServiceBuilder::new()
@@ -117,29 +248,18 @@ mod create_new_endpoint_tests {
         Command::cargo_bin("htrs")?
             .arg("new")
             .arg("endpoint")
-            .arg("foo_endpoint")
-            .arg("/path")
+            .arg("")
+            .arg("/my/path")
             .arg("--service")
             .arg("foo_service")
-            .arg("--query")
-            .arg("queryA")
             .assert()
-            .success();
-
-        let config = get_config();
-        let service = &config.services[0];
-        assert_eq!(service.endpoints.len(), 1);
-        let endpoint = &service.endpoints[0];
-        assert_eq!(endpoint.name, "foo_endpoint");
-        assert_eq!(endpoint.path_template, "/path");
-        assert_eq!(endpoint.query_parameters.len(), 1);
-        assert_eq!(endpoint.query_parameters[0].name, "queryA");
-        assert_eq!(endpoint.query_parameters[0].required, false);
+            .failure()
+            .stdout("Endpoint name cannot be empty\n");
         Ok(())
     }
 
     #[test]
-    fn given_new_endpoint_command_with_known_service_when_create_required_query_param_then_should_succeed() -> Result<(), Box<dyn Error>> {
+    fn given_new_endpoint_command_with_blank_path_when_execute_then_should_error() -> Result<(), Box<dyn Error>> {
         let config = HtrsConfigBuilder::new()
             .with_service(
                 ServiceBuilder::new()
@@ -152,28 +272,17 @@ mod create_new_endpoint_tests {
             .arg("new")
             .arg("endpoint")
             .arg("foo_endpoint")
-            .arg("/path")
+            .arg("")
             .arg("--service")
             .arg("foo_service")
-            .arg("--query")
-            .arg("*queryA")
             .assert()
-            .success();
-
-        let config = get_config();
-        let service = &config.services[0];
-        assert_eq!(service.endpoints.len(), 1);
-        let endpoint = &service.endpoints[0];
-        assert_eq!(endpoint.name, "foo_endpoint");
-        assert_eq!(endpoint.path_template, "/path");
-        assert_eq!(endpoint.query_parameters.len(), 1);
-        assert_eq!(endpoint.query_parameters[0].name, "queryA");
-        assert_eq!(endpoint.query_parameters[0].required, true);
+            .failure()
+            .stdout("Endpoint path cannot be empty\n");
         Ok(())
     }
 
     #[test]
-    fn given_new_endpoint_command_with_known_service_and_multiple_query_params_then_should_succeed() -> Result<(), Box<dyn Error>> {
+    fn given_new_endpoint_command_with_duplicate_path_params_when_execute_then_should_error() -> Result<(), Box<dyn Error>> {
         let config = HtrsConfigBuilder::new()
             .with_service(
                 ServiceBuilder::new()
@@ -186,27 +295,90 @@ mod create_new_endpoint_tests {
             .arg("new")
             .arg("endpoint")
             .arg("foo_endpoint")
-            .arg("/path")
+            .arg("/{param}/path/{param}")
+            .arg("--service")
+            .arg("foo_service")
+            .assert()
+            .failure();
+        Ok(())
+    }
+
+    #[test]
+    fn given_new_endpoint_command_with_blank_query_param_when_execute_then_should_error() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+            )
+            .build();
+        setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .arg("new")
+            .arg("endpoint")
+            .arg("foo_endpoint")
+            .arg("/my/path")
             .arg("--service")
             .arg("foo_service")
             .arg("--query")
-            .arg("queryA")
-            .arg("--query")
-            .arg("queryB")
+            .arg("")
             .assert()
-            .success();
+            .failure();
+        Ok(())
+    }
 
-        let config = get_config();
-        let service = &config.services[0];
-        assert_eq!(service.endpoints.len(), 1);
-        let endpoint = &service.endpoints[0];
-        assert_eq!(endpoint.name, "foo_endpoint");
-        assert_eq!(endpoint.path_template, "/path");
-        assert_eq!(endpoint.query_parameters.len(), 2);
-        assert_eq!(endpoint.query_parameters[0].name, "queryA");
-        assert_eq!(endpoint.query_parameters[0].required, false);
-        assert_eq!(endpoint.query_parameters[1].name, "queryB");
-        assert_eq!(endpoint.query_parameters[1].required, false);
+    #[test]
+    fn given_new_endpoint_command_with_blank_required_query_param_when_execute_then_should_error() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+            )
+            .build();
+        setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .arg("new")
+            .arg("endpoint")
+            .arg("foo_endpoint")
+            .arg("/my/path")
+            .arg("--service")
+            .arg("foo_service")
+            .arg("--query")
+            .arg("*")
+            .assert()
+            .failure();
+        Ok(())
+    }
+
+    #[rstest]
+    #[case("paramA", "paramA")]
+    #[case("paramA", "*paramA")]
+    fn given_new_endpoint_command_with_duplicate_query_params_when_execute_then_should_error(
+        #[case] paramA: &str,
+        #[case] paramB: &str,
+    ) -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+            )
+            .build();
+        setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .arg("new")
+            .arg("endpoint")
+            .arg("foo_endpoint")
+            .arg("/my/path")
+            .arg("--service")
+            .arg("foo_service")
+            .arg("--query")
+            .arg(paramA)
+            .arg("--query")
+            .arg(paramB)
+            .assert()
+            .failure();
         Ok(())
     }
 }
