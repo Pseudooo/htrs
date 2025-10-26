@@ -3,7 +3,7 @@ mod config;
 
 #[cfg(test)]
 pub mod test_helpers {
-    use crate::common::config::{Endpoint, Environment, HtrsConfig, Service};
+    use crate::common::config::{Endpoint, Environment, HtrsConfig, QueryParameter, Service};
     use std::collections::HashMap;
     use std::fs::{remove_file, OpenOptions};
     use std::path::PathBuf;
@@ -55,7 +55,7 @@ pub mod test_helpers {
     pub struct EndpointBuilder {
         pub name: Option<String>,
         pub path: Option<String>,
-        pub query_params: Vec<String>,
+        pub query_params: Vec<QueryParameter>,
     }
 
     pub struct EnvironmentBuilder {
@@ -158,8 +158,11 @@ pub mod test_helpers {
             self
         }
 
-        pub fn with_query_param(mut self, name: &str) -> Self {
-            self.query_params.push(name.to_string());
+        pub fn with_query_param(mut self, name: &str, required: bool) -> Self {
+            self.query_params.push(QueryParameter {
+                name: name.to_string(),
+                required,
+            });
             self
         }
 

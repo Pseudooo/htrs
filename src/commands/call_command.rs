@@ -1,11 +1,10 @@
 use crate::command_builder::MatchBinding;
+use crate::common::get_params_from_path;
 use crate::config::{Endpoint, HtrsConfig};
 use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgAction, ArgMatches, Command};
-use lazy_static::lazy_static;
-use regex::Regex;
 use reqwest::{Method, Url};
 use std::collections::HashMap;
 
@@ -75,7 +74,7 @@ impl CallServiceEndpointCommand {
                             .long("body")
                     );
 
-                let templated_params = get_path_template_params(&endpoint.path_template);
+                let templated_params = get_params_from_path(&endpoint.path_template);
                 for templated_param in templated_params {
                     endpoint_command = endpoint_command.arg(
                         Arg::new(&templated_param)
@@ -87,10 +86,10 @@ impl CallServiceEndpointCommand {
 
                 for param in &endpoint.query_parameters {
                     endpoint_command = endpoint_command.arg(
-                        Arg::new(param)
+                        Arg::new(&param.name)
                             .allow_hyphen_values(true)
-                            .long(param)
-                            .required(true)
+                            .long(&param.name)
+                            .required(param.required)
                     )
                 }
                 service_command = service_command.subcommand(endpoint_command);
@@ -182,19 +181,9 @@ fn parse_query_params_from_arg(arg: &str) -> Result<(String, String), HtrsBindin
     })
 }
 
-fn get_path_template_params(path_template: &str) -> Vec<String> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\{([A-Za-z0-1]|_|-)+}").unwrap();
-    }
-    RE.find_iter(path_template)
-        .filter_map(|s| s.as_str().parse().ok())
-        .map(|s: String| s[1..s.len() - 1].to_string())
-        .collect()
-}
-
 fn build_path_from_template(path_template: &str, args: &ArgMatches) -> String {
     let mut path: String = path_template.to_string();
-    let template_value_names = get_path_template_params(path_template);
+    let template_value_names = get_params_from_path(path_template);
     for template_value_name in &template_value_names {
         let template_value: String = args.bind_field(template_value_name);
         path = path.replace(&format!("{{{}}}", template_value_name.as_str()), &template_value)
@@ -206,8 +195,8 @@ fn build_path_from_template(path_template: &str, args: &ArgMatches) -> String {
 fn get_query_parameters_from_args(endpoint: &Endpoint, args: &ArgMatches) -> HashMap<String, String> {
     let mut query_parameters = HashMap::new();
     for parameter_name in &endpoint.query_parameters {
-        let parameter_value: String = args.bind_field(parameter_name);
-        query_parameters.insert(parameter_name.to_string(), parameter_value);
+        let parameter_value: String = args.bind_field(parameter_name.name.as_str());
+        query_parameters.insert(parameter_name.name.to_string(), parameter_value);
     }
     query_parameters
 }
@@ -364,7 +353,7 @@ mod call_command_execution_tests {
             .with_service(
                 HtrsServiceBuilder::new()
                     .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/path", vec!["foo_query_param"])
+                    .with_endpoint("foo_endpoint", "/my/path", vec!["*foo_query_param"])
             )
             .build();
         let args = vec!["htrs", "call", "foo_service", "foo_endpoint"];

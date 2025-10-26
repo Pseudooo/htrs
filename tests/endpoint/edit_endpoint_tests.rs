@@ -125,7 +125,7 @@ mod edit_endpoint_tests {
                         EndpointBuilder::new()
                             .with_name("foo_endpoint")
                             .with_path("/path")
-                            .with_query_param("existing_param")
+                            .with_query_param("existing_param", true)
                     )
             )
             .build();
@@ -149,8 +149,51 @@ mod edit_endpoint_tests {
         assert_eq!(endpoint.name, "foo_endpoint");
         assert_eq!(endpoint.path_template, "/path");
         assert_eq!(endpoint.query_parameters.len(), 2);
-        assert_eq!(endpoint.query_parameters[0], "existing_param");
-        assert_eq!(endpoint.query_parameters[1], "new_param");
+        assert_eq!(endpoint.query_parameters[0].name, "existing_param");
+        assert_eq!(endpoint.query_parameters[0].required, true);
+        assert_eq!(endpoint.query_parameters[1].name, "new_param");
+        assert_eq!(endpoint.query_parameters[1].required, false);
+        Ok(())
+    }
+
+    #[test]
+    fn given_edit_endpoint_command_with_known_endpoint_when_add_required_query_param_then_should_succeed() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_endpoint(
+                        EndpointBuilder::new()
+                            .with_name("foo_endpoint")
+                            .with_path("/path")
+                            .with_query_param("existing_param", true)
+                    )
+            )
+            .build();
+        setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .arg("edit")
+            .arg("endpoint")
+            .arg("foo_endpoint")
+            .arg("--service")
+            .arg("foo_service")
+            .arg("--new-query")
+            .arg("*new_param")
+            .assert()
+            .success();
+
+        let config = get_config();
+        let service = &config.services[0];
+        assert_eq!(service.endpoints.len(), 1);
+        let endpoint = &service.endpoints[0];
+        assert_eq!(endpoint.name, "foo_endpoint");
+        assert_eq!(endpoint.path_template, "/path");
+        assert_eq!(endpoint.query_parameters.len(), 2);
+        assert_eq!(endpoint.query_parameters[0].name, "existing_param");
+        assert_eq!(endpoint.query_parameters[0].required, true);
+        assert_eq!(endpoint.query_parameters[1].name, "new_param");
+        assert_eq!(endpoint.query_parameters[1].required, true);
         Ok(())
     }
 
@@ -164,8 +207,8 @@ mod edit_endpoint_tests {
                         EndpointBuilder::new()
                             .with_name("foo_endpoint")
                             .with_path("/path")
-                            .with_query_param("param1")
-                            .with_query_param("param2")
+                            .with_query_param("param1", true)
+                            .with_query_param("param2", true)
                     )
             )
             .build();
@@ -189,7 +232,8 @@ mod edit_endpoint_tests {
         assert_eq!(endpoint.name, "foo_endpoint");
         assert_eq!(endpoint.path_template, "/path");
         assert_eq!(endpoint.query_parameters.len(), 1);
-        assert_eq!(endpoint.query_parameters[0], "param2");
+        assert_eq!(endpoint.query_parameters[0].name, "param2");
+        assert_eq!(endpoint.query_parameters[0].required, true);
         Ok(())
     }
 }
