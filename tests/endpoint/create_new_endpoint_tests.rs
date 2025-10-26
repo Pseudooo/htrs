@@ -355,8 +355,8 @@ mod create_new_endpoint_tests {
     #[case("paramA", "paramA")]
     #[case("paramA", "*paramA")]
     fn given_new_endpoint_command_with_duplicate_query_params_when_execute_then_should_error(
-        #[case] paramA: &str,
-        #[case] paramB: &str,
+        #[case] param_a: &str,
+        #[case] param_b: &str,
     ) -> Result<(), Box<dyn Error>> {
         let config = HtrsConfigBuilder::new()
             .with_service(
@@ -374,9 +374,9 @@ mod create_new_endpoint_tests {
             .arg("--service")
             .arg("foo_service")
             .arg("--query")
-            .arg(paramA)
+            .arg(param_a)
             .arg("--query")
-            .arg(paramB)
+            .arg(param_b)
             .assert()
             .failure();
         Ok(())
