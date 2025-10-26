@@ -6,7 +6,6 @@ mod command_builder;
 #[cfg(test)]
 mod test_helpers;
 mod htrs_binding_error;
-mod common;
 
 use crate::commands::RootCommand;
 use crate::config::HtrsConfig;

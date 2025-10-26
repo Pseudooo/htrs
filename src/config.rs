@@ -93,6 +93,21 @@ pub struct QueryParameter {
     pub required: bool,
 }
 
+impl QueryParameter {
+    pub fn from_shorthand(query_param: &str) -> QueryParameter {
+        match query_param.starts_with('*') {
+            true => QueryParameter {
+                name: query_param[1..].to_string(),
+                required: true,
+            },
+            false => QueryParameter {
+                name: query_param.to_string(),
+                required: false,
+            }
+        }
+    }
+}
+
 impl HtrsConfig {
     pub fn new() -> HtrsConfig {
         HtrsConfig { services: Vec::new(), headers: HashMap::new() }
