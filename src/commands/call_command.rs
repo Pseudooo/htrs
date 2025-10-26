@@ -1,11 +1,10 @@
 use crate::command_builder::MatchBinding;
+use crate::common::get_params_from_path;
 use crate::config::{Endpoint, HtrsConfig};
 use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgAction, ArgMatches, Command};
-use lazy_static::lazy_static;
-use regex::Regex;
 use reqwest::{Method, Url};
 use std::collections::HashMap;
 
@@ -75,7 +74,7 @@ impl CallServiceEndpointCommand {
                             .long("body")
                     );
 
-                let templated_params = get_path_template_params(&endpoint.path_template);
+                let templated_params = get_params_from_path(&endpoint.path_template);
                 for templated_param in templated_params {
                     endpoint_command = endpoint_command.arg(
                         Arg::new(&templated_param)
@@ -182,19 +181,9 @@ fn parse_query_params_from_arg(arg: &str) -> Result<(String, String), HtrsBindin
     })
 }
 
-fn get_path_template_params(path_template: &str) -> Vec<String> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"\{([A-Za-z0-1]|_|-)+}").unwrap();
-    }
-    RE.find_iter(path_template)
-        .filter_map(|s| s.as_str().parse().ok())
-        .map(|s: String| s[1..s.len() - 1].to_string())
-        .collect()
-}
-
 fn build_path_from_template(path_template: &str, args: &ArgMatches) -> String {
     let mut path: String = path_template.to_string();
-    let template_value_names = get_path_template_params(path_template);
+    let template_value_names = get_params_from_path(path_template);
     for template_value_name in &template_value_names {
         let template_value: String = args.bind_field(template_value_name);
         path = path.replace(&format!("{{{}}}", template_value_name.as_str()), &template_value)
