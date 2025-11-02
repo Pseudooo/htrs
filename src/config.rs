@@ -84,7 +84,28 @@ pub struct Environment {
 pub struct Endpoint {
     pub name: String,
     pub path_template: String,
-    pub query_parameters: Vec<String>,
+    pub query_parameters: Vec<QueryParameter>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct QueryParameter {
+    pub name: String,
+    pub required: bool,
+}
+
+impl QueryParameter {
+    pub fn from_shorthand(query_param: &str) -> QueryParameter {
+        match query_param.starts_with('*') {
+            true => QueryParameter {
+                name: query_param[1..].to_string(),
+                required: true,
+            },
+            false => QueryParameter {
+                name: query_param.to_string(),
+                required: false,
+            }
+        }
+    }
 }
 
 impl HtrsConfig {
