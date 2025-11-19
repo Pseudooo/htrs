@@ -5,38 +5,36 @@ mod config;
 pub mod test_helpers {
     use crate::common::config::{Endpoint, Environment, HtrsConfig, QueryParameter, Service};
     use std::collections::HashMap;
-    use std::fs::{remove_file, OpenOptions};
+    use std::fs::{remove_file, File, OpenOptions};
     use std::path::PathBuf;
+    use uuid::Uuid;
 
-    pub fn get_config_path() -> PathBuf {
-        std::env::current_exe()
-            .expect("Unable to get executable location")
-            .parent()
-            .expect("Unable to get parent directory")
-            .parent()
-            .expect("Unable to get parent directory")
-            .join("config.json")
-    }
-
-    pub fn setup(init_config: Option<HtrsConfig>) {
-        let path = get_config_path();
+    pub fn setup(init_config: Option<HtrsConfig>) -> String {
+        let path_str = format!("{}.json", Uuid::new_v4());
+        let path = PathBuf::from(path_str.clone());
         if path.exists() {
             remove_file(path.clone()).expect("Failed to clear existing config file");
         }
 
-        if let Some(init_config) = init_config {
-            let handle = OpenOptions::new()
-                .create_new(true)
-                .write(true)
-                .open(path)
-                .unwrap();
+        let init_config = init_config.unwrap_or_else(|| HtrsConfig::new());
+        let handle = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(path)
+            .unwrap();
 
-            serde_json::to_writer_pretty(handle, &init_config).unwrap();
-        }
+        serde_json::to_writer_pretty(handle, &init_config).unwrap();
+
+        path_str
     }
 
-    pub fn get_config() -> HtrsConfig {
-        serde_json::from_reader(std::fs::File::open(get_config_path()).unwrap()).unwrap()
+    pub fn get_config(path: &str) -> HtrsConfig {
+        let path = PathBuf::from(path);
+        serde_json::from_reader(File::open(path).unwrap()).unwrap()
+    }
+
+    pub fn clear_config(path: &str) {
+        remove_file(path).expect("Failed to clean up test config file");
     }
 
     pub struct HtrsConfigBuilder {

@@ -1,15 +1,16 @@
 
 #[cfg(test)]
 mod delete_endpoint_tests {
-    use crate::common::test_helpers::{get_config, setup, EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config2, setup2, EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 
     #[test]
     fn given_delete_endpoint_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup2(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("endpoint")
             .arg("foo_endpoint")
@@ -18,6 +19,8 @@ mod delete_endpoint_tests {
             .assert()
             .failure()
             .stdout("No service could be found with name or alias `foo_service`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -29,9 +32,10 @@ mod delete_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("endpoint")
             .arg("foo_endpoint")
@@ -40,6 +44,8 @@ mod delete_endpoint_tests {
             .assert()
             .failure()
             .stdout("No endpoint could be found with name `foo_endpoint` for service `foo_service`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -56,9 +62,10 @@ mod delete_endpoint_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("endpoint")
             .arg("foo_endpoint")
@@ -67,9 +74,11 @@ mod delete_endpoint_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config2(&path);
         let service = &config.services[0];
         assert_eq!(service.endpoints.len(), 0);
+
+        clear_config(&path);
         Ok(())
     }
 }

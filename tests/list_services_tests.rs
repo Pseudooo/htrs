@@ -3,28 +3,32 @@ mod common;
 
 #[cfg(test)]
 mod list_services_tests {
-    use crate::common::test_helpers::{setup, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, setup, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 
     #[test]
     fn given_list_services_command_without_services_then_should_succeed() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("service")
             .assert()
             .success()
             .stdout("No services found\n");
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_list_services_command_with_filter_and_no_services_then_should_succeed() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("service")
             .arg("--filter")
@@ -32,6 +36,8 @@ mod list_services_tests {
             .assert()
             .success()
             .stdout("No services found with name or alias containing `foo`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -48,14 +54,17 @@ mod list_services_tests {
                     .with_name("service2")
             )
             .build();
-        setup(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("service")
             .assert()
             .success()
             .stdout(" - service1 (alias1)\n - service2\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -83,9 +92,10 @@ mod list_services_tests {
                     .with_alias("alias5")
             )
             .build();
-        setup(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("service")
             .arg("--filter")
@@ -93,6 +103,8 @@ mod list_services_tests {
             .assert()
             .success()
             .stdout(" - foo_service2 (alias2)\n - service3 (foo_alias3)\n");
+
+        clear_config(&path);
         Ok(())
     }
 }

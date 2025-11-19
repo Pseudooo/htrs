@@ -7,6 +7,10 @@ impl HtrsConfig {
     /// Generate the path to the configration file, using the directory
     /// of the executable as the base path.
     fn config_path() -> Result<PathBuf, String> {
+        if let Ok(path) = std::env::var("HTRS_CONFIG_PATH") {
+            return Ok(PathBuf::from(path));
+        }
+
         let exe_path = match std::env::current_exe() {
             Ok(path) => path,
             Err(e) => return Err(e.to_string())

@@ -1,15 +1,16 @@
 
 #[cfg(test)]
 mod list_endpoint_tests {
-    use crate::common::test_helpers::{setup, EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, setup, setup2, EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 
     #[test]
     fn given_list_endpoint_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>>{
-        setup(None);
+        let path = setup2(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("endpoint")
             .arg("--service")
@@ -17,6 +18,8 @@ mod list_endpoint_tests {
             .assert()
             .failure()
             .stdout("No service could be found with name or alias `foo_service`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -28,9 +31,10 @@ mod list_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("endpoint")
             .arg("--service")
@@ -38,6 +42,8 @@ mod list_endpoint_tests {
             .assert()
             .success()
             .stdout("No endpoints defined\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -59,9 +65,10 @@ mod list_endpoint_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("endpoint")
             .arg("--service")
@@ -69,6 +76,8 @@ mod list_endpoint_tests {
             .assert()
             .success()
             .stdout(" - endpoint1\n - endpoint2\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -90,9 +99,10 @@ mod list_endpoint_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("endpoint")
             .arg("--service")
@@ -102,6 +112,8 @@ mod list_endpoint_tests {
             .assert()
             .success()
             .stdout(" - foo_endpoint1\n");
+
+        clear_config(&path);
         Ok(())
     }
 }

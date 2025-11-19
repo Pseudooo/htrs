@@ -2,33 +2,38 @@ mod common;
 
 #[cfg(test)]
 mod edit_service_tests {
-    use crate::common::test_helpers::{get_config, setup, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config, setup, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 
     #[test]
     fn given_edit_service_command_without_name_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("service")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_edit_service_command_with_unknown_service_then_should_succeed() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("service")
             .arg("unknown-service")
             .assert()
             .failure();
 
+        clear_config(&path);
         Ok(())
     }
 
@@ -41,9 +46,10 @@ mod edit_service_tests {
                     .with_alias("existing_alias")
             )
             .build();
-        setup(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("service")
             .arg("existing_name")
@@ -52,11 +58,13 @@ mod edit_service_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config(&path);
         assert_eq!(config.services.len(), 1);
         let service = &config.services[0];
         assert_eq!(service.name, "new_name");
         assert_eq!(service.alias, Some("existing_alias".to_string()));
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -69,9 +77,10 @@ mod edit_service_tests {
                     .with_alias("existing_alias")
             )
             .build();
-        setup(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("service")
             .arg("existing_name")
@@ -80,11 +89,13 @@ mod edit_service_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config(&path);
         assert_eq!(config.services.len(), 1);
         let service = &config.services[0];
         assert_eq!(service.name, "existing_name");
         assert_eq!(service.alias, Some("new_alias".to_string()));
+
+        clear_config(&path);
         Ok(())
     }
 }
