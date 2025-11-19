@@ -1,5 +1,5 @@
 mod create_new_endpoint_tests {
-    use crate::common::test_helpers::{clear_config, get_config2, setup2, EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config, setup, EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use rstest::rstest;
     use std::error::Error;
@@ -12,7 +12,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -26,7 +26,7 @@ mod create_new_endpoint_tests {
             .assert()
             .success();
 
-        let config = get_config2(&path);
+        let config = get_config(&path);
         let service = &config.services[0];
         assert_eq!(service.endpoints.len(), 1);
         let endpoint = &service.endpoints[0];
@@ -46,7 +46,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -61,7 +61,7 @@ mod create_new_endpoint_tests {
             .assert()
             .success();
 
-        let config = get_config2(&path);
+        let config = get_config(&path);
         let service = &config.services[0];
         assert_eq!(service.endpoints.len(), 1);
         let endpoint = &service.endpoints[0];
@@ -84,7 +84,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -101,7 +101,7 @@ mod create_new_endpoint_tests {
             .assert()
             .success();
 
-        let config = get_config2(&path);
+        let config = get_config(&path);
         let service = &config.services[0];
         assert_eq!(service.endpoints.len(), 1);
         let endpoint = &service.endpoints[0];
@@ -127,7 +127,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -142,7 +142,7 @@ mod create_new_endpoint_tests {
             .assert()
             .success();
 
-        let config = get_config2(&path);
+        let config = get_config(&path);
         let service = &config.services[0];
         assert_eq!(service.endpoints.len(), 1);
         let endpoint = &service.endpoints[0];
@@ -165,7 +165,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -182,7 +182,7 @@ mod create_new_endpoint_tests {
             .assert()
             .success();
 
-        let config = get_config2(&path);
+        let config = get_config(&path);
         let service = &config.services[0];
         assert_eq!(service.endpoints.len(), 1);
         let endpoint = &service.endpoints[0];
@@ -208,7 +208,7 @@ mod create_new_endpoint_tests {
                     .with_name("unknown_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -221,6 +221,8 @@ mod create_new_endpoint_tests {
             .assert()
             .failure()
             .stdout("Unable to find service with name or alias `foo_service`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -237,7 +239,7 @@ mod create_new_endpoint_tests {
                     )
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -263,7 +265,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -289,7 +291,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -315,7 +317,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -340,7 +342,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -367,7 +369,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -399,7 +401,7 @@ mod create_new_endpoint_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)

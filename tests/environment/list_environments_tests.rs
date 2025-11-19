@@ -1,13 +1,13 @@
 #[cfg(test)]
 mod list_environments_tests {
-    use crate::common::test_helpers::{clear_config, setup2, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use rstest::rstest;
     use std::error::Error;
 
     #[test]
     fn given_list_environments_command_without_arguments_then_should_fail() -> Result<(), Box<dyn Error>> {
-        let path = setup2(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -22,7 +22,7 @@ mod list_environments_tests {
 
     #[test]
     fn given_list_environments_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>> {
-        let path = setup2(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -46,7 +46,7 @@ mod list_environments_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -86,7 +86,7 @@ mod list_environments_tests {
                     )
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -116,7 +116,7 @@ mod list_environments_tests {
                     )
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -159,7 +159,7 @@ mod list_environments_tests {
                     )
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)

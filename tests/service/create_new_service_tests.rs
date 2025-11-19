@@ -1,5 +1,3 @@
-mod common;
-
 #[cfg(test)]
 mod create_new_service_tests {
     use crate::common::test_helpers::{clear_config, get_config, setup, HtrsConfigBuilder, ServiceBuilder};
