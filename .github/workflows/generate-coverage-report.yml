@@ -22,7 +22,7 @@ jobs:
 
       - name: 📈 Generate Report
         run: |
-          cargo tarpaulin --engine=llvm --out html --output-dir reports -- --test-threads=1
+          cargo tarpaulin --engine=llvm --out html --output-dir reports
           mv ./reports/tarpaulin-report.html ./reports/index.html
 
       - name: ⚙️ Setup Pages
