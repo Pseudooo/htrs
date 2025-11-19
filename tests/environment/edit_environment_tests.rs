@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod edit_environment_tests {
-    use crate::common::test_helpers::{clear_config, get_config2, setup2, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 
     #[test]
     fn given_edit_environment_command_without_name_then_should_fail() -> Result<(), Box<dyn Error>> {
-        let path = setup2(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -21,7 +21,7 @@ mod edit_environment_tests {
 
     #[test]
     fn given_edit_environment_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>> {
-        let path = setup2(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -46,7 +46,7 @@ mod edit_environment_tests {
                     .with_name("foo_service")
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -77,7 +77,7 @@ mod edit_environment_tests {
                     )
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -97,7 +97,7 @@ mod edit_environment_tests {
             .assert()
             .success();
 
-        let config = get_config2(&path);
+        let config = get_config(&path);
         let service = &config.services[0];
         let environment = &service.environments[0];
         assert_eq!(environment.name, "new_name");
@@ -129,7 +129,7 @@ mod edit_environment_tests {
                     )
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -168,7 +168,7 @@ mod edit_environment_tests {
                     )
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -206,7 +206,7 @@ mod edit_environment_tests {
                     )
             )
             .build();
-        let path = setup2(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
@@ -220,7 +220,7 @@ mod edit_environment_tests {
             .assert()
             .success();
 
-        let config = get_config2(&path);
+        let config = get_config(&path);
         let service = &config.services[0];
         let existing_default_environment = &service.environments[0];
         assert_eq!(existing_default_environment.name, "existing_default");
@@ -235,7 +235,7 @@ mod edit_environment_tests {
 
     #[test]
     fn given_edit_environment_command_with_non_boolean_default_value_then_should_fail() -> Result<(), Box<dyn Error>> {
-        let path = setup2(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
             .env("HTRS_CONFIG_PATH", &path)
