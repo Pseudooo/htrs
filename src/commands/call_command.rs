@@ -1,4 +1,4 @@
-use crate::command_builder::MatchBinding;
+use crate::commands::bindings::MatchBinding;
 use crate::common::get_params_from_path;
 use crate::config::{Endpoint, HtrsConfig};
 use crate::htrs_binding_error::HtrsBindingError;

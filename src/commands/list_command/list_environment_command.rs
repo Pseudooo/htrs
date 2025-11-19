@@ -1,4 +1,4 @@
-use crate::command_builder::MatchBinding;
+use crate::commands::bindings::MatchBinding;
 use crate::config::{Environment, HtrsConfig};
 use crate::outcomes::HtrsAction::PrintDialogue;
 use crate::outcomes::{HtrsAction, HtrsError};

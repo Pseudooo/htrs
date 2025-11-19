@@ -1,4 +1,4 @@
-use crate::command_builder::MatchBinding;
+use crate::commands::bindings::MatchBinding;
 use crate::config::{HtrsConfig, QueryParameter};
 use crate::outcomes::HtrsAction::UpdateConfig;
 use crate::outcomes::{HtrsAction, HtrsError};

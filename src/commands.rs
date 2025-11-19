@@ -1,9 +1,10 @@
 pub mod call_command;
-pub(crate) mod new_command;
-pub(crate) mod edit_command;
-pub(crate) mod delete_command;
-pub(crate) mod list_command;
-pub(crate) mod set_command;
+mod new_command;
+mod edit_command;
+mod delete_command;
+mod list_command;
+mod set_command;
+mod bindings;
 
 use crate::commands::call_command::CallServiceEndpointCommand;
 use crate::commands::delete_command::DeleteCommand;
