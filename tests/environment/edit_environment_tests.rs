@@ -1,26 +1,30 @@
 #[cfg(test)]
 mod edit_environment_tests {
-    use crate::common::test_helpers::{get_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config2, setup2, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 
     #[test]
     fn given_edit_environment_command_without_name_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup2(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("environment")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_edit_environment_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup2(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("environment")
             .arg("foo_environment")
@@ -29,6 +33,8 @@ mod edit_environment_tests {
             .assert()
             .failure()
             .stdout("No service could be found with name or alias `foo_service`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -40,9 +46,10 @@ mod edit_environment_tests {
                     .with_name("foo_service")
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("environment")
             .arg("foo_environment")
@@ -51,6 +58,8 @@ mod edit_environment_tests {
             .assert()
             .failure()
             .stdout("No environment could be found with name or alias `foo_environment`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -68,9 +77,10 @@ mod edit_environment_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("environment")
             .arg("original_name")
@@ -87,13 +97,15 @@ mod edit_environment_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config2(&path);
         let service = &config.services[0];
         let environment = &service.environments[0];
         assert_eq!(environment.name, "new_name");
         assert_eq!(environment.alias, Some("new_alias".to_string()));
         assert_eq!(environment.host, "newhost.com");
         assert_eq!(environment.default, true);
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -117,9 +129,10 @@ mod edit_environment_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("environment")
             .arg("foo_environment")
@@ -130,6 +143,8 @@ mod edit_environment_tests {
             .assert()
             .failure()
             .stdout("Service `foo_service` already has an environment with name or alias `existing_environment`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -153,9 +168,10 @@ mod edit_environment_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("environment")
             .arg("foo_environment")
@@ -166,6 +182,8 @@ mod edit_environment_tests {
             .assert()
             .failure()
             .stdout("Service `foo_service` already has an environment with name or alias `existing_alias`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -188,9 +206,10 @@ mod edit_environment_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("environment")
             .arg("foo_environment")
@@ -201,7 +220,7 @@ mod edit_environment_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config2(&path);
         let service = &config.services[0];
         let existing_default_environment = &service.environments[0];
         assert_eq!(existing_default_environment.name, "existing_default");
@@ -209,14 +228,17 @@ mod edit_environment_tests {
         let new_default_environment = &service.environments[1];
         assert_eq!(new_default_environment.name, "foo_environment");
         assert_eq!(new_default_environment.default, true);
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_edit_environment_command_with_non_boolean_default_value_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup2(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("edit")
             .arg("environment")
             .arg("foo_environment")
@@ -226,6 +248,8 @@ mod edit_environment_tests {
             .arg("foo")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 }

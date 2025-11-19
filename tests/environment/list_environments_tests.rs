@@ -1,27 +1,31 @@
 #[cfg(test)]
 mod list_environments_tests {
-    use crate::common::test_helpers::{setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, setup2, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use rstest::rstest;
     use std::error::Error;
 
     #[test]
     fn given_list_environments_command_without_arguments_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup2(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("environment")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_list_environments_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup2(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("environment")
             .arg("--service")
@@ -29,6 +33,8 @@ mod list_environments_tests {
             .assert()
             .failure()
             .stdout("No service could be found with name or alias `foo_service`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -40,9 +46,10 @@ mod list_environments_tests {
                     .with_name("foo_service")
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("environment")
             .arg("--service")
@@ -50,6 +57,8 @@ mod list_environments_tests {
             .assert()
             .success()
             .stdout("No environments defined\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -77,9 +86,10 @@ mod list_environments_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg(list_cmd)
             .arg(env_cmd)
             .arg("--service")
@@ -87,6 +97,8 @@ mod list_environments_tests {
             .assert()
             .success()
             .stdout(" - environment1 (alias1)\n - environment2\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -104,9 +116,10 @@ mod list_environments_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("environment")
             .arg("--service")
@@ -116,6 +129,8 @@ mod list_environments_tests {
             .assert()
             .success()
             .stdout("No environments found for service `foo_service` with name or alias containing `unknown`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -144,9 +159,10 @@ mod list_environments_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("list")
             .arg("environment")
             .arg("--service")
@@ -156,6 +172,8 @@ mod list_environments_tests {
             .assert()
             .success()
             .stdout(" - foo_environment2\n - environment3 (foo_alias3)\n");
+
+        clear_config(&path);
         Ok(())
     }
 }

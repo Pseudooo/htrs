@@ -1,4 +1,0 @@
-mod create_new_environment_tests;
-mod delete_environment_tests;
-mod edit_environment_tests;
-mod list_environments_tests;

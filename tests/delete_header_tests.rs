@@ -3,32 +3,38 @@ mod common;
 
 #[cfg(test)]
 mod delete_header_tests {
-    use crate::common::test_helpers::{get_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 
     #[test]
     fn given_delete_header_command_with_no_args_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("header")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_delete_global_header_command_with_unknown_header_then_should_succeed() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("header")
             .arg("foo_header")
             .assert()
             .success();
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -37,17 +43,20 @@ mod delete_header_tests {
         let config = HtrsConfigBuilder::new()
             .with_header("foo_header", "foo_value")
             .build();
-        setup(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("header")
             .arg("foo_header")
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config(&path);
         assert_eq!(config.headers.len(), 0);
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -60,9 +69,10 @@ mod delete_header_tests {
                     .with_header("foo_header", "foo_value")
             )
             .build();
-        setup(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("header")
             .arg("foo_header")
@@ -71,17 +81,20 @@ mod delete_header_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config(&path);
         let service = &config.services[0];
         assert_eq!(service.headers.len(), 0);
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_delete_service_header_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("header")
             .arg("foo_header")
@@ -90,6 +103,8 @@ mod delete_header_tests {
             .assert()
             .failure()
             .stdout("Unable to find service with name or alias `foo_service`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -107,9 +122,10 @@ mod delete_header_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("header")
             .arg("foo_header")
@@ -120,18 +136,21 @@ mod delete_header_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config(&path);
         let service = &config.services[0];
         let environment = &service.environments[0];
         assert_eq!(environment.headers.len(), 0);
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_delete_environment_header_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("header")
             .arg("foo_header")
@@ -142,6 +161,8 @@ mod delete_header_tests {
             .assert()
             .failure()
             .stdout("Unable to find service with name or alias `foo_service`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -153,9 +174,10 @@ mod delete_header_tests {
                     .with_name("foo_service")
             )
             .build();
-        setup(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("header")
             .arg("foo_header")
@@ -166,14 +188,17 @@ mod delete_header_tests {
             .assert()
             .failure()
             .stdout("Unable to find environment with name or alias `foo_environment` for service `foo_service`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_delete_header_command_with_invalid_arguments_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("header")
             .arg("foo_header")
@@ -182,6 +207,8 @@ mod delete_header_tests {
             .assert()
             .failure()
             .stdout("Invalid combination of arguments used\n");
+
+        clear_config(&path);
         Ok(())
     }
 }

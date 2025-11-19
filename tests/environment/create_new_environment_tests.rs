@@ -1,40 +1,47 @@
 #[cfg(test)]
 mod create_new_environment_tests {
-    use crate::common::test_helpers::{get_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config2, setup2, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 
     #[test]
     fn given_create_environment_command_without_args_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup2(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("new")
             .arg("environment")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_create_environment_command_without_service_arg_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup2(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("new")
             .arg("environment")
             .arg("foo_environment")
             .arg("google.com")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_create_environment_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup2(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("new")
             .arg("environment")
             .arg("foo_environment")
@@ -44,6 +51,8 @@ mod create_new_environment_tests {
             .assert()
             .failure()
             .stdout("No service found with name or alias `foo_service`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -55,9 +64,10 @@ mod create_new_environment_tests {
                     .with_name("foo_service")
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("new")
             .arg("environment")
             .arg("foo_environment")
@@ -67,7 +77,7 @@ mod create_new_environment_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config2(&path);
         let service = &config.services[0];
         assert_eq!(service.environments.len(), 1);
         let environment = &service.environments[0];
@@ -75,6 +85,8 @@ mod create_new_environment_tests {
         assert_eq!(environment.alias, None);
         assert_eq!(environment.host, "google.com");
         assert_eq!(environment.default, false);
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -86,9 +98,10 @@ mod create_new_environment_tests {
                     .with_name("foo_service")
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("new")
             .arg("environment")
             .arg("foo_environment")
@@ -100,7 +113,7 @@ mod create_new_environment_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config2(&path);
         let service = &config.services[0];
         assert_eq!(service.environments.len(), 1);
         let environment = &service.environments[0];
@@ -108,6 +121,8 @@ mod create_new_environment_tests {
         assert_eq!(environment.alias, Some("foo_alias".to_string()));
         assert_eq!(environment.host, "google.com");
         assert_eq!(environment.default, false);
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -119,9 +134,10 @@ mod create_new_environment_tests {
                     .with_name("foo_service")
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("new")
             .arg("environment")
             .arg("foo_environment")
@@ -132,7 +148,7 @@ mod create_new_environment_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config2(&path);
         let service = &config.services[0];
         assert_eq!(service.environments.len(), 1);
         let environment = &service.environments[0];
@@ -140,6 +156,8 @@ mod create_new_environment_tests {
         assert_eq!(environment.alias, None);
         assert_eq!(environment.host, "google.com");
         assert_eq!(environment.default, true);
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -157,9 +175,10 @@ mod create_new_environment_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("new")
             .arg("environment")
             .arg("foo_environment")
@@ -171,6 +190,8 @@ mod create_new_environment_tests {
             .assert()
             .failure()
             .stdout("Service `foo_service` already has an environment with name or alias `foo_environment`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -188,9 +209,10 @@ mod create_new_environment_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("new")
             .arg("environment")
             .arg("new_environment")
@@ -202,6 +224,8 @@ mod create_new_environment_tests {
             .assert()
             .failure()
             .stdout("Service `foo_service` already has an environment with name or alias `foo_alias`\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -220,9 +244,10 @@ mod create_new_environment_tests {
                     )
             )
             .build();
-        setup(Some(config));
+        let path = setup2(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("new")
             .arg("environment")
             .arg("new_environment")
@@ -233,7 +258,7 @@ mod create_new_environment_tests {
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config2(&path);
         let service = &config.services[0];
         assert_eq!(service.environments.len(), 2);
         let existing_environment = &service.environments[0];
@@ -243,6 +268,8 @@ mod create_new_environment_tests {
         assert_eq!(new_environment.alias, None);
         assert_eq!(new_environment.host, "google.com");
         assert_eq!(new_environment.default, true);
+
+        clear_config(&path);
         Ok(())
     }
 }

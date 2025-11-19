@@ -2,32 +2,38 @@ mod common;
 
 #[cfg(test)]
 mod delete_service_tests {
-    use crate::common::test_helpers::{get_config, setup, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config, setup, HtrsConfigBuilder, ServiceBuilder};
     use assert_cmd::Command;
     use std::error::Error;
 
     #[test]
     fn given_delete_service_command_without_name_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("service")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 
     #[test]
     fn given_delete_service_command_with_unknown_service_then_should_fail() -> Result<(), Box<dyn Error>> {
-        setup(None);
+        let path = setup(None);
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("service")
             .arg("foo")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -40,17 +46,20 @@ mod delete_service_tests {
                     .with_alias("service_alias")
             )
             .build();
-        setup(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("service")
             .arg("service_name")
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config(&path);
         assert_eq!(config.services.len(), 0);
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -63,17 +72,20 @@ mod delete_service_tests {
                     .with_alias("service_alias")
             )
             .build();
-        setup(Some(config));
+        let path = setup(Some(config));
 
         Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
             .arg("delete")
             .arg("service")
             .arg("service_alias")
             .assert()
             .success();
 
-        let config = get_config();
+        let config = get_config(&path);
         assert_eq!(config.services.len(), 0);
+
+        clear_config(&path);
         Ok(())
     }
 }
