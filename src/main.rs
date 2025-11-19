@@ -1,7 +1,6 @@
 mod config;
 mod commands;
 mod outcomes;
-mod command_builder;
 
 #[cfg(test)]
 mod test_helpers;
