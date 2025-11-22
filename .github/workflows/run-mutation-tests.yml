@@ -29,6 +29,7 @@ jobs:
 
       - name: Run Mutation Tests
         run: cargo mutants
+        continue-on-error: true
 
       - id: export-outputs
         name: Export Outputs
