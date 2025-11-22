@@ -8,6 +8,9 @@ on:
         required: true
         default: master
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   run-mutation-tests:
     name: Run Mutation Tests for ${{ inputs.code-ref }}
@@ -27,12 +30,12 @@ jobs:
       - name: ⚙️ Install cargo-mutants
         run: cargo install cargo-mutants@25.3.1
 
-      - name: Run Mutation Tests
-        run: cargo mutants
+      - name: 🧬 Run Mutation Tests
+        run: cargo mutants --caught --unviable
         continue-on-error: true
 
       - id: export-outputs
-        name: Export Outputs
+        name: 💾 Set Outputs
         uses: actions/github-script@v7
         with:
           github-token: ${{ github.token }}
