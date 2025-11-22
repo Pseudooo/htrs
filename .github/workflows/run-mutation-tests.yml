@@ -1,0 +1,59 @@
+name: run-mutation-tests.yml
+on:
+  workflow_call:
+    inputs:
+      pull-request-num:
+        description: The pull-request issue number to run against
+        type: string
+        required: false
+        default: ''
+    outputs:
+      caught:
+        description: The number of caught mutants
+        value: ${{ jobs.run-mutation-tests.outputs.caught }}
+      missed:
+        description: The number of missed mutants
+        value: ${{ jobs.run-mutation-tests.outputs.missed }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  run-mutation-tests:
+    name: Run Mutation Tests
+    runs-on: ubuntu-22.04
+    outputs:
+      caught: ${{ steps.export-outputs.outputs.caught }}
+      missed: ${{ steps.export-outputs.outputs.missed }}
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: 🛒 Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout PR
+        if: ${{ inputs.pull-request-num != '' }}
+        run: gh pr checkout ${{ inputs.pull-request-num }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: ⚙️ Install actions/core
+        run: npm install @actions/core
+
+      - name: ⚙️ Install cargo-mutants
+        run: cargo install cargo-mutants@25.3.1
+
+      - name: 🧬 Run Mutation Tests
+        run: cargo mutants --caught --unviable
+        continue-on-error: true
+
+      - id: export-outputs
+        name: 💾 Set Outputs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const exportScore = require('./.github/scripts/getMutationScore.js');
+            exportScore();
+
