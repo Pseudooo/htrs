@@ -37,3 +37,22 @@ jobs:
     uses: ./.github/workflows/run-mutation-tests.yml
     with:
       code-ref: ${{ github.head_ref }}
+
+  comment-comparison:
+    name: 💬 Comment Comparison
+    runs-on: ubuntu-22.04
+    needs: [mutants-branch]
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          github-token: '${{ github.token }}'
+          script: |
+            const mutantsOutput = {
+              feature_caught: ${{ needs.mutants-branch.outputs.caught }},
+              feature_missed: ${{ needs.mutants-branch.outputs.missed }}
+            };
+            const commentComparison = require('./.github/scripts/commentMutationComparison.js');
+            commentComparison({github, context, mutantsOutput});
+
