@@ -3,10 +3,21 @@ module.exports = ({github, context, mutantsOutput}) => {
     const masterSummary = getMasterSummary(mutantsOutput);
     const featureSummary = getFeatureSummary(mutantsOutput);
 
-    let commentBody = "### Mutation Testing Completed\n"
+    const percentageDiff = featureSummary.percentageCaught - masterSummary.percentageCaught;
+
+    let commentBody = "### Mutation Testing Completed\n";
+    if(percentageDiff > 0) {
+        commentBody += `:white_check_mark: Mutation Score Increased by +${percentageDiff.toFixed(2)}\n`;
+    } else if(percentageDiff < 0) {
+        commentBody += `:warning: Mutation score decreased by ${percentageDiff.toFixed(2)}\n`;
+    } else {
+        commentBody += `Mutation Score is unchanged\n`;
+    }
+    commentBody += '#### Summary'
     commentBody += '| Target | Total Mutants | Caught | Missed | Percentage Caught |\n';
     commentBody += '| ------ | ------------- | ------ | ------ | ----------------- |\n';
-    commentBody += `| Branch | ${featureSummary.total} | ${featureSummary.caught} | ${featureSummary.missed} | ${featureSummary.percentageCaught}% |\n`;
+    commentBody += getSummaryTableRow('Master', masterSummary);
+    commentBody += getSummaryTableRow('Branch', featureSummary);
 
     github.rest.issues.createComment({
         issue_number: context.issue.number,
@@ -42,4 +53,8 @@ function getFeatureSummary(output) {
         total: total,
         percentageCaught: percentageCaught.toFixed(2),
     };
+}
+
+function getSummaryTableRow(branch, summary) {
+    return `| ${branch} | ${summary.total} | ${summary.caught} | ${summary.missed} | ${summary.percentageCaught.toFixed(2)}% |\n`;
 }
