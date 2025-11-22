@@ -7,6 +7,13 @@ on:
         type: string
         required: true
         default: master
+    outputs:
+      caught:
+        description: The number of caught mutants
+        value: ${{ jobs.run-mutation-tests.outputs.caught }}
+      missed:
+        description: The number of missed mutants
+        value: ${{ jobs.run-mutation-tests.outputs.missed }}
 
 env:
   CARGO_TERM_COLOR: always
