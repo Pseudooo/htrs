@@ -12,6 +12,6 @@ module.exports = () => {
         .split('\n')
         .length - 1;
 
-    core.setOutput('caught', caughtCount);
-    core.setOutput('missed', missedCount + unviableCount);
+    core.setOutput('caught', caughtCount + unviableCount);
+    core.setOutput('missed', missedCount);
 }
