@@ -1,0 +1,41 @@
+name: run-mutation-tests.yml
+on:
+  workflow_call:
+    inputs:
+      code-ref:
+        description: The branch, tag or SHA to be used when cloning repository
+        type: string
+        required: true
+        default: master
+
+jobs:
+  run-mutation-tests:
+    name: Run Mutation Tests for ${{ inputs.code-ref }}
+    runs-on: ubuntu-22.04
+    outputs:
+      caught: ${{ steps.export-outputs.outputs.caught }}
+      missed: ${{ steps.export-outputs.outputs.missed }}
+    steps:
+      - name: 🛒 Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.code-ref }}
+
+      - name: ⚙️ Install actions/core
+        run: npm install @actions/core
+
+      - name: ⚙️ Install cargo-mutants
+        run: cargo install cargo-mutants@25.3.1
+
+      - name: Run Mutation Tests
+        run: cargo mutants
+
+      - id: export-outputs
+        name: Export Outputs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const exportScore = require('./.github/scripts/getMutationScore.js');
+            exportScore();
+
