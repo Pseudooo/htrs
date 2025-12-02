@@ -141,6 +141,10 @@ impl HtrsConfig {
     pub fn get_service_mut(&mut self, name: &str) -> Option<&mut Service> {
         self.services.iter_mut().find(|s| s.name == name)
     }
+
+    pub fn get_preset(&self, name: &str) -> Option<&Preset> {
+        self.presets.iter().find(|p| p.name == name)
+    }
 }
 
 impl Service {
