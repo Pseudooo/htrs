@@ -44,7 +44,7 @@ impl NewPresetCommand {
 
         let mut values = HashMap::new();
         for value in &self.values {
-            if let Ok((left, right)) = parse_key_value_string(&value) {
+            if let Ok((left, right)) = parse_key_value_string(value) {
                 values.insert(left, right);
             } else {
                 return Err(HtrsError::new(format!("Invalid preset value `{}`, should be in format `key=value`", value).as_str()));

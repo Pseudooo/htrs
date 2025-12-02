@@ -32,7 +32,7 @@ pub fn parse_key_value_string(s: &str) -> Result<(String, String), ()> {
         None => return Err(()),
     };
 
-    if left.len() == 0 || right.len() == 0 {
+    if left.is_empty() || right.is_empty() {
         return Err(());
     }
 
