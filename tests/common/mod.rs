@@ -86,6 +86,7 @@ pub mod test_helpers {
             HtrsConfig {
                 services: self.services,
                 headers: self.headers,
+                presets: Vec::new(),
             }
         }
     }

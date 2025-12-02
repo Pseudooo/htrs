@@ -64,6 +64,13 @@ impl HtrsConfig {
 pub struct HtrsConfig {
     pub services: Vec<Service>,
     pub headers: HashMap<String, String>,
+    pub presets: Vec<Preset>
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Preset {
+    pub name: String,
+    pub values: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -113,8 +120,12 @@ impl QueryParameter {
 }
 
 impl HtrsConfig {
-    pub fn new() -> HtrsConfig {
-        HtrsConfig { services: Vec::new(), headers: HashMap::new() }
+    pub fn new() -> Self {
+        Self {
+            services: Vec::new(),
+            headers: HashMap::new(),
+            presets: Vec::new(),
+        }
     }
 
     pub fn remove_service(&mut self, name: &str) -> bool {

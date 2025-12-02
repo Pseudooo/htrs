@@ -35,6 +35,7 @@ impl HtrsConfigBuilder {
         HtrsConfig {
             services: self.services,
             headers: HashMap::new(),
+            presets: Vec::new(),
         }
     }
 }
