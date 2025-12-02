@@ -24,3 +24,46 @@ pub fn get_duplicates_from_vec(vec: Vec<String>) -> Vec<String> {
     }
     duplicates.into_iter().collect()
 }
+
+/// Attempts to parse a string in the format of `key=value` into its constituent parts
+pub fn parse_key_value_string(s: &str) -> Result<(String, String), ()> {
+    let (left, right) = match s.split_once("=") {
+        Some(x) => x,
+        None => return Err(()),
+    };
+
+    if left.len() == 0 || right.len() == 0 {
+        return Err(());
+    }
+
+    Ok((left.to_string(), right.to_string()))
+}
+
+#[cfg(test)]
+mod common_tests {
+    use crate::common::parse_key_value_string;
+    use rstest::rstest;
+
+    #[test]
+    fn given_valid_key_value_string_then_should_parse() {
+        let s = "key=value";
+
+        let result = parse_key_value_string(s);
+        assert!(result.is_ok());
+        let (left, right) = result.unwrap();
+        assert_eq!(left, "key");
+        assert_eq!(right, "value");
+    }
+
+    #[rstest]
+    #[case("")]
+    #[case("foo")]
+    #[case("key=")]
+    #[case("=value")]
+    fn given_invalid_key_value_string_then_should_fail(
+        #[case] s: &str,
+    ) {
+        let result = parse_key_value_string(s);
+        assert!(result.is_err());
+    }
+}
