@@ -78,7 +78,8 @@ mod create_new_preset_tests {
             .arg("--value")
             .arg("foo=bar")
             .assert()
-            .failure();
+            .failure()
+            .stdout("A preset with name `existing_preset` already exists\n");
 
         clear_config(&path);
         Ok(())
