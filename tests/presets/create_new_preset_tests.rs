@@ -36,6 +36,25 @@ mod create_new_preset_tests {
     }
 
     #[test]
+    fn given_create_new_preset_command_with_invalid_value_then_should_fail() -> Result<(), Box<dyn Error>> {
+        let path = setup(None);
+
+        Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
+            .arg("new")
+            .arg("preset")
+            .arg("foo_preset")
+            .arg("--value")
+            .arg("foo")
+            .assert()
+            .failure()
+            .stdout("Invalid preset value `foo`, should be in format `key=value`\n");
+
+        clear_config(&path);
+        Ok(())
+    }
+
+    #[test]
     fn given_create_new_preset_command_with_args_then_should_succeed() -> Result<(), Box<dyn Error>> {
         let path = setup(None);
 
