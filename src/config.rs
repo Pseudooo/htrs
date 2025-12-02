@@ -64,6 +64,13 @@ impl HtrsConfig {
 pub struct HtrsConfig {
     pub services: Vec<Service>,
     pub headers: HashMap<String, String>,
+    pub presets: Vec<Preset>
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Preset {
+    pub name: String,
+    pub values: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -113,8 +120,12 @@ impl QueryParameter {
 }
 
 impl HtrsConfig {
-    pub fn new() -> HtrsConfig {
-        HtrsConfig { services: Vec::new(), headers: HashMap::new() }
+    pub fn new() -> Self {
+        Self {
+            services: Vec::new(),
+            headers: HashMap::new(),
+            presets: Vec::new(),
+        }
     }
 
     pub fn remove_service(&mut self, name: &str) -> bool {
@@ -129,6 +140,16 @@ impl HtrsConfig {
 
     pub fn get_service_mut(&mut self, name: &str) -> Option<&mut Service> {
         self.services.iter_mut().find(|s| s.name == name)
+    }
+
+    pub fn get_preset(&self, name: &str) -> Option<&Preset> {
+        self.presets.iter().find(|p| p.name == name)
+    }
+
+    pub fn remove_preset(&mut self, name: &str) -> bool {
+        let init_length = self.presets.len();
+        self.presets.retain(|preset| preset.name != name);
+        init_length != self.presets.len()
     }
 }
 
