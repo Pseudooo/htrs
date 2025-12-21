@@ -92,10 +92,11 @@ impl CallServiceEndpointCommand {
             Ok(url) => url,
             Err(e) => return Err(HtrsError::new(format!("Failed to build url from given host: {e}").as_str())),
         };
-        let url = match base_url.join(self.path.as_str()) {
+        let mut url = match base_url.join(self.path.as_str()) {
             Ok(url) => url,
             Err(e) => return Err(HtrsError::new(format!("Failed to build url for endpoint: {e}").as_str())),
         };
+        url.set_scheme("http").unwrap();
 
         Ok(MakeRequest {
             url,
