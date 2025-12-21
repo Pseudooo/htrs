@@ -1,6 +1,6 @@
 use crate::commands::bindings::MatchBinding;
 use crate::common::get_params_from_path;
-use crate::config::{Endpoint, HtrsConfig};
+use crate::config::{Endpoint, HtrsConfig, Service};
 use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsAction, HtrsError};
@@ -32,69 +32,7 @@ impl CallServiceEndpointCommand {
             .arg_required_else_help(true);
 
         for service in &config.services {
-            let mut service_command = Command::new(service.name.clone())
-                .arg_required_else_help(true)
-
-                .arg(
-                    Arg::new("environment")
-                        .value_name("environment name")
-                        .required(false)
-                        .help("Environment to target, will use default environment if none specified")
-                        .long("environment")
-                        .short('e')
-                );
-            if let Some(alias) = &service.alias {
-                service_command = service_command.visible_alias(alias);
-            }
-
-            for endpoint in &service.endpoints {
-                let mut endpoint_command = Command::new(endpoint.name.clone())
-                    .arg(
-                        Arg::new("environment")
-                            .value_name("environment name")
-                            .required(false)
-                            .help("Environment to target, will use default environment if none specified")
-                            .long("environment")
-                            .short('e')
-                    )
-                    .arg(
-                        Arg::new("query_parameters")
-                            .value_name("query param")
-                            .help("Set a query parameter for the request in the format `name=value`")
-                            .required(false)
-                            .action(ArgAction::Append)
-                            .long("query-param")
-                            .short('q')
-                    )
-                    .arg(
-                        Arg::new("show_body")
-                            .help("Print the response body")
-                            .required(false)
-                            .num_args(0)
-                            .long("body")
-                    );
-
-                let templated_params = get_params_from_path(&endpoint.path_template);
-                for templated_param in templated_params {
-                    endpoint_command = endpoint_command.arg(
-                        Arg::new(&templated_param)
-                            .allow_hyphen_values(true)
-                            .long(&templated_param)
-                            .required(true)
-                    );
-                }
-
-                for param in &endpoint.query_parameters {
-                    endpoint_command = endpoint_command.arg(
-                        Arg::new(&param.name)
-                            .allow_hyphen_values(true)
-                            .long(&param.name)
-                            .required(param.required)
-                    )
-                }
-                service_command = service_command.subcommand(endpoint_command);
-            }
-            command = command.subcommand(service_command);
+            command = command.subcommand(get_command_for_service(service));
         }
 
         command
@@ -167,6 +105,78 @@ impl CallServiceEndpointCommand {
             show_body: self.show_body
         })
     }
+}
+
+fn get_command_for_service(service: &Service) -> Command {
+    let mut command = Command::new(service.name.clone())
+        .arg_required_else_help(true)
+        .arg(
+            Arg::new("environment")
+                .value_name("environment name")
+                .required(false)
+                .help("Environment to target, will use default environment if none specified")
+                .long("environment")
+                .short('e')
+        );
+
+    if let Some(alias) = &service.alias {
+        command = command.visible_alias(alias);
+    }
+
+    for endpoint in &service.endpoints {
+        command = command.subcommand(get_command_for_endpoint(endpoint));
+    }
+
+    command
+}
+
+fn get_command_for_endpoint(endpoint: &Endpoint) -> Command {
+    let mut command = Command::new(endpoint.name.clone())
+        .arg(
+            Arg::new("environment")
+                .value_name("environment")
+                .required(false)
+                .help("Environment to target, will use default environment if none specified")
+                .long("environment")
+                .short('e')
+        )
+        .arg(
+            Arg::new("query_parameters")
+                .value_name("query param")
+                .help("Set a query parameter for the request in the format `name=value`")
+                .required(false)
+                .action(ArgAction::Append)
+                .long("query-param")
+                .short('q')
+        )
+        .arg(
+            Arg::new("show_body")
+                .help("Print the response body")
+                .required(false)
+                .num_args(0)
+                .long("body")
+        );
+
+    let templated_params = get_params_from_path(&endpoint.path_template);
+    for templated_param in templated_params {
+        command = command.arg(
+            Arg::new(&templated_param)
+                .allow_hyphen_values(true)
+                .long(&templated_param)
+                .required(true)
+        );
+    }
+
+    for param in &endpoint.query_parameters {
+        command = command.arg(
+            Arg::new(&param.name)
+                .allow_hyphen_values(true)
+                .long(&param.name)
+                .required(param.required)
+        );
+    }
+
+    command
 }
 
 fn parse_query_params_from_arg(arg: &str) -> Result<(String, String), HtrsBindingError> {
