@@ -236,7 +236,7 @@ fn build_path_from_template(path_template: &str, parameters: &HashMap<String, St
         let Some(template_value) = parameters.get(template_value_name) else {
             return Err(HtrsError::new(format!("Parameter `{}` is required but not provided from parameters", template_value_name).as_str()));
         };
-        path = path.replace(&format!("{{{}}}", template_value_name.as_str()), &template_value)
+        path = path.replace(&format!("{{{}}}", template_value_name.as_str()), template_value)
     }
 
     Ok(path)
