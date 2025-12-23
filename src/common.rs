@@ -1,6 +1,7 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 
 pub fn get_params_from_path(path: &str) -> Vec<String> {
     lazy_static! {
@@ -37,6 +38,20 @@ pub fn parse_key_value_string(s: &str) -> Result<(String, String), ()> {
     }
 
     Ok((left.to_string(), right.to_string()))
+}
+
+/// Merges two given HashMaps into a new HashMap, if a value is present in both hashmaps the value
+/// provided in HashMap `b` will be used in the returned HashMap
+pub fn merge_hashmaps<T: Eq + Hash, U>(a: HashMap<T, U>, b: HashMap<T, U>) -> HashMap<T, U> {
+    let mut merged = HashMap::new();
+    for (key, value) in a {
+        merged.insert(key, value);
+    }
+    for (key, value) in b {
+        merged.insert(key, value);
+    }
+
+    merged
 }
 
 #[cfg(test)]

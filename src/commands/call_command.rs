@@ -1,5 +1,5 @@
 use crate::commands::bindings::MatchBinding;
-use crate::common::get_params_from_path;
+use crate::common::{get_params_from_path, merge_hashmaps};
 use crate::config::{Endpoint, HtrsConfig, Service};
 use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::HtrsAction::MakeRequest;
@@ -90,6 +90,16 @@ impl CallServiceEndpointCommand {
             }
         };
 
+        let mut parameters = HashMap::new();
+        if let Some(preset_name) = &self.preset {
+            parameters = match config.get_preset(preset_name) {
+                Some(preset) => preset.values.clone(),
+                None => return Err(HtrsError::new(format!("No preset found with name `{}`", preset_name).as_str()))
+            }
+        }
+
+        parameters = merge_hashmaps(parameters, self.query_parameters.clone());
+
         let base_url = match Url::parse(format!("https://{}/", environment.host).as_str()) {
             Ok(url) => url,
             Err(e) => return Err(HtrsError::new(format!("Failed to build url from given host: {e}").as_str())),
@@ -102,7 +112,7 @@ impl CallServiceEndpointCommand {
 
         Ok(MakeRequest {
             url,
-            query_parameters: self.query_parameters.clone(),
+            query_parameters: parameters,
             method: Method::GET,
             headers: self.headers.clone(),
             show_body: self.show_body
@@ -217,8 +227,11 @@ fn build_path_from_template(path_template: &str, args: &ArgMatches) -> String {
 fn get_query_parameters_from_args(endpoint: &Endpoint, args: &ArgMatches) -> HashMap<String, String> {
     let mut query_parameters = HashMap::new();
     for parameter_name in &endpoint.query_parameters {
-        let parameter_value: String = args.bind_field(parameter_name.name.as_str());
-        query_parameters.insert(parameter_name.name.to_string(), parameter_value);
+        let parameter_value: Option<String> = args.bind_field(parameter_name.name.as_str());
+
+        if let Some(parameter_value) = parameter_value {
+            query_parameters.insert(parameter_name.name.to_string(), parameter_value);
+        }
     }
     query_parameters
 }
