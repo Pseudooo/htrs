@@ -88,4 +88,81 @@ mod call_command_preset_tests {
             .success();
         Ok(())
     }
+
+    #[test]
+    fn given_endpoint_with_path_param_when_call_with_preset_missing_param_then_should_fail() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_environment(
+                        EnvironmentBuilder::new()
+                            .with_name("foo_environment")
+                            .with_host("foo.com")
+                            .with_default()
+                    )
+                    .with_endpoint(
+                        EndpointBuilder::new()
+                            .with_name("foo_endpoint")
+                            .with_path("/my/{foo}/path")
+                    )
+            )
+            .with_preset(
+                PresetBuilder::new()
+                    .with_name("foo_preset")
+            )
+            .build();
+        let path = setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
+            .arg("call")
+            .arg("foo_service")
+            .arg("foo_endpoint")
+            .arg("--preset")
+            .arg("foo_preset")
+            .assert()
+            .failure()
+            .stdout("Parameter `foo` is required but not provided from parameters\n");
+        Ok(())
+    }
+
+    #[test]
+    fn given_endpoint_with_required_param_when_call_with_preset_missing_param_then_should_fail() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_environment(
+                        EnvironmentBuilder::new()
+                            .with_name("foo_environment")
+                            .with_host("foo.com")
+                            .with_default()
+                    )
+                    .with_endpoint(
+                        EndpointBuilder::new()
+                            .with_name("foo_endpoint")
+                            .with_path("/my/path")
+                            .with_query_param("foo", true)
+                    )
+            )
+            .with_preset(
+                PresetBuilder::new()
+                    .with_name("foo_preset")
+            )
+            .build();
+        let path = setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
+            .arg("call")
+            .arg("foo_service")
+            .arg("foo_endpoint")
+            .arg("--preset")
+            .arg("foo_preset")
+            .assert()
+            .failure()
+            .stdout("Preset was missing required arguments for endpoint: foo\n");
+        Ok(())
+    }
 }

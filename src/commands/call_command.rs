@@ -7,12 +7,13 @@ use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use reqwest::{Method, Url};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 pub struct CallServiceEndpointCommand {
     pub service_name: String,
     pub environment_name: Option<String>,
-    pub path: String,
-    pub query_parameters: HashMap<String, String>,
+    pub endpoint_name: String,
+    pub parameters: HashMap<String, String>,
     pub headers: HashMap<String, String>,
     pub show_body: bool,
     pub preset: Option<String>,
@@ -58,20 +59,24 @@ impl CallServiceEndpointCommand {
         let mut headers = config.headers.clone();
         merge(&mut headers, &service.headers);
 
-        let path = build_path_from_template(&endpoint.path_template, endpoint_matches);
-        let mut query_parameters = get_query_parameters_from_args(endpoint, endpoint_matches);
+        let mut parameters = get_query_parameters_from_args(endpoint, endpoint_matches);
+        for template_param in get_params_from_path(endpoint.path_template.as_str()) {
+            if let Some(value) = endpoint_matches.bind_field(&template_param) {
+                parameters.insert(template_param.clone(), value);
+            }
+        }
 
         let query_param_args: Vec<String> = endpoint_matches.bind_field("query_parameters");
         for query_param_arg in query_param_args {
             let (key, value) = parse_query_params_from_arg(query_param_arg.as_str())?;
-            query_parameters.insert(key, value);
+            parameters.insert(key, value);
         }
 
         Ok(CallServiceEndpointCommand {
             service_name: service_name.to_string(),
             environment_name,
-            path,
-            query_parameters,
+            endpoint_name: endpoint_name.to_string(),
+            parameters,
             headers,
             show_body: endpoint_matches.bind_field("show_body"),
             preset: endpoint_matches.bind_field("preset"),
@@ -80,6 +85,7 @@ impl CallServiceEndpointCommand {
 
     pub fn execute_command(&self, config: &HtrsConfig) -> Result<HtrsAction, HtrsError> {
         let service = config.get_service(&self.service_name).unwrap();
+        let endpoint = service.get_endpoint(self.endpoint_name.as_str()).unwrap();
         let environment = match &self.environment_name {
             Some(environment_name) => service.get_environment(environment_name).unwrap(),
             None => {
@@ -92,27 +98,36 @@ impl CallServiceEndpointCommand {
 
         let mut parameters = HashMap::new();
         if let Some(preset_name) = &self.preset {
-            parameters = match config.get_preset(preset_name) {
-                Some(preset) => preset.values.clone(),
-                None => return Err(HtrsError::new(format!("No preset found with name `{}`", preset_name).as_str()))
+            let Some(preset) = config.get_preset(preset_name) else {
+                return Err(HtrsError::new(&format!("No preset found with name `{}`", preset_name)));
+            };
+            parameters = preset.values.clone();
+        }
+
+        parameters = merge_hashmaps(parameters, self.parameters.clone());
+
+        let mut url = match Url::from_str(format!("http://{}/", environment.host).as_str()) {
+            Ok(url) => url,
+            Err(e) => return Err(HtrsError::new(&format!("Error creating url from host `{}`: {}", environment.host, e)))
+        };
+        url = match url.join(build_path_from_template(&endpoint.path_template, &parameters)?.as_str()) {
+            Ok(url) => url,
+            Err(e) => return Err(HtrsError::new(format!("Failed joining path to url `{}`: {}", endpoint.path_template, e).as_str()))
+        };
+
+        let mut query_parameters = HashMap::new();
+        for param in &endpoint.query_parameters {
+            let value = parameters.get(&param.name);
+            if value.is_none() && param.required {
+                return Err(HtrsError::new(&format!("Preset was missing required arguments for endpoint: {}", param.name)));
+            } else if let Some(value) = value {
+                query_parameters.insert(param.name.clone(), value.clone());
             }
         }
 
-        parameters = merge_hashmaps(parameters, self.query_parameters.clone());
-
-        let base_url = match Url::parse(format!("https://{}/", environment.host).as_str()) {
-            Ok(url) => url,
-            Err(e) => return Err(HtrsError::new(format!("Failed to build url from given host: {e}").as_str())),
-        };
-        let mut url = match base_url.join(self.path.as_str()) {
-            Ok(url) => url,
-            Err(e) => return Err(HtrsError::new(format!("Failed to build url for endpoint: {e}").as_str())),
-        };
-        url.set_scheme("http").unwrap();
-
         Ok(MakeRequest {
             url,
-            query_parameters: parameters,
+            query_parameters,
             method: Method::GET,
             headers: self.headers.clone(),
             show_body: self.show_body
@@ -213,15 +228,18 @@ fn parse_query_params_from_arg(arg: &str) -> Result<(String, String), HtrsBindin
     })
 }
 
-fn build_path_from_template(path_template: &str, args: &ArgMatches) -> String {
+fn build_path_from_template(path_template: &str, parameters: &HashMap<String, String>) -> Result<String, HtrsError> {
     let mut path: String = path_template.to_string();
     let template_value_names = get_params_from_path(path_template);
     for template_value_name in &template_value_names {
-        let template_value: String = args.bind_field(template_value_name);
+
+        let Some(template_value) = parameters.get(template_value_name) else {
+            return Err(HtrsError::new(format!("Parameter `{}` is required but not provided from parameters", template_value_name).as_str()));
+        };
         path = path.replace(&format!("{{{}}}", template_value_name.as_str()), &template_value)
     }
 
-    path
+    Ok(path)
 }
 
 fn get_query_parameters_from_args(endpoint: &Endpoint, args: &ArgMatches) -> HashMap<String, String> {
