@@ -2,6 +2,7 @@
 mod create_new_preset_tests {
     use crate::common::test_helpers::{clear_config, get_config, setup, HtrsConfigBuilder, PresetBuilder};
     use assert_cmd::Command;
+    use rstest::rstest;
     use std::error::Error;
 
     #[test]
@@ -35,8 +36,14 @@ mod create_new_preset_tests {
         Ok(())
     }
 
-    #[test]
-    fn given_create_new_preset_command_with_invalid_value_then_should_fail() -> Result<(), Box<dyn Error>> {
+    #[rstest]
+    #[case("foo")]
+    #[case("foo=")]
+    #[case("=")]
+    #[case("=foo")]
+    fn given_create_new_preset_command_with_invalid_value_then_should_fail(
+        #[case] param: &str
+    ) -> Result<(), Box<dyn Error>> {
         let path = setup(None);
 
         Command::cargo_bin("htrs")?
@@ -45,10 +52,10 @@ mod create_new_preset_tests {
             .arg("preset")
             .arg("foo_preset")
             .arg("--value")
-            .arg("foo")
+            .arg(param)
             .assert()
             .failure()
-            .stdout("Invalid preset value `foo`, should be in format `key=value`\n");
+            .stdout(format!("Invalid preset value `{}`, should be in format `key=value`\n", param));
 
         clear_config(&path);
         Ok(())
