@@ -15,6 +15,7 @@ pub struct CallServiceEndpointCommand {
     pub query_parameters: HashMap<String, String>,
     pub headers: HashMap<String, String>,
     pub show_body: bool,
+    pub preset: Option<String>,
 }
 
 impl CallServiceEndpointCommand {
@@ -73,6 +74,7 @@ impl CallServiceEndpointCommand {
             query_parameters,
             headers,
             show_body: endpoint_matches.bind_field("show_body"),
+            preset: endpoint_matches.bind_field("preset"),
         })
     }
 
@@ -156,6 +158,12 @@ fn get_command_for_endpoint(endpoint: &Endpoint) -> Command {
                 .required(false)
                 .num_args(0)
                 .long("body")
+        )
+        .arg(
+            Arg::new("preset")
+                .help("Use a preset to populate endpoint's parameters")
+                .long("preset")
+                .short('p')
         );
 
     let templated_params = get_params_from_path(&endpoint.path_template);
@@ -164,17 +172,20 @@ fn get_command_for_endpoint(endpoint: &Endpoint) -> Command {
             Arg::new(&templated_param)
                 .allow_hyphen_values(true)
                 .long(&templated_param)
-                .required(true)
+                .required_unless_present("preset")
         );
     }
 
     for param in &endpoint.query_parameters {
-        command = command.arg(
-            Arg::new(&param.name)
-                .allow_hyphen_values(true)
-                .long(&param.name)
-                .required(param.required)
-        );
+        let mut arg = Arg::new(&param.name)
+            .allow_hyphen_values(true)
+            .long(&param.name);
+
+        if param.required {
+            arg = arg.required_unless_present("preset");
+        }
+
+        command = command.arg(arg);
     }
 
     command
