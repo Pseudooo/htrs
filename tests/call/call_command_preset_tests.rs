@@ -45,7 +45,7 @@ mod call_command_preset_tests {
 
     #[test]
     fn given_known_endpoint_with_query_param_when_call_with_preset_then_should_succeed() -> Result<(), Box<dyn Error>> {
-        let server = SERVER_POOL.get_server();
+        let mut server = SERVER_POOL.get_server();
         server.expect(
             Expectation::matching(all_of![
                 request::path("/my/path"),
@@ -86,6 +86,9 @@ mod call_command_preset_tests {
             .arg("foo_preset")
             .assert()
             .success();
+
+        clear_config(&path);
+        server.verify_and_clear();
         Ok(())
     }
 
@@ -124,6 +127,8 @@ mod call_command_preset_tests {
             .assert()
             .failure()
             .stdout("Parameter `foo` is required but not provided from parameters\n");
+
+        clear_config(&path);
         Ok(())
     }
 
@@ -163,6 +168,8 @@ mod call_command_preset_tests {
             .assert()
             .failure()
             .stdout("Preset was missing required arguments for endpoint: foo\n");
+
+        clear_config(&path);
         Ok(())
     }
 }

@@ -10,7 +10,7 @@ mod call_command_tests {
 
     #[test]
     fn given_known_endpoint_with_no_params_when_call_then_should_succeed() -> Result<(), Box<dyn Error>> {
-        let server = SERVER_POOL.get_server();
+        let mut server = SERVER_POOL.get_server();
         server.expect(
             Expectation::matching(all_of![
                 request::method("GET"),
@@ -45,12 +45,13 @@ mod call_command_tests {
             .success();
 
         clear_config(&path);
+        server.verify_and_clear();
         Ok(())
     }
 
     #[test]
     fn given_known_endpoint_with_path_param_when_call_then_should_succeed() -> Result<(), Box<dyn Error>> {
-        let server = SERVER_POOL.get_server();
+        let mut server = SERVER_POOL.get_server();
         server.expect(
             Expectation::matching(all_of![
                 request::method("GET"),
@@ -87,12 +88,45 @@ mod call_command_tests {
             .success();
 
         clear_config(&path);
+        server.verify_and_clear();
+        Ok(())
+    }
+
+    #[test]
+    fn given_known_endpoint_with_required_param_when_call_then_should_fail() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_environment(
+                        EnvironmentBuilder::new()
+                            .with_name("foo_environment")
+                            .with_host("foo.com")
+                            .with_default()
+                    )
+                    .with_endpoint(
+                        EndpointBuilder::new()
+                            .with_name("foo_endpoint")
+                            .with_path("/my/path")
+                            .with_query_param("foo", true)
+                    )
+            )
+            .build();
+        let path = setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
+            .arg("call")
+            .arg("foo_service")
+            .arg("foo_endpoint")
+            .assert()
+            .failure();
         Ok(())
     }
 
     #[test]
     fn given_known_endpoint_with_query_param_when_call_then_should_succeed() -> Result<(), Box<dyn Error>> {
-        let server = SERVER_POOL.get_server();
+        let mut server = SERVER_POOL.get_server();
         server.expect(
             Expectation::matching(all_of![
                 request::path("/my/path"),
@@ -130,38 +164,7 @@ mod call_command_tests {
             .success();
 
         clear_config(&path);
-        Ok(())
-    }
-
-    #[test]
-    fn given_known_endpoint_with_required_param_when_call_then_should_fail() -> Result<(), Box<dyn Error>> {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                ServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_environment(
-                        EnvironmentBuilder::new()
-                            .with_name("foo_environment")
-                            .with_host("foo.com")
-                            .with_default()
-                    )
-                    .with_endpoint(
-                        EndpointBuilder::new()
-                            .with_name("foo_endpoint")
-                            .with_path("/my/path")
-                            .with_query_param("foo", true)
-                    )
-            )
-            .build();
-        let path = setup(Some(config));
-
-        Command::cargo_bin("htrs")?
-            .env("HTRS_CONFIG_PATH", &path)
-            .arg("call")
-            .arg("foo_service")
-            .arg("foo_endpoint")
-            .assert()
-            .failure();
+        server.verify_and_clear();
         Ok(())
     }
 }
