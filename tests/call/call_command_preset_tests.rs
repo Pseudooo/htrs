@@ -172,4 +172,55 @@ mod call_command_preset_tests {
         clear_config(&path);
         Ok(())
     }
+
+    #[test]
+    fn given_endpoint_with_required_param_when_call_with_preset_and_param_then_param_used() -> Result<(), Box<dyn Error>> {
+        let mut server = SERVER_POOL.get_server();
+        server.expect(
+            Expectation::matching(all_of![
+                request::path("/my/path"),
+                request::query(url_decoded(contains(("foo", "kek")))),
+            ]).respond_with(status_code(200)),
+        );
+        let config = HtrsConfigBuilder::new()
+            .with_service(
+                ServiceBuilder::new()
+                    .with_name("foo_service")
+                    .with_environment(
+                        EnvironmentBuilder::new()
+                            .with_name("foo_environment")
+                            .with_host(server.addr().to_string().as_str())
+                            .with_default()
+                    )
+                    .with_endpoint(
+                        EndpointBuilder::new()
+                            .with_name("foo_endpoint")
+                            .with_path("/my/path")
+                            .with_query_param("foo", true)
+                    )
+            )
+            .with_preset(
+                PresetBuilder::new()
+                    .with_name("foo_preset")
+                    .with_value("foo", "bar")
+            )
+            .build();
+        let path = setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
+            .arg("call")
+            .arg("foo_service")
+            .arg("foo_endpoint")
+            .arg("--preset")
+            .arg("foo_preset")
+            .arg("--foo")
+            .arg("kek")
+            .assert()
+            .success();
+
+        clear_config(&path);
+        server.verify_and_clear();
+        Ok(())
+    }
 }
