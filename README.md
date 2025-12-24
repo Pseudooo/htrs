@@ -265,21 +265,24 @@ Options:
 
 And for the endpoint will show:
 ```
-Usage: htrs.exe call example endpoint [OPTIONS] --path <path> --query <query>
+Usage: htrs.exe call example endpoint [OPTIONS]
 
 Options:
-  -e, --environment <environment name>  Environment to target, will use default environment if none specified
-  -q, --query-param <query param>       Set a query parameter for the request in the format `name=value`
-      --body                            Print the response body
-      --path <path>                     
-      --query <query>                   
-  -h, --help                            Print help
+  -e, --environment <environment>  Environment to target, will use default environment if none specified
+  -q, --query-param <query param>  Set a query parameter for the request in the format `name=value`
+      --body                       Print the response body
+  -p, --preset <preset>            Use a preset to populate endpoint's parameters
+      --path <path>                
+      --query <query>              
+  -h, --help                       Print help
 ```
 
 The `-q` or `--query-param` argument can be used to provide additional query parameters that aren't included in the template.
 If a query parameter that's provided with this argument has the same name as any defined in the endpoint it will override
 the value provided directly from the endpoint's corresponding argument.
 
+Providing a preset will make all other arguments non-required as they can be provided via the preset instead. If the preset
+is missing any required values then an error will still be raised, for more info on creating presets see [Presets](#presets)
 
 ## Headers
 
@@ -306,4 +309,42 @@ Options:
   -s, --service <service>          Service to target
   -e, --environment <environment>  Environment to target
   -h, --help                       Print help
+```
+
+## Presets
+
+A preset is just a collection of parameters that can be used when calling an endpoint instead of providing all the
+desired parameters every time
+
+### Creating a preset
+
+Create a new named preset
+
+```
+Create a new preset
+
+Usage: htrs.exe new preset --value <value> <name>
+
+Arguments:
+  <name>  The preset name
+
+Options:
+  -v, --value <value>  A parameter value to be included in the preset, should be given in format <key>=<value>
+  -h, --help           Print help
+```
+
+### Deleting a preset
+
+Delete an existing preset
+
+```
+Delete an existing preset
+
+Usage: htrs.exe delete preset <name>
+
+Arguments:
+  <name>  The name of the preset to delete
+
+Options:
+  -h, --help  Print help
 ```

@@ -3,7 +3,7 @@ mod config;
 
 #[cfg(test)]
 pub mod test_helpers {
-    use crate::common::config::{Endpoint, Environment, HtrsConfig, QueryParameter, Service};
+    use crate::common::config::{Endpoint, Environment, HtrsConfig, Preset, QueryParameter, Service};
     use std::collections::HashMap;
     use std::fs::{remove_file, File, OpenOptions};
     use std::path::PathBuf;
@@ -39,6 +39,7 @@ pub mod test_helpers {
 
     pub struct HtrsConfigBuilder {
         pub services: Vec<Service>,
+        pub presets: Vec<Preset>,
         pub headers: HashMap<String, String>,
     }
 
@@ -48,6 +49,11 @@ pub mod test_helpers {
         pub endpoints: Vec<Endpoint>,
         pub environments: Vec<Environment>,
         pub headers: HashMap<String, String>,
+    }
+
+    pub struct PresetBuilder {
+        pub name: Option<String>,
+        pub values: HashMap<String, String>,
     }
 
     pub struct EndpointBuilder {
@@ -68,12 +74,18 @@ pub mod test_helpers {
         pub fn new() -> Self {
             Self {
                 services: vec![],
+                presets: vec![],
                 headers: HashMap::new(),
             }
         }
 
         pub fn with_service(mut self, builder: ServiceBuilder) -> Self {
             self.services.push(builder.build());
+            self
+        }
+
+        pub fn with_preset(mut self, builder: PresetBuilder) -> Self {
+            self.presets.push(builder.build());
             self
         }
 
@@ -86,6 +98,7 @@ pub mod test_helpers {
             HtrsConfig {
                 services: self.services,
                 headers: self.headers,
+                presets: self.presets,
             }
         }
     }
@@ -133,6 +146,32 @@ pub mod test_helpers {
                 headers: self.headers,
                 endpoints: self.endpoints,
                 environments: self.environments,
+            }
+        }
+    }
+
+    impl PresetBuilder {
+        pub fn new() -> Self {
+            Self {
+                name: None,
+                values: HashMap::new(),
+            }
+        }
+
+        pub fn with_name(mut self, name: &str) -> Self {
+            self.name = Some(name.to_string());
+            self
+        }
+
+        pub fn with_value(mut self, key: &str, value: &str) -> Self {
+            self.values.insert(key.to_string(), value.to_string());
+            self
+        }
+
+        pub fn build(self) -> Preset {
+            Preset {
+                name: self.name.unwrap(),
+                values: self.values,
             }
         }
     }

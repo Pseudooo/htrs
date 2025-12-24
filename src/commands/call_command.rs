@@ -1,20 +1,22 @@
 use crate::commands::bindings::MatchBinding;
-use crate::common::get_params_from_path;
-use crate::config::{Endpoint, HtrsConfig};
+use crate::common::{get_params_from_path, merge_hashmaps};
+use crate::config::{Endpoint, HtrsConfig, Service};
 use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use reqwest::{Method, Url};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 pub struct CallServiceEndpointCommand {
     pub service_name: String,
     pub environment_name: Option<String>,
-    pub path: String,
-    pub query_parameters: HashMap<String, String>,
+    pub endpoint_name: String,
+    pub parameters: HashMap<String, String>,
     pub headers: HashMap<String, String>,
     pub show_body: bool,
+    pub preset: Option<String>,
 }
 
 impl CallServiceEndpointCommand {
@@ -32,69 +34,7 @@ impl CallServiceEndpointCommand {
             .arg_required_else_help(true);
 
         for service in &config.services {
-            let mut service_command = Command::new(service.name.clone())
-                .arg_required_else_help(true)
-
-                .arg(
-                    Arg::new("environment")
-                        .value_name("environment name")
-                        .required(false)
-                        .help("Environment to target, will use default environment if none specified")
-                        .long("environment")
-                        .short('e')
-                );
-            if let Some(alias) = &service.alias {
-                service_command = service_command.visible_alias(alias);
-            }
-
-            for endpoint in &service.endpoints {
-                let mut endpoint_command = Command::new(endpoint.name.clone())
-                    .arg(
-                        Arg::new("environment")
-                            .value_name("environment name")
-                            .required(false)
-                            .help("Environment to target, will use default environment if none specified")
-                            .long("environment")
-                            .short('e')
-                    )
-                    .arg(
-                        Arg::new("query_parameters")
-                            .value_name("query param")
-                            .help("Set a query parameter for the request in the format `name=value`")
-                            .required(false)
-                            .action(ArgAction::Append)
-                            .long("query-param")
-                            .short('q')
-                    )
-                    .arg(
-                        Arg::new("show_body")
-                            .help("Print the response body")
-                            .required(false)
-                            .num_args(0)
-                            .long("body")
-                    );
-
-                let templated_params = get_params_from_path(&endpoint.path_template);
-                for templated_param in templated_params {
-                    endpoint_command = endpoint_command.arg(
-                        Arg::new(&templated_param)
-                            .allow_hyphen_values(true)
-                            .long(&templated_param)
-                            .required(true)
-                    );
-                }
-
-                for param in &endpoint.query_parameters {
-                    endpoint_command = endpoint_command.arg(
-                        Arg::new(&param.name)
-                            .allow_hyphen_values(true)
-                            .long(&param.name)
-                            .required(param.required)
-                    )
-                }
-                service_command = service_command.subcommand(endpoint_command);
-            }
-            command = command.subcommand(service_command);
+            command = command.subcommand(get_command_for_service(service));
         }
 
         command
@@ -119,27 +59,33 @@ impl CallServiceEndpointCommand {
         let mut headers = config.headers.clone();
         merge(&mut headers, &service.headers);
 
-        let path = build_path_from_template(&endpoint.path_template, endpoint_matches);
-        let mut query_parameters = get_query_parameters_from_args(endpoint, endpoint_matches);
+        let mut parameters = get_query_parameters_from_args(endpoint, endpoint_matches);
+        for template_param in get_params_from_path(endpoint.path_template.as_str()) {
+            if let Some(value) = endpoint_matches.bind_field(&template_param) {
+                parameters.insert(template_param.clone(), value);
+            }
+        }
 
         let query_param_args: Vec<String> = endpoint_matches.bind_field("query_parameters");
         for query_param_arg in query_param_args {
             let (key, value) = parse_query_params_from_arg(query_param_arg.as_str())?;
-            query_parameters.insert(key, value);
+            parameters.insert(key, value);
         }
 
         Ok(CallServiceEndpointCommand {
             service_name: service_name.to_string(),
             environment_name,
-            path,
-            query_parameters,
+            endpoint_name: endpoint_name.to_string(),
+            parameters,
             headers,
             show_body: endpoint_matches.bind_field("show_body"),
+            preset: endpoint_matches.bind_field("preset"),
         })
     }
 
     pub fn execute_command(&self, config: &HtrsConfig) -> Result<HtrsAction, HtrsError> {
         let service = config.get_service(&self.service_name).unwrap();
+        let endpoint = service.get_endpoint(self.endpoint_name.as_str()).unwrap();
         let environment = match &self.environment_name {
             Some(environment_name) => service.get_environment(environment_name).unwrap(),
             None => {
@@ -150,23 +96,124 @@ impl CallServiceEndpointCommand {
             }
         };
 
-        let base_url = match Url::parse(format!("https://{}/", environment.host).as_str()) {
+        let mut parameters = HashMap::new();
+        if let Some(preset_name) = &self.preset {
+            let Some(preset) = config.get_preset(preset_name) else {
+                return Err(HtrsError::new(&format!("No preset found with name `{}`", preset_name)));
+            };
+            parameters = preset.values.clone();
+        }
+
+        parameters = merge_hashmaps(parameters, self.parameters.clone());
+
+        let mut url = match Url::from_str(format!("http://{}/", environment.host).as_str()) {
             Ok(url) => url,
-            Err(e) => return Err(HtrsError::new(format!("Failed to build url from given host: {e}").as_str())),
+            Err(e) => return Err(HtrsError::new(&format!("Error creating url from host `{}`: {}", environment.host, e)))
         };
-        let url = match base_url.join(self.path.as_str()) {
+        url = match url.join(build_path_from_template(&endpoint.path_template, &parameters)?.as_str()) {
             Ok(url) => url,
-            Err(e) => return Err(HtrsError::new(format!("Failed to build url for endpoint: {e}").as_str())),
+            Err(e) => return Err(HtrsError::new(format!("Failed joining path to url `{}`: {}", endpoint.path_template, e).as_str()))
         };
+
+        let mut query_parameters = HashMap::new();
+        for param in &endpoint.query_parameters {
+            let value = parameters.get(&param.name);
+            if value.is_none() && param.required {
+                return Err(HtrsError::new(&format!("Preset was missing required arguments for endpoint: {}", param.name)));
+            } else if let Some(value) = value {
+                query_parameters.insert(param.name.clone(), value.clone());
+            }
+        }
 
         Ok(MakeRequest {
             url,
-            query_parameters: self.query_parameters.clone(),
+            query_parameters,
             method: Method::GET,
             headers: self.headers.clone(),
             show_body: self.show_body
         })
     }
+}
+
+fn get_command_for_service(service: &Service) -> Command {
+    let mut command = Command::new(service.name.clone())
+        .arg_required_else_help(true)
+        .arg(
+            Arg::new("environment")
+                .value_name("environment name")
+                .required(false)
+                .help("Environment to target, will use default environment if none specified")
+                .long("environment")
+                .short('e')
+        );
+
+    if let Some(alias) = &service.alias {
+        command = command.visible_alias(alias);
+    }
+
+    for endpoint in &service.endpoints {
+        command = command.subcommand(get_command_for_endpoint(endpoint));
+    }
+
+    command
+}
+
+fn get_command_for_endpoint(endpoint: &Endpoint) -> Command {
+    let mut command = Command::new(endpoint.name.clone())
+        .arg(
+            Arg::new("environment")
+                .value_name("environment")
+                .required(false)
+                .help("Environment to target, will use default environment if none specified")
+                .long("environment")
+                .short('e')
+        )
+        .arg(
+            Arg::new("query_parameters")
+                .value_name("query param")
+                .help("Set a query parameter for the request in the format `name=value`")
+                .required(false)
+                .action(ArgAction::Append)
+                .long("query-param")
+                .short('q')
+        )
+        .arg(
+            Arg::new("show_body")
+                .help("Print the response body")
+                .required(false)
+                .num_args(0)
+                .long("body")
+        )
+        .arg(
+            Arg::new("preset")
+                .help("Use a preset to populate endpoint's parameters")
+                .long("preset")
+                .short('p')
+        );
+
+    let templated_params = get_params_from_path(&endpoint.path_template);
+    for templated_param in templated_params {
+        command = command.arg(
+            Arg::new(&templated_param)
+                .allow_hyphen_values(true)
+                .long(&templated_param)
+                .required_unless_present("preset")
+        );
+    }
+
+    for param in &endpoint.query_parameters {
+        let mut arg = Arg::new(&param.name)
+            .allow_hyphen_values(true)
+            .long(&param.name);
+
+        if param.required {
+            arg = arg.required_unless_present("preset");
+        }
+
+        command = command.arg(arg);
+    }
+
+    command
 }
 
 fn parse_query_params_from_arg(arg: &str) -> Result<(String, String), HtrsBindingError> {
@@ -181,22 +228,28 @@ fn parse_query_params_from_arg(arg: &str) -> Result<(String, String), HtrsBindin
     })
 }
 
-fn build_path_from_template(path_template: &str, args: &ArgMatches) -> String {
+fn build_path_from_template(path_template: &str, parameters: &HashMap<String, String>) -> Result<String, HtrsError> {
     let mut path: String = path_template.to_string();
     let template_value_names = get_params_from_path(path_template);
     for template_value_name in &template_value_names {
-        let template_value: String = args.bind_field(template_value_name);
-        path = path.replace(&format!("{{{}}}", template_value_name.as_str()), &template_value)
+
+        let Some(template_value) = parameters.get(template_value_name) else {
+            return Err(HtrsError::new(format!("Parameter `{}` is required but not provided from parameters", template_value_name).as_str()));
+        };
+        path = path.replace(&format!("{{{}}}", template_value_name.as_str()), template_value)
     }
 
-    path
+    Ok(path)
 }
 
 fn get_query_parameters_from_args(endpoint: &Endpoint, args: &ArgMatches) -> HashMap<String, String> {
     let mut query_parameters = HashMap::new();
     for parameter_name in &endpoint.query_parameters {
-        let parameter_value: String = args.bind_field(parameter_name.name.as_str());
-        query_parameters.insert(parameter_name.name.to_string(), parameter_value);
+        let parameter_value: Option<String> = args.bind_field(parameter_name.name.as_str());
+
+        if let Some(parameter_value) = parameter_value {
+            query_parameters.insert(parameter_name.name.to_string(), parameter_value);
+        }
     }
     query_parameters
 }
@@ -204,263 +257,5 @@ fn get_query_parameters_from_args(endpoint: &Endpoint, args: &ArgMatches) -> Has
 fn merge(into: &mut HashMap<String, String>, from: &HashMap<String, String>) {
     for (k, v) in from.iter() {
         into.insert(k.to_string(), v.to_string());
-    }
-}
-
-#[cfg(test)]
-mod call_command_execution_tests {
-    use super::*;
-    use crate::commands::RootCommand;
-    use crate::commands::RootCommand::Call;
-    use crate::test_helpers::{HtrsConfigBuilder, HtrsServiceBuilder};
-    use clap::Error;
-    use rstest::rstest;
-
-    pub fn get_matches(config: &HtrsConfig, args: Vec<&str>) -> Result<ArgMatches, Error> {
-        let command = RootCommand::get_command(&config);
-        command.try_get_matches_from(args)
-    }
-
-    #[rstest]
-    #[case(true)]
-    #[case(false)]
-    fn given_service_with_known_endpoint_when_no_parameters_then_parse_and_map(
-        #[case] print_body: bool
-    ) {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                HtrsServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/path", vec![])
-            )
-            .build();
-        let mut args = vec!["htrs", "call", "foo_service", "foo_endpoint"];
-        if print_body {
-            args.push("--body")
-        }
-
-        let matches_result = get_matches(&config, args);
-        assert!(matches_result.is_ok(), "Failed to get matches from arguments: {}", matches_result.unwrap_err());
-        let result = RootCommand::bind_from_matches(&matches_result.unwrap(), &config);
-        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
-
-        let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommand::Call");
-        };
-        assert_eq!(command.service_name, "foo_service");
-        assert_eq!(command.environment_name, None);
-        assert_eq!(command.path.as_str(), "/my/path");
-        assert_eq!(command.query_parameters.len(), 0);
-        assert_eq!(command.show_body, print_body);
-    }
-
-    #[test]
-    fn given_service_with_known_endpoint_when_required_path_template_parameters_provided_then_parse_and_map() {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                HtrsServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/templated/path/{template_param}", vec![])
-            )
-            .build();
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--template_param", "foo_value"];
-
-        let matches = get_matches(&config, args);
-        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
-        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
-
-        let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommand::Call");
-        };
-        assert_eq!(command.service_name, "foo_service");
-        assert_eq!(command.environment_name, None);
-        assert_eq!(command.path.as_str(), "/my/templated/path/foo_value");
-        assert_eq!(command.query_parameters.len(), 0);
-    }
-
-    #[test]
-    fn given_service_with_known_environment_when_call_environment_then_should_parse_and_map() {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                HtrsServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_environment("foo_environment", None, "host.com", false)
-                    .with_endpoint("foo_endpoint", "/my/path", vec![])
-            )
-            .build();
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--environment", "foo_environment"];
-
-        let matches = get_matches(&config, args);
-        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
-        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
-
-        let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommand::Call");
-        };
-        assert_eq!(command.service_name, "foo_service");
-        assert_eq!(command.environment_name, Some("foo_environment".to_string()));
-        assert_eq!(command.path.as_str(), "/my/path");
-        assert_eq!(command.query_parameters.len(), 0);
-    }
-
-    #[test]
-    fn given_service_with_known_endpoint_when_required_path_params_not_provided_then_should_error() {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                HtrsServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/templated/path/{template_param}", vec![])
-            )
-            .build();
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint"];
-
-        let result = get_matches(&config, args);
-        assert!(result.is_err(), "Result was not an error");
-    }
-
-    #[test]
-    fn given_service_with_known_endpoint_when_required_query_params_provided_then_parse_and_map() {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                HtrsServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/path", vec!["foo_query_param"])
-            )
-            .build();
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--foo_query_param", "foo_value"];
-
-        let matches = get_matches(&config, args);
-        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
-        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
-
-        let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommand::Call");
-        };
-        assert_eq!(command.service_name, "foo_service");
-        assert_eq!(command.environment_name, None);
-        assert_eq!(command.path.as_str(), "/my/path");
-        assert_eq!(command.query_parameters.len(), 1);
-        assert!(command.query_parameters.contains_key("foo_query_param"), "Query parameters did not contain expected value");
-        assert_eq!(command.query_parameters["foo_query_param"], "foo_value");
-    }
-
-    #[test]
-    fn given_service_with_known_endpoint_when_required_query_params_not_provided_then_parse_and_map() {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                HtrsServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/path", vec!["*foo_query_param"])
-            )
-            .build();
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint"];
-
-        let result = get_matches(&config, args);
-        assert!(result.is_err(), "Result was not an error");
-    }
-
-    #[test]
-    fn given_service_with_known_endpoint_when_query_params_provided_then_parse_and_map() {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                HtrsServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/path", vec![])
-            )
-            .build();
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--query-param", "param1=value1", "-q", "param2=value2"];
-
-        let matches = get_matches(&config, args);
-        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
-        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
-
-        let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommand::Call");
-        };
-        assert_eq!(command.service_name, "foo_service");
-        assert_eq!(command.environment_name, None);
-        assert_eq!(command.path.as_str(), "/my/path");
-        assert_eq!(command.query_parameters.len(), 2);
-        assert_eq!(command.query_parameters["param1"], "value1");
-        assert_eq!(command.query_parameters["param2"], "value2");
-    }
-
-    #[rstest]
-    #[case("foo")]
-    #[case("=")]
-    #[case("foo=")]
-    #[case("=foo")]
-    fn given_service_with_known_endpoint_when_invalid_query_params_provided_then_error(
-        #[case] query_param: &str,
-    ) {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                HtrsServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/path", vec![])
-            )
-            .build();
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--query-param", query_param];
-
-        let matches = get_matches(&config, args);
-        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
-        assert!(result.is_err(), "Matches binding result was not an error");
-    }
-
-    #[test]
-    fn given_known_service_and_endpoint_when_pass_hypen_prefixed_path_parameter_then_should_parse_and_map() {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                HtrsServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/{path}", vec![])
-            )
-            .build();
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--path", "-foo"];
-
-        let matches = get_matches(&config, args);
-        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
-        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
-
-        let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommand::Call");
-        };
-        assert_eq!(command.service_name, "foo_service");
-        assert_eq!(command.environment_name, None);
-        assert_eq!(command.path.as_str(), "/my/-foo");
-        assert_eq!(command.query_parameters.len(), 0);
-    }
-
-    #[test]
-    fn given_known_service_and_endpoint_when_pass_hyphen_prefixed_query_parameter_then_should_parse_and_map() {
-        let config = HtrsConfigBuilder::new()
-            .with_service(
-                HtrsServiceBuilder::new()
-                    .with_name("foo_service")
-                    .with_endpoint("foo_endpoint", "/my/path", vec!["param"])
-            )
-            .build();
-        let args = vec!["htrs", "call", "foo_service", "foo_endpoint", "--param", "-foo"];
-
-        let matches = get_matches(&config, args);
-        assert!(matches.is_ok(), "Failed to get matches from arguments: {}", matches.err().unwrap());
-        let result = RootCommand::bind_from_matches(&matches.unwrap(), &config);
-        assert!(result.is_ok(), "Failed to bind from matches: {}", result.err().unwrap());
-
-        let Call(command) = result.unwrap() else {
-            panic!("Parsed command was not RootCommand::Call");
-        };
-        assert_eq!(command.service_name, "foo_service");
-        assert_eq!(command.environment_name, None);
-        assert_eq!(command.path.as_str(), "/my/path");
-        assert_eq!(command.query_parameters.len(), 1);
-        assert!(command.query_parameters.contains_key("param"), "Query parameters did not contain expected key");
-        assert_eq!(command.query_parameters["param"], "-foo");
     }
 }
