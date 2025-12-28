@@ -36,11 +36,11 @@ impl DeleteEndpointCommand {
 
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
         let Some(service) = config.get_service_mut(&self.service) else {
-            return Err(HtrsError::new(format!("No service could be found with name or alias `{}`", self.service).as_str()));
+            return Err(HtrsError::aliased_item_not_found("service", self.service.as_str()));
         };
         match service.remove_endpoint(&self.name) {
             true => Ok(UpdateConfig),
-            false => Err(HtrsError::new(format!("No endpoint could be found with name `{}` for service `{}`", self.name, service.name).as_str()))
+            false => Err(HtrsError::item_not_found("endpoint", self.name.as_str()))
         }
     }
 }

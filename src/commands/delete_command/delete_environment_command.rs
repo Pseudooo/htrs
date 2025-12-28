@@ -37,11 +37,11 @@ impl DeleteEnvironmentCommand {
 
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
         let Some(service) = config.get_service_mut(&self.service) else {
-            return Err(HtrsError::new(format!("No service could be found with name or alias `{}`", self.service).as_str()))
+            return Err(HtrsError::aliased_item_not_found("service", self.service.as_str()));
         };
         match service.remove_environment(&self.name) {
             true => Ok(UpdateConfig),
-            false => Err(HtrsError::new(format!("No environment could be found with name or alias `{}`", self.name).as_str()))
+            false => Err(HtrsError::aliased_item_not_found("environment", self.name.as_str()))
         }
     }
 }
