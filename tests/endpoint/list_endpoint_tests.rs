@@ -1,7 +1,8 @@
 
 #[cfg(test)]
 mod list_endpoint_tests {
-    use crate::common::test_helpers::{clear_config, setup, EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::builders::{EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, setup};
     use assert_cmd::Command;
     use std::error::Error;
 

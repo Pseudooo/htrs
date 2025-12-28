@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod create_new_service_tests {
-    use crate::common::test_helpers::{clear_config, get_config, setup, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::builders::{HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config, setup};
     use assert_cmd::prelude::{CommandCargoExt, OutputAssertExt};
     use rstest::rstest;
     use std::error::Error;

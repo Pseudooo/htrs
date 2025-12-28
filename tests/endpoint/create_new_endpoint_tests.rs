@@ -1,5 +1,6 @@
 mod create_new_endpoint_tests {
-    use crate::common::test_helpers::{clear_config, get_config, setup, EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::builders::{EndpointBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config, setup};
     use assert_cmd::Command;
     use rstest::rstest;
     use std::error::Error;

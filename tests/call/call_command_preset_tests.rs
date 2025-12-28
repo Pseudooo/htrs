@@ -1,5 +1,6 @@
 mod call_command_preset_tests {
-    use crate::common::test_helpers::{clear_config, setup, EndpointBuilder, EnvironmentBuilder, HtrsConfigBuilder, PresetBuilder, ServiceBuilder};
+    use crate::common::builders::{EndpointBuilder, EnvironmentBuilder, HtrsConfigBuilder, PresetBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, setup};
     use assert_cmd::Command;
     use httptest::matchers::{contains, request, url_decoded};
     use httptest::responders::status_code;
