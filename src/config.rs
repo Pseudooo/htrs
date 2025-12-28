@@ -146,6 +146,10 @@ impl HtrsConfig {
         self.presets.iter().find(|p| p.name == name)
     }
 
+    pub fn get_preset_mut(&mut self, name: &str) -> Option<&mut Preset> {
+        self.presets.iter_mut().find(|p| p.name == name)
+    }
+
     pub fn remove_preset(&mut self, name: &str) -> bool {
         let init_length = self.presets.len();
         self.presets.retain(|preset| preset.name != name);

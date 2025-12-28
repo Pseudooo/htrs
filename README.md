@@ -10,6 +10,7 @@ HTTP CLI for calling services across multiple environments
 - [Endpoints](#endpoints)
 - [Calling a Service](#calling-a-service)
 - [Headers](#headers)
+- [Presets](#presets)
 
 ## Quickstart
 
@@ -347,4 +348,23 @@ Arguments:
 
 Options:
   -h, --help  Print help
+```
+
+### Editing a preset
+
+Existing presets can be edited in place by adding, replacing or removing values defined within them.
+
+Use `--set` to edit or create parameters, use `--clear` to remove existing ones.
+
+```
+Usage: htrs.exe edit preset [OPTIONS] <name>
+
+Arguments:
+  <name>  The name of the preset to edit
+
+Options:
+      --new-name <new-name>  New name of the preset
+  -s, --set <set>            Set a parameter value in the format `key=value`
+  -c, --clear <clear>        Clear an existing parameter value by name
+  -h, --help                 Print help
 ```
