@@ -12,7 +12,6 @@ pub mod v1config {
     #[derive(Serialize, Deserialize, Clone)]
     pub struct PresetV1 {
         pub name: String,
-        pub alias: Option<String>,
         pub values: HashMap<String, String>,
     }
 
