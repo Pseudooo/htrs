@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 pub struct NewPresetCommand {
     pub name: String,
+    pub alias: Option<String>,
     pub values: Vec<String>,
 }
 
@@ -21,6 +22,13 @@ impl NewPresetCommand {
                     .required(true)
             )
             .arg(
+                Arg::new("alias")
+                    .help("Alias for the preset")
+                    .required(false)
+                    .long("alias")
+                    .short('a')
+            )
+            .arg(
                 Arg::new("value")
                     .help("A parameter value to be included in the preset, should be given in format <key>=<value>")
                     .long("value")
@@ -33,13 +41,17 @@ impl NewPresetCommand {
     pub fn bind_from_matches(args: &ArgMatches) -> NewPresetCommand {
         NewPresetCommand {
             name: args.bind_field("name"),
+            alias: args.bind_field("alias"),
             values: args.bind_field("value"),
         }
     }
 
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
         if config.get_preset(self.name.as_str()).is_some() {
-            return Err(HtrsError::new(format!("A preset with name `{}` already exists", self.name).as_str()));
+            return Err(HtrsError::new(format!("A preset with name or alias `{}` already exists", self.name).as_str()));
+        }
+        if self.alias.is_some() && config.get_preset(self.alias.as_ref().unwrap()).is_some() {
+            return Err(HtrsError::new(format!("A preset with name or alias `{}` already exists", self.alias.as_ref().unwrap()).as_str()));
         }
 
         let mut values = HashMap::new();
@@ -53,7 +65,7 @@ impl NewPresetCommand {
 
         config.presets.push(Preset {
             name: self.name.to_string(),
-            alias: None,
+            alias: self.alias.clone(),
             values,
         });
         Ok(HtrsAction::UpdateConfig)

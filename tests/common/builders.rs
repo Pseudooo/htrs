@@ -138,6 +138,7 @@ impl PresetBuilder {
     pub fn build(self) -> Preset {
         Preset {
             name: self.name.unwrap(),
+            alias: None,
             values: self.values,
         }
     }
