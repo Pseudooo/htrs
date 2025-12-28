@@ -1,33 +1,15 @@
 pub mod current_config;
+mod versioned_config;
+mod util;
 
 use crate::config::current_config::{Endpoint, Environment, HtrsConfig, Preset, QueryParameter, Service};
+use crate::config::util::get_config_path;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
-use std::path::PathBuf;
 
 impl HtrsConfig {
-    /// Generate the path to the configration file, using the directory
-    /// of the executable as the base path.
-    fn config_path() -> Result<PathBuf, String> {
-        if let Ok(path) = std::env::var("HTRS_CONFIG_PATH") {
-            return Ok(PathBuf::from(path));
-        }
-
-        let exe_path = match std::env::current_exe() {
-            Ok(path) => path,
-            Err(e) => return Err(e.to_string())
-        };
-
-        let directory = match exe_path.parent() {
-            Some(path) => path,
-            None => return Err(format!("No parent directory could be found for path `{}`", exe_path.display())),
-        };
-
-        Ok(directory.join("config.json"))
-    }
-
     pub fn load() -> Result<HtrsConfig, String> {
-        let config_path = Self::config_path()?;
+        let config_path = get_config_path()?;
         if !config_path.exists() {
             return Ok(HtrsConfig::new());
         }
@@ -44,7 +26,7 @@ impl HtrsConfig {
     }
 
     pub fn save(self) -> Result<(), String> {
-        let config_path = Self::config_path()?;
+        let config_path = get_config_path()?;
 
         let mut file = match OpenOptions::new()
             .create(true)

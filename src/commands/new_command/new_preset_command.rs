@@ -53,6 +53,7 @@ impl NewPresetCommand {
 
         config.presets.push(Preset {
             name: self.name.to_string(),
+            alias: None,
             values,
         });
         Ok(HtrsAction::UpdateConfig)

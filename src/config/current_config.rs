@@ -11,6 +11,7 @@ pub struct HtrsConfig {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Preset {
     pub name: String,
+    pub alias: Option<String>,
     pub values: HashMap<String, String>,
 }
 
