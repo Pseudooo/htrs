@@ -79,7 +79,11 @@ impl EditPresetCommand {
             preset.values.insert(key.clone(), value.clone());
         }
         for key in &self.clear_values {
-            preset.values.remove(key.as_str());
+            if preset.values.contains_key(key) {
+                preset.values.remove(key.as_str());
+            } else {
+                return Err(HtrsError::new(format!("Preset `{}` has no parameter `{}`", preset.name, key).as_str()));
+            }
         }
 
         Ok(HtrsAction::UpdateConfig)
