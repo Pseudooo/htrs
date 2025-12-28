@@ -1,5 +1,6 @@
-use crate::config::current_config::{Endpoint, Environment, HtrsConfig, Preset, QueryParameter, Service};
+use crate::config::current_config::HtrsConfig;
 use crate::config::util::get_config_path;
+use crate::config::versioned_config::migrations::migrate_v1_to_v2::migrate_v1_to_v2;
 use crate::config::versioned_config::versioned_htrs_config::VersionedHtrsConfig::{V1, V2};
 use crate::config::versioned_config::versions::v1::v1config::HtrsConfigV1;
 use serde::{Deserialize, Serialize};
@@ -55,62 +56,13 @@ impl VersionedHtrsConfig {
         }
     }
 
-    fn migrate_config(&self) -> HtrsConfig {
+    fn migrate_config(self) -> HtrsConfig {
         match self {
             V1(v1_config) => {
-                let v2_config = HtrsConfig {
-                    services: v1_config.services.iter()
-                        .map(|v1_service| {
-                            Service {
-                                name: v1_service.name.clone(),
-                                alias: v1_service.alias.clone(),
-                                environments: v1_service.environments.iter()
-                                    .map(|v1_env| {
-                                        Environment {
-                                            name: v1_env.name.clone(),
-                                            alias: v1_env.alias.clone(),
-                                            host: v1_env.host.clone(),
-                                            headers: v1_env.headers.clone(),
-                                            default: v1_env.default,
-                                        }
-                                    })
-                                    .collect(),
-                                endpoints: v1_service.endpoints.iter()
-                                    .map(|v1_endpoint| {
-                                        Endpoint {
-                                            name: v1_endpoint.name.clone(),
-                                            path_template: v1_endpoint.path_template.clone(),
-                                            query_parameters: v1_endpoint.query_parameters.iter()
-                                                .map(|v1_query_param| {
-                                                    QueryParameter {
-                                                        name: v1_query_param.name.clone(),
-                                                        required: v1_query_param.required
-                                                    }
-                                                })
-                                                .collect(),
-                                        }
-                                    })
-                                    .collect(),
-                                headers: v1_service.headers.clone(),
-                            }
-                        })
-                        .collect(),
-                    presets: v1_config.presets.iter()
-                        .map(|v1_preset| {
-                            Preset {
-                                name: v1_preset.name.clone(),
-                                alias: None,
-                                values: v1_preset.values.clone(),
-                            }
-                        })
-                        .collect(),
-                    headers: v1_config.headers.clone(),
-                };
-
-                v2_config
+                migrate_v1_to_v2(v1_config)
             },
             V2(v2_config) => {
-                v2_config.clone()
+                v2_config
             }
         }
     }
