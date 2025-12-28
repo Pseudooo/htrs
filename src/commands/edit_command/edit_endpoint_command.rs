@@ -69,16 +69,16 @@ impl EditEndpointCommand {
     }
 
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
-        let Some(service) = config.get_service_mut(&self.service) else {
-            return Err(HtrsError::new(format!("No service could be found with name or alias `{}`", self.service).as_str()))
+        let Some(service) = config.get_service_mut(self.service.as_str()) else {
+            return Err(HtrsError::aliased_item_not_found("service", self.service.as_str()));
         };
-        if service.get_endpoint(&self.name).is_none() {
-            return Err(HtrsError::new(format!("No endpoint could be found with name `{}` for service `{}`", self.name, service.name).as_str()));
+        if service.get_endpoint(self.name.as_str()).is_none() {
+            return Err(HtrsError::item_not_found("endpoint", self.name.as_str()));
         }
 
         if let Some(new_name) = &self.new_name {
             if service.get_endpoint(new_name).is_some() {
-                return Err(HtrsError::new(format!("An endpoint already exists with name `{}` for service `{}`", new_name, service.name).as_str()));
+                return Err(HtrsError::item_already_exists("endpoint", new_name));
             }
         };
 

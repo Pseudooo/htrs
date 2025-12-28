@@ -50,17 +50,17 @@ impl DeleteHeaderCommand {
 
             (Some(service_name), None) => {
                 let Some(service) = config.get_service_mut(service_name) else {
-                    return Err(HtrsError::new(format!("Unable to find service with name or alias `{}`", service_name).as_str()))
+                    return Err(HtrsError::aliased_item_not_found("service", service_name));
                 };
                 service
             },
 
             (Some(service_name), Some(environment_name)) => {
                 let Some(service) = config.get_service_mut(service_name) else {
-                    return Err(HtrsError::new(format!("Unable to find service with name or alias `{}`", service_name).as_str()))
+                    return Err(HtrsError::aliased_item_not_found("service", service_name));
                 };
                 let Some(environment) = service.get_environment_mut(environment_name) else {
-                    return Err(HtrsError::new(format!("Unable to find environment with name or alias `{}` for service `{}`", environment_name, service.name).as_str()))
+                    return Err(HtrsError::aliased_item_not_found("environment", environment_name));
                 };
                 environment
             },

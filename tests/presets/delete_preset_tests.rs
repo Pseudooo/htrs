@@ -16,7 +16,7 @@ mod delete_preset_tests {
             .arg("unknown_preset")
             .assert()
             .failure()
-            .stdout("Unable to find preset with name `unknown_preset`\n");
+            .stdout("No preset could be found with name or alias `unknown_preset`\n");
 
         clear_config(&path);
         Ok(())

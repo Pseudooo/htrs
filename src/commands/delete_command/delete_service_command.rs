@@ -27,7 +27,7 @@ impl DeleteServiceCommand {
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
         match config.remove_service(&self.name) {
             true => Ok(HtrsAction::UpdateConfig),
-            false => Err(HtrsError::new(format!("No service could be found with name or alias `{}`", self.name).as_str())),
+            false => Err(HtrsError::aliased_item_not_found("service", self.name.as_str())),
         }
     }
 }
