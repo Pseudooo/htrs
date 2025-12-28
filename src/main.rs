@@ -2,8 +2,6 @@ mod config;
 mod commands;
 mod outcomes;
 
-#[cfg(test)]
-mod test_helpers;
 mod htrs_binding_error;
 mod common;
 
