@@ -174,4 +174,36 @@ mod edit_preset_tests {
         clear_config(&path);
         Ok(())
     }
+
+    #[test]
+    pub fn given_known_preset_when_clear_unknown_param_then_should_fail() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_preset(
+                PresetBuilder::new()
+                    .with_name("foo_preset")
+                    .with_value("foo", "bar")
+            )
+            .build();
+        let path = setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
+            .arg("edit")
+            .arg("preset")
+            .arg("foo_preset")
+            .arg("--clear")
+            .arg("kek")
+            .assert()
+            .failure()
+            .stdout("Preset `foo_preset` has no parameter `kek`\n");
+
+        let config = get_config(&path);
+        assert_eq!(config.presets.len(), 1);
+        assert_eq!(config.presets[0].name, "foo_preset");
+        assert_eq!(config.presets[0].values.len(), 1);
+        assert_eq!(config.presets[0].values["foo"], "bar");
+
+        clear_config(&path);
+        Ok(())
+    }
 }
