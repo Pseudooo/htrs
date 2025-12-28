@@ -122,6 +122,8 @@ mod call_command_tests {
             .arg("foo_endpoint")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 
