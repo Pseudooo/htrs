@@ -3,7 +3,7 @@ mod versioned_config;
 mod util;
 
 use crate::config::current_config::{Endpoint, Environment, HtrsConfig, Preset, QueryParameter, Service};
-use crate::config::versioned_config::versioned_htrs_config::VersionedHtrsConfig;
+use crate::config::versioned_config::VersionedHtrsConfig;
 use std::collections::HashMap;
 
 impl HtrsConfig {
