@@ -25,6 +25,8 @@ impl NewPresetCommand {
                 Arg::new("alias")
                     .help("Alias for the preset")
                     .required(false)
+                    .long("alias")
+                    .short('a')
             )
             .arg(
                 Arg::new("value")

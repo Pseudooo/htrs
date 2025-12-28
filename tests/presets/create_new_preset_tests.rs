@@ -71,6 +71,8 @@ mod create_new_preset_tests {
             .arg("new")
             .arg("preset")
             .arg("foo_preset")
+            .arg("--alias")
+            .arg("foo_alias")
             .arg("--value")
             .arg("key=value")
             .assert()
@@ -79,6 +81,7 @@ mod create_new_preset_tests {
         let config = get_config(&path);
         assert_eq!(config.presets.len(), 1);
         assert_eq!(config.presets[0].name, "foo_preset");
+        assert_eq!(config.presets[0].alias, Some("foo_alias".to_string()));
         assert_eq!(config.presets[0].values.len(), 1);
         assert_eq!(config.presets[0].values["key"], "value");
 
@@ -106,7 +109,7 @@ mod create_new_preset_tests {
             .arg("foo=bar")
             .assert()
             .failure()
-            .stdout("A preset with name `existing_preset` already exists\n");
+            .stdout("A preset with name or alias `existing_preset` already exists\n");
 
         clear_config(&path);
         Ok(())
