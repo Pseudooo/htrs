@@ -8,6 +8,7 @@ use clap::{Arg, ArgAction, ArgMatches, Command};
 pub struct EditPresetCommand {
     pub name: String,
     pub new_name: Option<String>,
+    pub new_alias: Option<String>,
     pub set_values: Vec<(String, String)>,
     pub clear_values: Vec<String>,
 }
@@ -25,6 +26,12 @@ impl EditPresetCommand {
                     .help("New name of the preset")
                     .required(false)
                     .long("new-name")
+            )
+            .arg(
+                Arg::new("new-alias")
+                    .help("The new alias of the preset")
+                    .required(false)
+                    .long("new-alias")
             )
             .arg(
                 Arg::new("set")
@@ -59,6 +66,7 @@ impl EditPresetCommand {
         Ok(EditPresetCommand {
             name: args.bind_field("name"),
             new_name: args.bind_field("new-name"),
+            new_alias: args.bind_field("new-alias"),
             set_values,
             clear_values: args.bind_field("clear"),
         })
@@ -68,6 +76,10 @@ impl EditPresetCommand {
         if self.new_name.is_some() && config.get_preset(self.new_name.as_ref().unwrap()).is_some() {
             return Err(HtrsError::new(format!("A preset already exists with name `{}`", self.new_name.as_ref().unwrap()).as_str()));
         }
+        if self.new_alias.is_some() && config.get_preset(self.new_alias.as_ref().unwrap()).is_some() {
+            return Err(HtrsError::new(format!("A preset already exists with name or alias `{}`", self.new_alias.as_ref().unwrap()).as_str()));
+        }
+
         let Some(preset) = config.get_preset_mut(self.name.as_str()) else {
             return Err(HtrsError::new(format!("No preset found with name `{}`", self.name).as_str()));
         };
