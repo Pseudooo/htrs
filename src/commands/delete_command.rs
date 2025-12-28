@@ -3,7 +3,7 @@ use crate::commands::delete_command::delete_environment_command::DeleteEnvironme
 use crate::commands::delete_command::delete_header_command::DeleteHeaderCommand;
 use crate::commands::delete_command::delete_preset_command::DeletePresetCommand;
 use crate::commands::delete_command::DeleteCommand::{Endpoint, Environment, Header, Preset, Service};
-use crate::config::HtrsConfig;
+use crate::config::current_config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};
 use delete_service_command::DeleteServiceCommand;

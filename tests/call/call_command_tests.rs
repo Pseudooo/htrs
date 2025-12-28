@@ -1,5 +1,6 @@
 mod call_command_tests {
-    use crate::common::test_helpers::{clear_config, setup, EndpointBuilder, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::builders::{EndpointBuilder, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, setup};
     use assert_cmd::Command;
     use httptest::matchers::{contains, request, url_decoded};
     use httptest::responders::status_code;
@@ -121,6 +122,8 @@ mod call_command_tests {
             .arg("foo_endpoint")
             .assert()
             .failure();
+
+        clear_config(&path);
         Ok(())
     }
 

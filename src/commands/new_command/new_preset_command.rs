@@ -1,6 +1,6 @@
 use crate::commands::bindings::MatchBinding;
 use crate::common::parse_key_value_string;
-use crate::config::{HtrsConfig, Preset};
+use crate::config::current_config::{HtrsConfig, Preset};
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgAction, ArgMatches, Command};
 use std::collections::HashMap;
@@ -53,6 +53,7 @@ impl NewPresetCommand {
 
         config.presets.push(Preset {
             name: self.name.to_string(),
+            alias: None,
             values,
         });
         Ok(HtrsAction::UpdateConfig)

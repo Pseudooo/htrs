@@ -1,7 +1,7 @@
 use crate::commands::list_command::list_endpoint_command::ListEndpointsCommand;
 use crate::commands::list_command::list_environment_command::ListEnvironmentsCommand;
 use crate::commands::list_command::ListCommand::{Endpoint, Environment, Service};
-use crate::config::HtrsConfig;
+use crate::config::current_config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};
 use list_service_command::ListServicesCommand;

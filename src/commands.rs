@@ -13,7 +13,7 @@ use crate::commands::list_command::ListCommand;
 use crate::commands::new_command::NewCommand;
 use crate::commands::set_command::SetCommand;
 use crate::commands::RootCommand::{Call, Delete, Edit, List, New, Set};
-use crate::config::HtrsConfig;
+use crate::config::current_config::HtrsConfig;
 use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};

@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod create_new_preset_tests {
-    use crate::common::test_helpers::{clear_config, get_config, setup, HtrsConfigBuilder, PresetBuilder};
+    use crate::common::builders::{HtrsConfigBuilder, PresetBuilder};
+    use crate::common::test_helpers::{clear_config, get_config, setup};
     use assert_cmd::Command;
     use rstest::rstest;
     use std::error::Error;

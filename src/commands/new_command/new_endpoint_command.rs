@@ -1,6 +1,6 @@
 use crate::commands::bindings::MatchBinding;
 use crate::common::{get_duplicates_from_vec, get_params_from_path};
-use crate::config::{Endpoint, HtrsConfig, QueryParameter};
+use crate::config::current_config::{Endpoint, HtrsConfig, QueryParameter};
 use crate::outcomes::HtrsAction::UpdateConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgAction, ArgMatches, Command};

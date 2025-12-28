@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod delete_environment_tests {
-    use crate::common::test_helpers::{clear_config, get_config, setup, EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::builders::{EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
+    use crate::common::test_helpers::{clear_config, get_config, setup};
     use assert_cmd::Command;
     use rstest::rstest;
     use std::error::Error;
