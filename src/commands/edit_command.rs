@@ -2,7 +2,7 @@ use crate::commands::edit_command::edit_endpoint_command::EditEndpointCommand;
 use crate::commands::edit_command::edit_environment_command::EditEnvironmentCommand;
 use crate::commands::edit_command::edit_preset_command::EditPresetCommand;
 use crate::commands::edit_command::EditCommand::{Endpoint, Environment, Preset, Service};
-use crate::config::HtrsConfig;
+use crate::config::current_config::HtrsConfig;
 use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};

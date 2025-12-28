@@ -1,6 +1,6 @@
 use crate::commands::bindings::MatchBinding;
 use crate::common::{get_params_from_path, merge_hashmaps};
-use crate::config::{Endpoint, HtrsConfig, Service};
+use crate::config::current_config::{Endpoint, HtrsConfig, Service};
 use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::HtrsAction::MakeRequest;
 use crate::outcomes::{HtrsAction, HtrsError};

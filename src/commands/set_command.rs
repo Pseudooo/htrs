@@ -1,6 +1,6 @@
 use crate::commands::set_command::set_header_command::SetHeaderCommand;
 use crate::commands::set_command::SetCommand::Header;
-use crate::config::HtrsConfig;
+use crate::config::current_config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};
 

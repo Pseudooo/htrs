@@ -8,8 +8,8 @@ mod htrs_binding_error;
 mod common;
 
 use crate::commands::RootCommand;
-use crate::config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
+use config::current_config::HtrsConfig;
 use reqwest::blocking::Client;
 use reqwest::{Method, Url};
 use std::collections::HashMap;

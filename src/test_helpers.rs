@@ -1,4 +1,4 @@
-use crate::config::{Endpoint, Environment, HtrsConfig, QueryParameter, Service};
+use crate::config::current_config::{Endpoint, Environment, HtrsConfig, QueryParameter, Service};
 use std::collections::HashMap;
 
 pub struct HtrsConfigBuilder {

@@ -1,6 +1,6 @@
 use crate::commands::bindings::MatchBinding;
 use crate::common::parse_key_value_string;
-use crate::config::HtrsConfig;
+use crate::config::current_config::HtrsConfig;
 use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{Arg, ArgAction, ArgMatches, Command};

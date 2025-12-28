@@ -7,7 +7,7 @@ use crate::commands::new_command::new_endpoint_command::NewEndpointCommand;
 use crate::commands::new_command::new_environment_command::NewEnvironmentCommand;
 use crate::commands::new_command::new_preset_command::NewPresetCommand;
 use crate::commands::new_command::NewCommand::{Endpoint, Environment, Preset, Service};
-use crate::config::HtrsConfig;
+use crate::config::current_config::HtrsConfig;
 use crate::outcomes::{HtrsAction, HtrsError};
 use clap::{ArgMatches, Command};
 use new_service_command::NewServiceCommand;
