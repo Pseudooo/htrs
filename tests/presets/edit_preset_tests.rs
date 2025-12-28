@@ -81,4 +81,97 @@ mod edit_preset_tests {
         clear_config(&path);
         Ok(())
     }
+
+    #[test]
+    pub fn given_known_preset_when_set_new_param_then_should_succeed() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_preset(
+                PresetBuilder::new()
+                    .with_name("foo_preset")
+                    .with_value("foo", "bar")
+            )
+            .build();
+        let path = setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
+            .arg("edit")
+            .arg("preset")
+            .arg("foo_preset")
+            .arg("--set")
+            .arg("test=kek")
+            .assert()
+            .success();
+
+        let config = get_config(&path);
+        assert_eq!(config.presets.len(), 1);
+        assert_eq!(config.presets[0].name, "foo_preset");
+        assert_eq!(config.presets[0].values.len(), 2);
+        assert_eq!(config.presets[0].values["foo"], "bar");
+        assert_eq!(config.presets[0].values["test"], "kek");
+
+        clear_config(&path);
+        Ok(())
+    }
+
+    #[test]
+    pub fn given_known_preset_when_set_existing_param_then_should_succeed() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_preset(
+                PresetBuilder::new()
+                    .with_name("foo_preset")
+                    .with_value("foo", "bar")
+            )
+            .build();
+        let path = setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
+            .arg("edit")
+            .arg("preset")
+            .arg("foo_preset")
+            .arg("--set")
+            .arg("foo=kek")
+            .assert()
+            .success();
+
+        let config = get_config(&path);
+        assert_eq!(config.presets.len(), 1);
+        assert_eq!(config.presets[0].name, "foo_preset");
+        assert_eq!(config.presets[0].values.len(), 1);
+        assert_eq!(config.presets[0].values["foo"], "kek");
+
+        clear_config(&path);
+        Ok(())
+    }
+
+    #[test]
+    pub fn given_known_preset_when_clear_existing_param_then_should_succeed() -> Result<(), Box<dyn Error>> {
+        let config = HtrsConfigBuilder::new()
+            .with_preset(
+                PresetBuilder::new()
+                    .with_name("foo_preset")
+                    .with_value("foo", "bar")
+            )
+            .build();
+        let path = setup(Some(config));
+
+        Command::cargo_bin("htrs")?
+            .env("HTRS_CONFIG_PATH", &path)
+            .arg("edit")
+            .arg("preset")
+            .arg("foo_preset")
+            .arg("--clear")
+            .arg("foo")
+            .assert()
+            .success();
+
+        let config = get_config(&path);
+        assert_eq!(config.presets.len(), 1);
+        assert_eq!(config.presets[0].name, "foo_preset");
+        assert_eq!(config.presets[0].values.len(), 0);
+
+        clear_config(&path);
+        Ok(())
+    }
 }
