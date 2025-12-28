@@ -57,7 +57,7 @@ impl RootCommand {
             },
             Some(("edit", edit_matches)) => {
                 Ok(Edit(
-                    EditCommand::bind_from_matches(edit_matches)
+                    EditCommand::bind_from_matches(edit_matches)?
                 ))
             },
             Some(("delete" | "del", delete_matches)) => {
