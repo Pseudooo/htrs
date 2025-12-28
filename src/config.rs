@@ -3,44 +3,16 @@ mod versioned_config;
 mod util;
 
 use crate::config::current_config::{Endpoint, Environment, HtrsConfig, Preset, QueryParameter, Service};
-use crate::config::util::get_config_path;
+use crate::config::versioned_config::versioned_htrs_config::VersionedHtrsConfig;
 use std::collections::HashMap;
-use std::fs::OpenOptions;
 
 impl HtrsConfig {
     pub fn load() -> Result<HtrsConfig, String> {
-        let config_path = get_config_path()?;
-        if !config_path.exists() {
-            return Ok(HtrsConfig::new());
-        }
-
-        let handle = OpenOptions::new()
-            .read(true)
-            .open(config_path)
-            .expect("Unable to open config file");
-
-        match serde_json::from_reader(handle) {
-            Ok(config) => Ok(config),
-            Err(e) => Err(format!("Unable to read config json: {e}")),
-        }
+        VersionedHtrsConfig::load_and_migrate_config()
     }
 
     pub fn save(self) -> Result<(), String> {
-        let config_path = get_config_path()?;
-
-        let mut file = match OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(config_path) {
-            Ok(f) => f,
-            Err(e) => return Err(format!("Failed to open config file: {e}"))
-        };
-
-        match serde_json::to_writer_pretty(&mut file, &self) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(format!("Failed to write config json to file: {e}"))
-        }
+        VersionedHtrsConfig::save_config(self)
     }
 }
 

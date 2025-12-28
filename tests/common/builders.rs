@@ -2,6 +2,7 @@ use crate::common::config::{Endpoint, Environment, HtrsConfig, Preset, QueryPara
 use std::collections::HashMap;
 
 pub struct HtrsConfigBuilder {
+    pub version: String,
     pub services: Vec<Service>,
     pub presets: Vec<Preset>,
     pub headers: HashMap<String, String>,
@@ -37,6 +38,7 @@ pub struct EnvironmentBuilder {
 impl HtrsConfigBuilder {
     pub fn new() -> Self {
         Self {
+            version: "V2".to_string(),
             services: vec![],
             presets: vec![],
             headers: HashMap::new(),
@@ -60,6 +62,7 @@ impl HtrsConfigBuilder {
 
     pub fn build(self) -> HtrsConfig {
         HtrsConfig {
+            version: self.version,
             services: self.services,
             headers: self.headers,
             presets: self.presets,

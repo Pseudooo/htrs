@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct HtrsConfig {
+    pub version: String,
     pub services: Vec<Service>,
     pub headers: HashMap<String, String>,
     pub presets: Vec<Preset>
