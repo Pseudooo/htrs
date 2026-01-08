@@ -5,6 +5,7 @@ mod delete_command;
 mod list_command;
 mod set_command;
 mod bindings;
+mod view_command;
 
 use crate::commands::call_command::CallServiceEndpointCommand;
 use crate::commands::delete_command::DeleteCommand;
@@ -12,7 +13,8 @@ use crate::commands::edit_command::EditCommand;
 use crate::commands::list_command::ListCommand;
 use crate::commands::new_command::NewCommand;
 use crate::commands::set_command::SetCommand;
-use crate::commands::RootCommand::{Call, Delete, Edit, List, New, Set};
+use crate::commands::view_command::ViewCommand;
+use crate::commands::RootCommand::{Call, Delete, Edit, List, New, Set, View};
 use crate::config::current_config::HtrsConfig;
 use crate::htrs_binding_error::HtrsBindingError;
 use crate::outcomes::{HtrsAction, HtrsError};
@@ -26,6 +28,7 @@ pub enum RootCommand {
     Delete(DeleteCommand),
     List(ListCommand),
     Set(SetCommand),
+    View(ViewCommand)
 }
 
 impl RootCommand {
@@ -40,6 +43,7 @@ impl RootCommand {
             .subcommand(DeleteCommand::get_command())
             .subcommand(ListCommand::get_command())
             .subcommand(SetCommand::get_command())
+            .subcommand(ViewCommand::get_command())
     }
 
     pub fn bind_from_matches(args: &ArgMatches, config: &HtrsConfig) -> Result<RootCommand, HtrsBindingError> {
@@ -74,6 +78,11 @@ impl RootCommand {
                 Ok(Set(
                     SetCommand::bind_from_matches(set_matches)
                 ))
+            },
+            Some(("view", view_matches)) => {
+                Ok(View(
+                    ViewCommand::bind_from_matches(view_matches)
+                ))
             }
             _ => unreachable!()
         }
@@ -89,6 +98,7 @@ impl RootCommand {
             Delete(delete_command) => delete_command.execute(config),
             List(list_command) => list_command.execute(config),
             Set(set_command) => set_command.execute(config),
+            View(view_command) => view_command.execute(config),
         }
     }
 }

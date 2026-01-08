@@ -18,6 +18,7 @@ pub struct ServiceBuilder {
 
 pub struct PresetBuilder {
     pub name: Option<String>,
+    pub alias: Option<String>,
     pub values: HashMap<String, String>,
 }
 
@@ -121,12 +122,18 @@ impl PresetBuilder {
     pub fn new() -> Self {
         Self {
             name: None,
+            alias: None,
             values: HashMap::new(),
         }
     }
 
     pub fn with_name(mut self, name: &str) -> Self {
         self.name = Some(name.to_string());
+        self
+    }
+
+    pub fn with_alias(mut self, alias: &str) -> Self {
+        self.alias = Some(alias.to_string());
         self
     }
 
@@ -138,7 +145,7 @@ impl PresetBuilder {
     pub fn build(self) -> Preset {
         Preset {
             name: self.name.unwrap(),
-            alias: None,
+            alias: self.alias,
             values: self.values,
         }
     }

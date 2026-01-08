@@ -19,3 +19,4 @@ rstest = "0.26.1"
 assert_cmd = "2.0.17"
 uuid = { version = "1.18.1", features = ["v4"]}
 httptest = "0.16.3"
+predicates = "3.1.3"
