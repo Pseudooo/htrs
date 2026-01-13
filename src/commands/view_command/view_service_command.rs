@@ -37,7 +37,7 @@ impl ViewServiceCommand {
         }
         text.push_str("Environments:\n");
         let environment_text = service.environments.iter()
-            .map(|e| Self::get_environment_str(e))
+            .map(Self::get_environment_str)
             .collect::<Vec<String>>()
             .join("");
         text.push_str(match environment_text.is_empty() {
@@ -47,7 +47,7 @@ impl ViewServiceCommand {
 
         text.push_str("Endpoints:\n");
         let endpoint_text = service.endpoints.iter()
-            .map(|e| Self::get_endpoint_string(e))
+            .map(Self::get_endpoint_string)
             .collect::<Vec<String>>()
             .join("");
         text.push_str(match endpoint_text.is_empty() {
