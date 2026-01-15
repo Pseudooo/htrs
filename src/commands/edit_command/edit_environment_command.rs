@@ -73,10 +73,10 @@ impl EditEnvironmentCommand {
 
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
         let Some(service) = config.get_service_mut(&self.service) else {
-            return Err(HtrsError::new(format!("No service could be found with name or alias `{}`", self.service).as_ref()))
+            return Err(HtrsError::aliased_item_not_found("service", self.service.as_str()))
         };
         if service.get_environment_mut(&self.name).is_none() {
-            return Err(HtrsError::new(format!("No environment could be found with name or alias `{}`", self.name).as_ref()))
+            return Err(HtrsError::aliased_item_not_found("environment", self.name.as_str()))
         };
 
         if self.new_name.is_some() && service.get_environment_mut(self.new_name.as_ref().unwrap()).is_some() {

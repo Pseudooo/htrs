@@ -44,7 +44,7 @@ mod edit_endpoint_tests {
             .arg("foo_service")
             .assert()
             .failure()
-            .stdout("No endpoint could be found with name `foo_endpoint` for service `foo_service`\n");
+            .stdout("No endpoint could be found with name `foo_endpoint`\n");
 
         clear_config(&path);
         Ok(())

@@ -103,7 +103,7 @@ mod delete_header_tests {
             .arg("foo_service")
             .assert()
             .failure()
-            .stdout("Unable to find service with name or alias `foo_service`\n");
+            .stdout("No service could be found with name or alias `foo_service`\n");
 
         clear_config(&path);
         Ok(())
@@ -161,7 +161,7 @@ mod delete_header_tests {
             .arg("foo_environment")
             .assert()
             .failure()
-            .stdout("Unable to find service with name or alias `foo_service`\n");
+            .stdout("No service could be found with name or alias `foo_service`\n");
 
         clear_config(&path);
         Ok(())
@@ -188,7 +188,7 @@ mod delete_header_tests {
             .arg("foo_environment")
             .assert()
             .failure()
-            .stdout("Unable to find environment with name or alias `foo_environment` for service `foo_service`\n");
+            .stdout("No environment could be found with name or alias `foo_environment`\n");
 
         clear_config(&path);
         Ok(())

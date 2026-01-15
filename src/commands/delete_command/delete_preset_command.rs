@@ -29,7 +29,7 @@ impl DeletePresetCommand {
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
         match config.remove_preset(self.name.as_str()) {
             true => Ok(UpdateConfig),
-            false => Err(HtrsError::new(format!("Unable to find preset with name `{}`", self.name).as_str())),
+            false => Err(HtrsError::aliased_item_not_found("preset", self.name.as_str())),
         }
     }
 }

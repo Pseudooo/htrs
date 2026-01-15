@@ -12,6 +12,30 @@ impl HtrsError {
     pub fn new(msg: &str) -> HtrsError {
         HtrsError { details: msg.to_string() }
     }
+
+    pub fn item_not_found(name: &str, searched_term: &str) -> Self {
+        Self {
+            details: format!("No {name} could be found with name `{searched_term}`")
+        }
+    }
+
+    pub fn aliased_item_not_found(name: &str, searched_term: &str) -> Self {
+        Self {
+            details: format!("No {name} could be found with name or alias `{searched_term}`")
+        }
+    }
+
+    pub fn item_already_exists(name: &str, conflicting_term: &str) -> Self {
+        Self {
+            details: format!("A {name} already exists with name `{conflicting_term}")
+        }
+    }
+
+    pub fn aliased_item_already_exists(name: &str, conflicting_term: &str) -> Self {
+        Self {
+            details: format!("A {name} already exists with name or alias `{conflicting_term}`")
+        }
+    }
 }
 
 impl fmt::Display for HtrsError {
