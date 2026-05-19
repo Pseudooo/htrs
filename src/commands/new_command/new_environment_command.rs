@@ -68,14 +68,12 @@ impl NewEnvironmentCommand {
         if service.get_environment(&self.name).is_some() {
             return Err(HtrsError::new(format!("Service `{}` already has an environment with name or alias `{}`", service.name, self.name).as_str()));
         }
-        if self.alias.is_some() && service.get_environment(self.alias.as_ref().unwrap().as_str()).is_some() {
-            return Err(HtrsError::new(format!("Service `{}` already has an environment with name or alias `{}`", service.name, self.alias.as_ref().unwrap()).as_str()));
+        if let Some(alias) = self.alias.as_ref() && service.get_environment(alias).is_some() {
+            return Err(HtrsError::new(format!("Service `{}` already has an environment with name or alias `{}`", service.name, alias).as_str()));
         }
 
-        if self.default {
-            if let Some(existing_default_environment) = service.get_default_environment_mut() {
-                existing_default_environment.default = false;
-            }
+        if self.default && let Some(existing_default_environment) = service.get_default_environment_mut() {
+            existing_default_environment.default = false;
         }
 
         service.environments.push(

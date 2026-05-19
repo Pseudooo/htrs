@@ -39,10 +39,8 @@ impl NewServiceCommand {
         if config.get_service(&self.name).is_some() {
             return Err(HtrsError::new(format!("A service already exists with the name or alias '{}'", self.name).as_str()));
         }
-        if let Some(alias) = &self.alias {
-            if config.get_service(alias).is_some() {
-                return Err(HtrsError::new(format!("A service already exists with the name or alias '{alias}").as_str()));
-            }
+        if let Some(alias) = &self.alias && config.get_service(alias).is_some() {
+            return Err(HtrsError::new(format!("A service already exists with the name or alias '{alias}").as_str()));
         }
 
         config.services.push(Service::new(self.name.clone(), self.alias.clone()));
