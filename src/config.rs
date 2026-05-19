@@ -146,10 +146,17 @@ impl Environment {
     }
 
     pub fn display_name(&self) -> String {
-        match &self.alias {
-            None => self.name.to_string(),
-            Some(alias) => format!("{} ({})", self.name, alias),
+        let mut s = self.name.to_string();
+
+        if let Some(alias) = &self.alias {
+            s += format!(" ({})", alias).as_ref();
         }
+
+        if self.default {
+            s += " (default)";
+        }
+
+        return s;
     }
 }
 
