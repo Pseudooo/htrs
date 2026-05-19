@@ -43,11 +43,11 @@ impl EditServiceCommand {
     }
 
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
-        if self.new_name.is_some() && config.get_service(self.new_name.as_ref().unwrap()).is_some() {
-            return Err(HtrsError::new(format!("A service already exists with the name or alias `{}`", &self.new_name.as_ref().unwrap()).as_str()))
+        if let Some(new_name) = self.new_name.as_ref() && config.get_service(new_name).is_some() {
+            return Err(HtrsError::new(format!("A service already exists with the name or alias `{}`", new_name).as_str()))
         }
-        if self.new_alias.is_some() && config.get_service(self.new_alias.as_ref().unwrap()).is_some() {
-            return Err(HtrsError::new(format!("A service already exists with the name or alias `{}`", &self.new_alias.as_ref().unwrap()).as_str()))
+        if let Some(new_alias) = self.new_alias.as_ref() && config.get_service(new_alias).is_some() {
+            return Err(HtrsError::new(format!("A service already exists with the name or alias `{}`", new_alias).as_str()))
         }
 
         let Some(service) = &mut config.get_service_mut(&self.name) else {

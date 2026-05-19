@@ -76,10 +76,8 @@ impl EditEndpointCommand {
             return Err(HtrsError::new(format!("No endpoint could be found with name `{}` for service `{}`", self.name, service.name).as_str()));
         }
 
-        if let Some(new_name) = &self.new_name {
-            if service.get_endpoint(new_name).is_some() {
-                return Err(HtrsError::new(format!("An endpoint already exists with name `{}` for service `{}`", new_name, service.name).as_str()));
-            }
+        if let Some(new_name) = &self.new_name && service.get_endpoint(new_name).is_some() {
+            return Err(HtrsError::new(format!("An endpoint already exists with name `{}` for service `{}`", new_name, service.name).as_str()));
         };
 
         let endpoint = service.get_endpoint_mut(&self.name).unwrap();

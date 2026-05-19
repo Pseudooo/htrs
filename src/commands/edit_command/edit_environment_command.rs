@@ -79,17 +79,15 @@ impl EditEnvironmentCommand {
             return Err(HtrsError::new(format!("No environment could be found with name or alias `{}`", self.name).as_ref()))
         };
 
-        if self.new_name.is_some() && service.get_environment_mut(self.new_name.as_ref().unwrap()).is_some() {
-            return Err(HtrsError::new(format!("Service `{}` already has an environment with name or alias `{}`", service.name, self.new_name.as_ref().unwrap()).as_ref()))
+        if let Some(new_name) = self.new_name.as_ref() && service.get_environment_mut(new_name).is_some() {
+            return Err(HtrsError::new(format!("Service `{}` already has an environment with name or alias `{}`", service.name, new_name).as_ref()))
         }
-        if self.new_alias.is_some() && service.get_environment_mut(self.new_alias.as_ref().unwrap()).is_some() {
-            return Err(HtrsError::new(format!("Service `{}` already has an environment with name or alias `{}`", service.name, self.new_alias.as_ref().unwrap()).as_ref()))
+        if let Some(new_alias) = self.new_alias.as_ref() &&service.get_environment_mut(new_alias).is_some() {
+            return Err(HtrsError::new(format!("Service `{}` already has an environment with name or alias `{}`", service.name, new_alias).as_ref()))
         }
 
-        if self.is_default.unwrap_or(false) {
-            if let Some(existing_default_environment) = service.get_default_environment_mut() {
-                existing_default_environment.default = false;
-            }
+        if self.is_default.unwrap_or(false) && let Some(existing_default_environment) = service.get_default_environment_mut() {
+            existing_default_environment.default = false;
         }
 
         let environment = service.get_environment_mut(&self.name).unwrap();

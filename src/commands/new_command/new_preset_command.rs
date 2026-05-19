@@ -50,8 +50,8 @@ impl NewPresetCommand {
         if config.get_preset(self.name.as_str()).is_some() {
             return Err(HtrsError::new(format!("A preset with name or alias `{}` already exists", self.name).as_str()));
         }
-        if self.alias.is_some() && config.get_preset(self.alias.as_ref().unwrap()).is_some() {
-            return Err(HtrsError::new(format!("A preset with name or alias `{}` already exists", self.alias.as_ref().unwrap()).as_str()));
+        if let Some(alias) = self.alias.as_ref() && config.get_preset(alias).is_some() {
+            return Err(HtrsError::new(format!("A preset with name or alias `{}` already exists", alias).as_str()));
         }
 
         let mut values = HashMap::new();

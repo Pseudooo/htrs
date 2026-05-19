@@ -73,11 +73,11 @@ impl EditPresetCommand {
     }
 
     pub fn execute(&self, config: &mut HtrsConfig) -> Result<HtrsAction, HtrsError> {
-        if self.new_name.is_some() && config.get_preset(self.new_name.as_ref().unwrap()).is_some() {
+        if let Some(new_name) = &self.new_name && config.get_preset(new_name).is_some() {
             return Err(HtrsError::new(format!("A preset already exists with name `{}`", self.new_name.as_ref().unwrap()).as_str()));
         }
-        if self.new_alias.is_some() && config.get_preset(self.new_alias.as_ref().unwrap()).is_some() {
-            return Err(HtrsError::new(format!("A preset already exists with name or alias `{}`", self.new_alias.as_ref().unwrap()).as_str()));
+        if let Some(new_alias) = &self.new_alias && config.get_preset(new_alias).is_some() {
+            return Err(HtrsError::new(format!("A preset already exists with name or alias `{}`", new_alias).as_str()));
         }
 
         let Some(preset) = config.get_preset_mut(self.name.as_str()) else {

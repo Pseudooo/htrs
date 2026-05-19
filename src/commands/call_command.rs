@@ -217,10 +217,9 @@ fn get_command_for_endpoint(endpoint: &Endpoint) -> Command {
 }
 
 fn parse_query_params_from_arg(arg: &str) -> Result<(String, String), HtrsBindingError> {
-    if let [name, value] = arg.split("=").collect::<Vec<&str>>().as_slice() {
-        if !name.is_empty() && !value.is_empty() {
-            return Ok((name.to_string(), value.to_string()));
-        }
+    if let [name, value] = arg.split("=").collect::<Vec<&str>>().as_slice()
+        && !name.is_empty() && !value.is_empty() {
+        return Ok((name.to_string(), value.to_string()));
     }
 
     Err(HtrsBindingError {
