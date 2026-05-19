@@ -156,7 +156,7 @@ impl Environment {
             s += " (default)";
         }
 
-        return s;
+        s
     }
 }
 
