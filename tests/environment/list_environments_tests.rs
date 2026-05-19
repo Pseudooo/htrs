@@ -78,11 +78,18 @@ mod list_environments_tests {
                         EnvironmentBuilder::new()
                             .with_name("environment1")
                             .with_alias("alias1")
+                            .with_default()
                             .with_host("google.com")
                     )
                     .with_environment(
                         EnvironmentBuilder::new()
                             .with_name("environment2")
+                            .with_alias("alias2")
+                            .with_host("google.com")
+                    )
+                    .with_environment(
+                        EnvironmentBuilder::new()
+                            .with_name("environment3")
                             .with_host("google.com")
                     )
             )
@@ -97,7 +104,7 @@ mod list_environments_tests {
             .arg("foo_service")
             .assert()
             .success()
-            .stdout(" - environment1 (alias1)\n - environment2\n");
+            .stdout(" - environment1 (alias1) (default)\n - environment2 (alias2)\n - environment3\n");
 
         clear_config(&path);
         Ok(())
