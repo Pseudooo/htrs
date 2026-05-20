@@ -47,11 +47,11 @@ impl HtrsConfig {
     }
 
     pub fn get_service(&self, name: &str) -> Option<&Service> {
-        self.services.iter().find(|&service| service.name == name || service.alias == Some(name.to_string())).map(|v| v as _)
+        self.services.iter().find(|&service| service.name == name || service.alias == Some(name.to_string()))
     }
 
     pub fn get_service_mut(&mut self, name: &str) -> Option<&mut Service> {
-        self.services.iter_mut().find(|s| s.name == name)
+        self.services.iter_mut().find(|s| s.name == name || s.alias ==Some(name.to_string()))
     }
 
     pub fn get_preset(&self, name: &str) -> Option<&Preset> {
