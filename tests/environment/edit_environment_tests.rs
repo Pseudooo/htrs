@@ -3,6 +3,7 @@ mod edit_environment_tests {
     use crate::common::builders::{EnvironmentBuilder, HtrsConfigBuilder, ServiceBuilder};
     use crate::common::test_helpers::{clear_config, get_config, setup};
     use assert_cmd::Command;
+    use rstest::rstest;
     use std::error::Error;
 
     #[test]
@@ -64,12 +65,17 @@ mod edit_environment_tests {
         Ok(())
     }
 
-    #[test]
-    fn given_edit_environment_command_with_known_environment_then_should_succeed() -> Result<(), Box<dyn Error>> {
+    #[rstest]
+    #[case("foo_service")]
+    #[case("foo_alias")]
+    fn given_edit_environment_command_with_known_environment_then_should_succeed(
+        #[case] service_name: &str
+    ) -> Result<(), Box<dyn Error>> {
         let config = HtrsConfigBuilder::new()
             .with_service(
                 ServiceBuilder::new()
                     .with_name("foo_service")
+                    .with_alias("foo_alias")
                     .with_environment(
                         EnvironmentBuilder::new()
                             .with_name("original_name")
@@ -86,7 +92,7 @@ mod edit_environment_tests {
             .arg("environment")
             .arg("original_name")
             .arg("--service")
-            .arg("foo_service")
+            .arg(service_name)
             .arg("--new-name")
             .arg("new_name")
             .arg("--new-alias")
